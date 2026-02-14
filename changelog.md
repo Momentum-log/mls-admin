@@ -1,0 +1,96 @@
+# Changelog
+
+### [0.4.2] - 2026-02-14 - Estimate ↔ Shipment Correlation
+
+- Added: `utils/estimate-shipment-correlation.ts` — matches estimates to shipments by address, serviceType, and chronological order
+- Added: "Source Estimate" section in `ShipmentDetailSheet` — green card showing the estimate that originated the shipment
+- Added: "Created Shipment" section in `EstimateDetailSheet` — green card with tracking #, carrier, price, payment status
+- Added: Yellow warning in estimate sheet when `converted: true` but no matching shipment found in loaded data
+- Added: "Selected" badge highlighting the rate the user actually chose when viewing a converted estimate
+- Changed: Sub-pages now fetch the complementary data set (estimates on shipments page, shipments on estimates page) for correlation
+- Changed: User details page computes correlation using `useMemo` and passes to detail sheets
+
+### [0.4.1] - 2026-02-14 - Shipment & Estimate Detail Sheets + API Fix
+
+- Fixed: API response types now match actual backend shape (`data[]` wrapper instead of `shipments[]`/`leads[]`)
+- Added: `AdminShipment`, `AdminLead` and related types in `types/admin-user-resources.ts`
+- Added: `ShipmentDetailSheet` — slide-out panel with full shipment details (addresses, package, pricing, label link)
+- Added: `EstimateDetailSheet` — slide-out panel with full estimate details (locations, rates, conversion status, contact)
+- Changed: Shipment and estimate table rows are now clickable on user details page and sub-pages
+- Fixed: Correct field names used throughout (`shipmentStatus`, `carrier.name`, `pickupLocation`, `weight.value`, etc.)
+
+### [0.4.0] - 2026-02-14 - User Details — Shipments & Estimates Enhancement
+
+- Added: "Recent Shipments" card on user details page (top 5, with tracking #, status, carrier, date)
+- Added: "Recent Estimates" card on user details page (top 5, with route, weight, conversion status, date)
+- Added: `ConversionBadge` component — green "Shipment Created" or neutral "Shipping Estimate"
+- Added: `UserInfoHeader` compact component for user sub-pages
+- Added: "See All" Shipments sub-page at `/dashboard/users/[id]/shipments` (paginated table)
+- Added: "See All" Estimates sub-page at `/dashboard/users/[id]/estimates` (paginated table with conversion badges)
+- Added: `getUserShipments` API function and `useUserShipments` hook (`GET /shipments?userId=...`)
+- Added: `getUserLeads` API function and `useUserLeads` hook (`GET /leads?userId=...`)
+- Added: `UserShipmentFilter` and `UserLeadFilter` types for user-scoped queries
+- Changed: `Lead` type now includes `converted` boolean field
+
+### [0.3.0] - 2026-02-13 - UI Overhaul — Light Theme, Create Shipment, & Cleanup
+
+- Changed: Entire app switched to light theme with brand colors (`--primary` → `#005db1`, `--secondary` → `#fef9ec`, `--accent` → `#f3f0ff`)
+- Changed: Sidebar redesigned from dark (`#111827`) to white with brand-blue active states
+- Changed: Removed `.dark` CSS block (app is light-only)
+- Changed: Layout sidebar wrapper no longer uses `bg-gray-900`
+- Changed: User detail page merged "Verification & Status" and "Profile Information" into a single 2-column "User Profile" card
+- Changed: All native `confirm()` calls replaced with shadcn `ConfirmDialog` component
+- Changed: "Create Proxy" renamed to "Create Shipment" everywhere
+- Changed: `userCode` used instead of `id` for copy actions and navigation across all pages
+- Changed: Create Shipment button on user detail page now passes `userCode` in URL
+- Added: Reusable `ConfirmDialog` component (`components/ui/confirm-dialog.tsx`) built on shadcn AlertDialog
+- Added: Multi-step Create Shipment flow: Select User → Addresses → Package → Get Rates → Confirm & Create
+- Added: Searchable user list with auto-select from `?userCode=` query parameter
+- Added: Shipping estimate types (`types/shipping-estimate.ts`), API (`api/shipping/index.ts`), and hook (`hooks/shipping/use-shipping.ts`)
+- Added: Rate cards display with per-currency formatting
+- Added: "Create & Bypass Payment" option on the confirm step
+
+### [0.2.1] - 2026-02-13 - Stats, Dates & User Details Fixes
+
+- Changed: Dashboard stats now correctly handle multi-currency `revenue` object (e.g., `{ EUR: 375.04, PLN: 2344.09 }`)
+- Changed: Revenue card displays each currency on its own line instead of concatenating
+- Changed: Dashboard shows `pendingPayments` and `inTransit` instead of the incorrect `totalRevenue` / `activeShipments`
+- Changed: Dashboard grid updated to 5 columns for all stat cards
+- Changed: Date formatting across the app now uses "12 Feb 2026" format (short month name) via `utils/format-date.ts`
+- Changed: User detail page URL now uses `userCode` (e.g., `/dashboard/users/MLS-U-15O8B2W6`) instead of UUID
+- Changed: `getUserById` replaced with `getUserByCode` (searches users list by userCode as workaround until dedicated endpoint exists)
+- Changed: Removed "Status" and "Verified" columns from users table for cleaner layout
+- Changed: Verification status now shown as `BadgeCheck` (green) / `BadgeX` (red) icons inline next to email
+- Changed: Email verification on user detail page also uses `BadgeCheck` / `BadgeX` icons
+- Added: `lastActiveAt` and `lastLoginAt` fields to User type
+- Added: "Last Active" and "Last Login" columns on the users list page
+- Added: "Last Login" field on the user detail page
+- Added: `utils/format-date.ts` with `formatDate`, `formatDateTime`, and `formatRelativeTime` utilities
+- Added: `utils/format-date.ts` with `formatDate`, `formatDateTime`, and `formatRelativeTime` utilities
+
+- Added: Brand logo in sidebar (replaces placeholder circle)
+- Added: Topbar profile dropdown showing admin initials, name, email, role badge
+- Added: Red logout button in the profile dropdown
+- Added: Dashboard stats API integration (`/dashboard/stats`) with PLN formatting
+- Added: User details page at `/dashboard/users/[id]` with profile info and moderation actions
+- Added: "View Details" option in users action dropdown
+- Added: Clickable user names in the users table (navigates to detail page)
+- Added: CopyButton on user emails, user codes, user IDs (users page and detail page)
+- Added: CopyButton on tracking numbers and user emails (shipments page)
+- Added: `WARNED` status filter option in users page
+- Added: Page indicator in pagination controls
+- Changed: `getMe` now correctly parses the direct API response (was trying to access `response.data.user`)
+- Changed: `AuthResponse` type updated to match actual API (`admin` field instead of `user`)
+- Changed: Dates formatted using `pl-PL` locale
+- Fixed: CopyButton `cn` import path corrected to `@/lib/utils`
+
+### [0.1.0] - 2026-02-13 - Initial Admin Panel Setup
+
+- Added: Authentication module (login, logout, session management)
+- Added: Admin layout with sidebar and topbar
+- Added: Dashboard overview page
+- Added: User management (list, search, filter, ban, verify)
+- Added: Shipment management (list, proxy creation, payment bypass, status override)
+- Added: Marketing leads management with CSV export
+- Added: Middleware-based route protection
+- Added: Axios interceptor for Bearer token and 401 handling

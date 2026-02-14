@@ -1,0 +1,80 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getShipments,
+  createProxyShipment,
+  bypassPayment,
+  overrideStatus,
+  getUserShipments,
+} from "@/api/shipments";
+import {
+  ShipmentFilter,
+  CreateProxyShipmentPayload,
+  BypassPaymentPayload,
+  OverrideStatusPayload,
+  UserShipmentFilter,
+} from "@/types/shipment";
+
+export const useShipments = (filters: ShipmentFilter) => {
+  return useQuery({
+    queryKey: ["shipments", filters],
+    queryFn: () => getShipments(filters),
+    placeholderData: (previousData) => previousData,
+  });
+};
+
+/**
+ * Hook to fetch a paginated list of shipments for a specific user.
+ * Only fires the query when `userId` is truthy.
+ *
+ * @param filters - Filter params including required userId.
+ */
+export const useUserShipments = (filters: UserShipmentFilter) => {
+  return useQuery({
+    queryKey: ["user-shipments", filters],
+    queryFn: () => getUserShipments(filters),
+    enabled: !!filters.userId,
+    placeholderData: (previousData) => previousData,
+  });
+};
+
+export const useCreateProxyShipment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateProxyShipmentPayload) => createProxyShipment(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+    },
+  });
+};
+
+export const useBypassPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      shipmentId,
+      data,
+    }: {
+      shipmentId: string;
+      data: BypassPaymentPayload;
+    }) => bypassPayment(shipmentId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+    },
+  });
+};
+
+export const useOverrideStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      shipmentId,
+      data,
+    }: {
+      shipmentId: string;
+      data: OverrideStatusPayload;
+    }) => overrideStatus(shipmentId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+    },
+  });
+};
