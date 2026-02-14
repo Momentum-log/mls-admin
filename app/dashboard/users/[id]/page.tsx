@@ -121,26 +121,6 @@ export default function UserDetailPage() {
     setShowVerifyDialog(false);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="space-y-4">
-        <Button variant="ghost" onClick={() => router.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <p className="text-center text-muted-foreground">User not found.</p>
-      </div>
-    );
-  }
-
   /** Resolved shipment & lead arrays from the `data` wrapper. */
   const shipments = shipmentsData?.data ?? [];
   const leads = leadsData?.data ?? [];
@@ -161,6 +141,26 @@ export default function UserDetailPage() {
         : null,
     [selectedEstimate, shipments],
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" onClick={() => router.back()}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        <p className="text-center text-muted-foreground">User not found.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
