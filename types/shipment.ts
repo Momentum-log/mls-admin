@@ -72,10 +72,20 @@ export interface BypassPaymentPayload {
   notes?: string;
 }
 
+/**
+ * Payload for the manual status override endpoint.
+ * `PUT /api/admin/shipments/:id/manual-status`
+ *
+ * @param status - Any valid ShipmentStatus (CREATED, PAID, IN_TRANSIT, DELIVERED, COMPLETED, CANCELLED, FAILED).
+ * @param manualOverride - Marks the shipment as manually adjusted (default: true).
+ * @param trackingSyncEnabled - If false, carrier tracking updates are ignored (default: false).
+ * @param notify - If true, sends an email notification to the user about the change (default: true).
+ */
 export interface OverrideStatusPayload {
   status: string;
   manualOverride: boolean;
   trackingSyncEnabled: boolean;
+  notify: boolean;
 }
 
 export interface ShipmentFilter {

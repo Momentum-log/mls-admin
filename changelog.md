@@ -1,5 +1,13 @@
 # Changelog
 
+### [0.5.1] - 2026-02-14 - Unified Shipment Status Override
+
+- Changed: Rewrote `OverrideStatusModal` with full status list (CREATED → FAILED), descriptions, destructive action warnings, and notification toggle
+- Added: `notify` field to `OverrideStatusPayload` type to match updated backend API
+- Added: "Admin Actions" section in `ShipmentDetailSheet` with "Update Status" and "Mark as Paid" buttons
+- Changed: Modals (status override, payment bypass) are now managed internally by the detail sheet instead of the parent page
+- Changed: Cleaned up shipments page by removing legacy modal state and standalone modal rendering
+
 ### [0.5.0] - 2026-02-14 - Shipments & Estimates Dashboard Tabs Revamp
 
 - Changed: Rewrote main Shipments page with modern UI, clickable rows, and `ShipmentDetailSheet` integration

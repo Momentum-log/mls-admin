@@ -560,6 +560,80 @@
         }
       }
     },
+    "/shipments/{id}": {
+      "get": {
+        "summary": "Get Shipment Details",
+        "description": "Returns full shipment details, including user, carrier, payments, and audit logs.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Full shipment details retrieved" },
+          "404": { "description": "Shipment not found" }
+        }
+      }
+    },
+    "/shipments/{id}/complete": {
+      "post": {
+        "summary": "Mark Shipment as Completed",
+        "description": "Sets status to COMPLETED and sends notification to the user.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Shipment completed" }
+        }
+      }
+    },
+    "/shipments/{id}/manual-status": {
+      "put": {
+        "summary": "Manual Status Override",
+        "description": "Force a shipment into any status. Optionally disables carrier sync and notifies the user.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string" },
+                  "manualOverride": { "type": "boolean", "default": true },
+                  "trackingSyncEnabled": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "notify": { "type": "boolean", "default": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status updated" }
+        }
+      }
+    },
     "/shipments/{id}/bypass-payment": {
       "post": {
         "summary": "Bypass Payment",

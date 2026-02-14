@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -11,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CopyButton from "@/components/ui/copy-button";
 import ConversionBadge from "@/components/ui/conversion-badge";
+import { OverrideStatusModal } from "@/components/shipments/override-status-modal";
+import { BypassPaymentModal } from "@/components/shipments/bypass-payment-modal";
 import { formatDate, formatDateTime } from "@/utils/format-date";
 import type { AdminShipment, AdminLead } from "@/types/admin-user-resources";
 import {
@@ -22,6 +25,8 @@ import {
   User as UserIcon,
   FileText,
   Link2,
+  Shield,
+  Banknote,
 } from "lucide-react";
 
 /**
@@ -75,6 +80,9 @@ export default function ShipmentDetailSheet({
   onOpenChange,
   linkedEstimate,
 }: ShipmentDetailSheetProps) {
+  const [overrideModalOpen, setOverrideModalOpen] = useState(false);
+  const [bypassModalOpen, setBypassModalOpen] = useState(false);
+
   if (!shipment) return null;
 
   return (
@@ -348,8 +356,50 @@ export default function ShipmentDetailSheet({
               </a>
             </Button>
           )}
+
+          {/* Admin Actions */}
+          <section className="space-y-2 pt-2 border-t">
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+              <Shield className="h-3.5 w-3.5" />
+              Admin Actions
+            </h4>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => setOverrideModalOpen(true)}
+              >
+                <Shield className="mr-2 h-4 w-4" />
+                Update Status
+              </Button>
+              {shipment.paymentStatus !== "PAID" && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => setBypassModalOpen(true)}
+                >
+                  <Banknote className="mr-2 h-4 w-4" />
+                  Mark as Paid (Bypass)
+                </Button>
+              )}
+            </div>
+          </section>
         </div>
       </SheetContent>
+
+      {/* Modals */}
+      <OverrideStatusModal
+        shipmentId={shipment.id}
+        currentStatus={shipment.shipmentStatus}
+        currentSync={shipment.trackingSyncEnabled}
+        isOpen={overrideModalOpen}
+        onClose={() => setOverrideModalOpen(false)}
+      />
+      <BypassPaymentModal
+        shipmentId={shipment.id}
+        isOpen={bypassModalOpen}
+        onClose={() => setBypassModalOpen(false)}
+      />
     </Sheet>
   );
 }

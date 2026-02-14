@@ -18,8 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Search, Truck } from "lucide-react";
 import CopyButton from "@/components/ui/copy-button";
-import { BypassPaymentModal } from "@/components/shipments/bypass-payment-modal";
-import { OverrideStatusModal } from "@/components/shipments/override-status-modal";
 import ShipmentDetailSheet from "@/components/shipments/shipment-detail-sheet";
 import type { AdminShipment } from "@/types/admin-user-resources";
 import { formatDate } from "@/utils/format-date";
@@ -39,13 +37,6 @@ export default function ShipmentsPage() {
   // Detail Sheet State
   const [selectedShipment, setSelectedShipment] =
     useState<AdminShipment | null>(null);
-
-  // Modals state (for legacy actions if still needed, but Detail Sheet is preferred now)
-  const [bypassModalOpen, setBypassModalOpen] = useState(false);
-  const [overrideModalOpen, setOverrideModalOpen] = useState(false);
-  const [modalShipment, setModalShipment] = useState<AdminShipment | null>(
-    null,
-  );
 
   const { data: responseData, isLoading } = useShipments({
     page,
@@ -241,31 +232,13 @@ export default function ShipmentsPage() {
         </div>
       </div>
 
-      {/* Detail Sheet */}
+      {/* Detail Sheet (modals for actions are managed internally) */}
       <ShipmentDetailSheet
         shipment={selectedShipment}
         open={!!selectedShipment}
         onOpenChange={(open) => !open && setSelectedShipment(null)}
         linkedEstimate={linkedEstimate}
       />
-
-      {/* Modals for actions if provided in future context menus */}
-      {modalShipment && (
-        <>
-          <BypassPaymentModal
-            shipmentId={modalShipment.id}
-            isOpen={bypassModalOpen}
-            onClose={() => setBypassModalOpen(false)}
-          />
-          <OverrideStatusModal
-            shipmentId={modalShipment.id}
-            currentStatus={modalShipment.shipmentStatus}
-            currentSync={modalShipment.trackingSyncEnabled}
-            isOpen={overrideModalOpen}
-            onClose={() => setOverrideModalOpen(false)}
-          />
-        </>
-      )}
     </div>
   );
 }
