@@ -82,7 +82,10 @@ export interface ShipmentFilter {
   page?: number;
   limit?: number;
   status?: string;
-  search?: string; // tracking number
+  search?: string; // tracking number, user name, email, or userCode
+  userId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 /**

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useShipments } from "@/hooks/shipments/use-shipments";
+import { useUserLeads } from "@/hooks/leads/use-leads";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
   Table,
@@ -15,53 +16,71 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, MoreHorizontal, Plus, Link as LinkIcon } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Loader2, Plus, Search, Truck } from "lucide-react";
 import CopyButton from "@/components/ui/copy-button";
 import { BypassPaymentModal } from "@/components/shipments/bypass-payment-modal";
 import { OverrideStatusModal } from "@/components/shipments/override-status-modal";
+import ShipmentDetailSheet from "@/components/shipments/shipment-detail-sheet";
+import type { AdminShipment } from "@/types/admin-user-resources";
+import { formatDate } from "@/utils/format-date";
+import { findEstimateForShipment } from "@/utils/estimate-shipment-correlation";
 
+const PAGE_SIZE = 10;
+
+/**
+ * Main Shipments dashboard page.
+ * Lists all shipments across the system with filtering.
+ */
 export default function ShipmentsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-
-  // Modals state
-  const [bypassModalOpen, setBypassModalOpen] = useState(false);
-  const [overrideModalOpen, setOverrideModalOpen] = useState(false);
-  const [selectedShipment, setSelectedShipment] = useState<any>(null);
-
   const debouncedSearch = useDebounce(search, 500);
 
-  const { data, isLoading } = useShipments({
+  // Detail Sheet State
+  const [selectedShipment, setSelectedShipment] =
+    useState<AdminShipment | null>(null);
+
+  // Modals state (for legacy actions if still needed, but Detail Sheet is preferred now)
+  const [bypassModalOpen, setBypassModalOpen] = useState(false);
+  const [overrideModalOpen, setOverrideModalOpen] = useState(false);
+  const [modalShipment, setModalShipment] = useState<AdminShipment | null>(
+    null,
+  );
+
+  const { data: responseData, isLoading } = useShipments({
     page,
-    limit: 10,
+    limit: PAGE_SIZE,
     search: debouncedSearch,
   });
 
-  const openBypass = (shipment: any) => {
-    setSelectedShipment(shipment);
-    setBypassModalOpen(true);
-  };
+  /**
+   * Fetch leads for the selected shipment to show correlation.
+   * Since we're in a global list, we fetch on-demand for the selected user.
+   */
+  const { data: leadsData } = useUserLeads({
+    userId: selectedShipment?.user.id ?? "",
+    page: 1,
+    limit: 100,
+  });
 
-  const openOverride = (shipment: any) => {
-    setSelectedShipment(shipment);
-    setOverrideModalOpen(true);
-  };
+  const linkedEstimate = useMemo(
+    () =>
+      selectedShipment && leadsData?.data
+        ? findEstimateForShipment(selectedShipment, leadsData.data)
+        : null,
+    [selectedShipment, leadsData],
+  );
 
-  // Helper for Payment Badge color
-  const getPaymentColor = (status: string) => {
+  const shipments = responseData?.data ?? [];
+  const pagination = responseData?.pagination;
+
+  // Badge variants
+  const getPaymentVariant = (status: string) => {
     switch (status) {
       case "PAID":
-        return "default"; // or green custom variant
+        return "default";
       case "PENDING":
-        return "secondary"; // yellow?
+        return "secondary";
       case "FAILED":
         return "destructive";
       default:
@@ -70,130 +89,125 @@ export default function ShipmentsPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Shipments</h2>
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Shipments</h2>
+          <p className="text-muted-foreground">
+            Manage all customer shipments and tracking.
+          </p>
+        </div>
         <Link href="/dashboard/shipments/new">
-          <Button>
+          <Button className="bg-brand-blue hover:bg-brand-blue/90">
             <Plus className="mr-2 h-4 w-4" />
             Create Shipment
           </Button>
         </Link>
       </div>
-      <div className="flex items-center space-x-2">
-        <Input
-          placeholder="Search tracking number..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
+
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search tracking, user name, email, or code..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="pl-9"
+          />
+        </div>
       </div>
-      <div className="rounded-md border">
+
+      <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Tracking #</TableHead>
-              <TableHead>Carrier</TableHead>
-              <TableHead>User</TableHead>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-[180px]">Tracking #</TableHead>
+              <TableHead>User / Customer</TableHead>
+              <TableHead>Route</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Payment</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                <TableCell colSpan={6} className="h-64 text-center">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-brand-blue" />
+                    <p className="text-sm text-muted-foreground">
+                      Loading shipments...
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
-            ) : data?.shipments.length === 0 ? (
+            ) : shipments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  No shipments found.
+                <TableCell colSpan={6} className="h-64 text-center">
+                  <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                    <Truck className="h-10 w-10 opacity-20" />
+                    <p>No shipments found matching your criteria.</p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
-              data?.shipments.map((shipment) => (
-                <TableRow key={shipment.id}>
+              shipments.map((shipment) => (
+                <TableRow
+                  key={shipment.id}
+                  className="cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => setSelectedShipment(shipment)}
+                >
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <span className="font-mono text-sm">
+                    <div
+                      className="flex items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="font-mono text-sm font-medium">
                         {shipment.customTrackingNumber}
                       </span>
                       <CopyButton
                         text={shipment.customTrackingNumber}
                         tooltipText="Copy tracking #"
+                        className="h-6 w-6"
                       />
                     </div>
                   </TableCell>
-                  <TableCell>{shipment.carrierName}</TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium">
-                        {shipment.user?.name || "Guest"}
+                      <span className="font-medium text-sm">
+                        {shipment.user.name}
                       </span>
-                      {shipment.user?.email && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground">
-                            {shipment.user.email}
-                          </span>
-                          <CopyButton
-                            text={shipment.user.email}
-                            tooltipText="Copy email"
-                          />
-                        </div>
-                      )}
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {shipment.user.userCode}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{shipment.status}</Badge>
+                    <div className="text-xs">
+                      {shipment.pickupAddress.city},{" "}
+                      {shipment.pickupAddress.countryCode} →{" "}
+                      {shipment.dropoffAddress.city},{" "}
+                      {shipment.dropoffAddress.countryCode}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs font-semibold">
+                      {shipment.shipmentStatus}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={getPaymentColor(shipment.paymentStatus) as any}
+                      variant={getPaymentVariant(shipment.paymentStatus) as any}
+                      className="text-xs font-semibold"
                     >
                       {shipment.paymentStatus}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {new Date(shipment.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            navigator.clipboard.writeText(
-                              shipment.customTrackingNumber,
-                            )
-                          }
-                        >
-                          Copy Tracking #
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => openOverride(shipment)}
-                        >
-                          Override Status
-                        </DropdownMenuItem>
-                        {shipment.paymentStatus !== "PAID" && (
-                          <DropdownMenuItem
-                            onClick={() => openBypass(shipment)}
-                          >
-                            Mark as Paid (Bypass)
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {formatDate(shipment.createdAt)}
                   </TableCell>
                 </TableRow>
               ))
@@ -202,38 +216,51 @@ export default function ShipmentsPage() {
         </Table>
       </div>
 
-      {/* Pagination controls */}
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1 || isLoading}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => p + 1)}
-          disabled={!data || data.shipments.length < 10 || isLoading}
-        >
-          Next
-        </Button>
+      <div className="flex items-center justify-between px-2">
+        <p className="text-sm text-muted-foreground">
+          Showing page {page} of {pagination?.totalPages ?? 1} (
+          {pagination?.total ?? 0} total)
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1 || isLoading}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page >= (pagination?.totalPages ?? 1) || isLoading}
+          >
+            Next
+          </Button>
+        </div>
       </div>
 
-      {/* Modals */}
-      {selectedShipment && (
+      {/* Detail Sheet */}
+      <ShipmentDetailSheet
+        shipment={selectedShipment}
+        open={!!selectedShipment}
+        onOpenChange={(open) => !open && setSelectedShipment(null)}
+        linkedEstimate={linkedEstimate}
+      />
+
+      {/* Modals for actions if provided in future context menus */}
+      {modalShipment && (
         <>
           <BypassPaymentModal
-            shipmentId={selectedShipment.id}
+            shipmentId={modalShipment.id}
             isOpen={bypassModalOpen}
             onClose={() => setBypassModalOpen(false)}
           />
           <OverrideStatusModal
-            shipmentId={selectedShipment.id}
-            currentStatus={selectedShipment.status}
-            currentSync={selectedShipment.trackingSyncEnabled}
+            shipmentId={modalShipment.id}
+            currentStatus={modalShipment.shipmentStatus}
+            currentSync={modalShipment.trackingSyncEnabled}
             isOpen={overrideModalOpen}
             onClose={() => setOverrideModalOpen(false)}
           />

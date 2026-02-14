@@ -12,10 +12,13 @@ import { AdminShipmentListResponse } from "@/types/admin-user-resources";
 
 export const getShipments = async (
   params: ShipmentFilter,
-): Promise<ShipmentListResponse> => {
-  const response = await apiClient.get<ShipmentListResponse>("/shipments", {
-    params,
-  });
+): Promise<AdminShipmentListResponse> => {
+  const response = await apiClient.get<AdminShipmentListResponse>(
+    "/shipments",
+    {
+      params,
+    },
+  );
   return response.data;
 };
 

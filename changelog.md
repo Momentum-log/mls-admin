@@ -1,5 +1,15 @@
 # Changelog
 
+### [0.5.0] - 2026-02-14 - Shipments & Estimates Dashboard Tabs Revamp
+
+- Changed: Rewrote main Shipments page with modern UI, clickable rows, and `ShipmentDetailSheet` integration
+- Changed: Rewrote main Marketing Leads page as "Shipping Estimates" with modern UI, clickable rows, and `EstimateDetailSheet` integration
+- Added: Global search filters for user code, email, name, and guest ID across both tabs
+- Added: Correlation logic to the global tabs (fetching matching data on-demand when a row is selected)
+- Added: CSV export for shipping estimates with expanded fields (converted status, price, user details)
+- Fixed: Standardized global API endpoints (`/leads` for estimates, response payload uses `data[]` wrapper)
+- Fixed: Added missing `trackingSyncEnabled` and `carrier` fields to admin resource types
+
 ### [0.4.2] - 2026-02-14 - Estimate ↔ Shipment Correlation
 
 - Added: `utils/estimate-shipment-correlation.ts` — matches estimates to shipments by address, serviceType, and chronological order

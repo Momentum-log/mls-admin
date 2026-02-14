@@ -42,6 +42,7 @@ export interface AdminShipment {
   shipmentStatus: string;
   labelUrl?: string;
   manualOverride: boolean;
+  trackingSyncEnabled: boolean;
   createdAt: string;
   updatedAt: string;
   user: {

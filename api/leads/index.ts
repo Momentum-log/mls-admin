@@ -4,8 +4,8 @@ import { AdminLeadListResponse } from "@/types/admin-user-resources";
 
 export const getLeads = async (
   params: LeadFilter,
-): Promise<LeadListResponse> => {
-  const response = await apiClient.get<LeadListResponse>("/marketing/leads", {
+): Promise<AdminLeadListResponse> => {
+  const response = await apiClient.get<AdminLeadListResponse>("/leads", {
     params,
   });
   return response.data;

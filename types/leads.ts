@@ -25,7 +25,12 @@ export interface LeadListResponse {
 export interface LeadFilter {
   page?: number;
   limit?: number;
-  search?: string;
+  search?: string; // email, phone, user name, or userCode
+  converted?: string; // 'true' | 'false'
+  isGuest?: string; // 'true' | 'false'
+  userId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 /**
