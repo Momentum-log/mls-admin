@@ -248,14 +248,15 @@ export default function ShipmentDetailSheet({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Weight</span>
                 <span>
-                  {shipment.weight.value} {shipment.weight.units}
+                  {shipment.weight?.value ?? "—"} {shipment.weight?.units ?? ""}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Dimensions</span>
                 <span>
-                  {shipment.dimensions.length}×{shipment.dimensions.width}×
-                  {shipment.dimensions.height} {shipment.dimensions.units}
+                  {shipment.dimensions
+                    ? `${shipment.dimensions.length}×${shipment.dimensions.width}×${shipment.dimensions.height} ${shipment.dimensions.units}`
+                    : "—"}
                 </span>
               </div>
             </div>

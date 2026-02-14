@@ -199,14 +199,15 @@ export default function EstimateDetailSheet({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Weight</span>
                 <span>
-                  {estimate.weight.value} {estimate.weight.units}
+                  {estimate.weight?.value ?? "—"} {estimate.weight?.units ?? ""}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Dimensions</span>
                 <span>
-                  {estimate.dimensions.length}×{estimate.dimensions.width}×
-                  {estimate.dimensions.height} {estimate.dimensions.units}
+                  {estimate.dimensions
+                    ? `${estimate.dimensions.length}×${estimate.dimensions.width}×${estimate.dimensions.height} ${estimate.dimensions.units}`
+                    : "—"}
                 </span>
               </div>
             </div>
