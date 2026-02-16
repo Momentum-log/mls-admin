@@ -1,5 +1,33 @@
 # Changelog
 
+### [0.7.1] - 2026-02-16 - Branding, Font System & Login Content Refinement
+
+- Changed: Switched application logo from `favicon.svg` to the official `logo-landscape.svg` on the login page.
+- Changed: Overhauled font system to use local **Satoshi** (primary) and **Work Sans** (secondary) fonts.
+- Changed: Removed `next/font/google` and `next/font/local` dependencies to fix Turbopack build errors; switched to standard CSS `@font-face` declarations.
+- Changed: Redesigned login page branding section with left-aligned content and updated typography.
+- Changed: Updated login page description to include mandatory instruction regarding credential emails and restricted access.
+- Changed: Toned down background animations to a minimal geometric grid with subtle light pulses.
+- Removed: Default Next.js boilerplate assets (`next.svg`, `vercel.svg`, etc.) from the `public` directory.
+
+### [0.7.0] - 2026-02-16 - Admin Login Redesign & Hot Toast Integration
+
+- Added: Premium split-screen login page with dynamic background (Logistic/Security icons + grid)
+- Added: Integrated `react-hot-toast` as the global notification system with brand-aligned styling
+- Changed: Updated `useLogin` to provide immediate feedback via toasts
+- Changed: Globalized `Toaster` in `Providers.tsx` for application-wide notifications
+- Added: Success/Error toast feedback for Shipment updates, User bans/verifications, and Payments
+- Removed: Legacy custom toast system (`components/ui/toast.tsx`)
+
+### [0.6.0] - 2026-02-14 - Admin Dashboard Redesign & Colorful Stats
+
+- Added: Colorful, high-contrast statistics grid with brand-aligned backgrounds (Blue, Yellow, Accent Dark/Light)
+- Added: "Recent Activity" sections for Shipments, Marketing Leads, and User Signups with "View All" shortcuts
+- Added: Subtle entrance animations and hover transitions using `framer-motion`
+- Added: `totalLeads` and `recentSignupsCount` to `DashboardStats` type
+- Changed: Dashboard now fetches real-time recent data using specific resource hooks
+- Added: `date-fns` dependency for enhanced date formatting
+
 ### [0.5.1] - 2026-02-14 - Unified Shipment Status Override
 
 - Changed: Rewrote `OverrideStatusModal` with full status list (CREATED → FAILED), descriptions, destructive action warnings, and notification toggle

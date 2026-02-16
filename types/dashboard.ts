@@ -9,4 +9,6 @@ export interface DashboardStats {
   revenue: Record<string, number>;
   pendingPayments: number;
   inTransit: number;
+  totalLeads: number;
+  recentSignupsCount: number;
 }

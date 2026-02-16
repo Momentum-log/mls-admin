@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getUsers, getUserByCode, banUser, verifyUser } from "@/api/users";
 import { UserFilter, BanUserPayload } from "@/types/user";
+import { toast } from "react-hot-toast";
 
 /**
  * Hook to fetch a paginated list of users with optional filters.
@@ -38,6 +39,12 @@ export const useBanUser = () => {
       banUser(userId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("User status updated successfully");
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to update user status",
+      );
     },
   });
 };
@@ -51,6 +58,10 @@ export const useVerifyUser = () => {
     mutationFn: (userId: string) => verifyUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("User verified successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to verify user");
     },
   });
 };

@@ -6,6 +6,7 @@ import {
   overrideStatus,
   getUserShipments,
 } from "@/api/shipments";
+import { toast } from "react-hot-toast";
 import {
   ShipmentFilter,
   CreateProxyShipmentPayload,
@@ -43,6 +44,12 @@ export const useCreateProxyShipment = () => {
     mutationFn: (data: CreateProxyShipmentPayload) => createProxyShipment(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      toast.success("Shipment created successfully!");
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to create shipment",
+      );
     },
   });
 };
@@ -59,6 +66,10 @@ export const useBypassPayment = () => {
     }) => bypassPayment(shipmentId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      toast.success("Payment bypassed successfully!");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to bypass payment");
     },
   });
 };
@@ -75,6 +86,10 @@ export const useOverrideStatus = () => {
     }) => overrideStatus(shipmentId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      toast.success("Shipment status updated!");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to update status");
     },
   });
 };

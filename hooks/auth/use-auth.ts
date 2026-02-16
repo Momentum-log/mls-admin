@@ -3,6 +3,7 @@ import { login, logout, getMe } from "@/api/auth";
 import { LoginPayload, AuthResponse } from "@/types/auth";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { toast } from "react-hot-toast";
 
 export const useLogin = () => {
   const router = useRouter();
@@ -15,7 +16,18 @@ export const useLogin = () => {
         Cookies.set("accessToken", data.token, { expires: 7 }); // 7 days
       }
       queryClient.setQueryData(["me"], data.admin);
+      toast.success("Login successful! Welcome back.");
       router.push("/dashboard");
+    },
+    onError: (error: any) => {
+      // The backend returns { error: string, details: string, code: number }
+      const message =
+        error?.response?.data?.details ||
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error.message ||
+        "Failed to login";
+      toast.error(message);
     },
   });
 };
