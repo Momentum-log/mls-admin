@@ -74,8 +74,10 @@ export default function EstimateDetailSheet({
         <div className="space-y-6 px-4 pb-6">
           {/* Conversion Status */}
           <div className="flex items-center gap-3">
-            <ConversionBadge converted={estimate.converted ?? false} />
-            {estimate.guestId && <Badge variant="secondary">Guest</Badge>}
+            <ConversionBadge
+              converted={estimate.converted || !!linkedShipment}
+            />
+            {!estimate.user && <Badge variant="secondary">Guest</Badge>}
           </div>
 
           {/* Created Shipment Correlation */}
@@ -336,15 +338,52 @@ export default function EstimateDetailSheet({
             </section>
           )}
 
-          {/* Guest ID */}
-          {estimate.guestId && (
-            <section className="space-y-1.5 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Guest ID</span>
-                <div className="flex items-center gap-1">
-                  <span className="font-mono text-xs">{estimate.guestId}</span>
-                  <CopyButton text={estimate.guestId} tooltipText="Copy" />
-                </div>
+          {/* Guest Info */}
+          {!estimate.user && (
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <UserIcon className="h-3.5 w-3.5" />
+                Guest Contact
+              </h4>
+              <div className="space-y-1.5 text-sm">
+                {estimate.email && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Email</span>
+                    <div className="flex items-center gap-1">
+                      <span>{estimate.email}</span>
+                      <CopyButton
+                        text={estimate.email}
+                        tooltipText="Copy email"
+                      />
+                    </div>
+                  </div>
+                )}
+                {estimate.phone && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Phone</span>
+                    <div className="flex items-center gap-1">
+                      <span>{estimate.phone}</span>
+                      <CopyButton
+                        text={estimate.phone}
+                        tooltipText="Copy phone"
+                      />
+                    </div>
+                  </div>
+                )}
+                {estimate.guestId && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Guest ID</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-xs">
+                        {estimate.guestId}
+                      </span>
+                      <CopyButton
+                        text={estimate.guestId}
+                        tooltipText="Copy ID"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
           )}

@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useLeads } from "@/hooks/leads/use-leads";
-import { useUserShipments } from "@/hooks/shipments/use-shipments";
+
+import { useLeads, useDeleteLead } from "@/hooks/leads/use-leads";
+import {
+  useShipments,
+  useUserShipments,
+} from "@/hooks/shipments/use-shipments";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
   Table,
@@ -15,14 +19,37 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Download, Search, FileText } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Loader2,
+  Search,
+  FileText,
+  MoreHorizontal,
+  Trash2,
+  Copy,
+} from "lucide-react";
 import ConversionBadge from "@/components/ui/conversion-badge";
 import EstimateDetailSheet from "@/components/shipments/estimate-detail-sheet";
 import type { AdminLead } from "@/types/admin-user-resources";
-import { formatDate } from "@/utils/format-date";
+import { formatDateTime } from "@/utils/format-date";
 import { findShipmentForEstimate } from "@/utils/estimate-shipment-correlation";
+import CopyButton from "@/components/ui/copy-button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { formatCurrency } from "@/utils/format-currency";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 20;
 
 /**
  * Main Shipping Estimates (Marketing Leads) page.
@@ -32,6 +59,7 @@ export default function LeadsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
+  const [limit, setLimit] = useState(20);
 
   // Detail Sheet State
   const [selectedEstimate, setSelectedEstimate] = useState<AdminLead | null>(
@@ -40,9 +68,12 @@ export default function LeadsPage() {
 
   const { data: responseData, isLoading } = useLeads({
     page,
-    limit: PAGE_SIZE,
+    limit,
     search: debouncedSearch,
   });
+
+  const { mutate: deleteLead } = useDeleteLead();
+  const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
 
   /**
    * Fetch shipments for the selected estimate's user to show correlation.
@@ -65,47 +96,15 @@ export default function LeadsPage() {
   const leads = responseData?.data ?? [];
   const pagination = responseData?.pagination;
 
-  const handleExport = () => {
-    if (!leads.length) return;
+  /**
+   * Fetch a pool of recent shipments to correlate with the leads list.
+   * This ensures the "Conversion" column accurately reflects shipments created.
+   */
+  const { data: allShipmentsPool } = useShipments({
+    limit: 200, // Fetch a reasonably large pool for correlation
+  });
 
-    const headers = [
-      "ID",
-      "User / Guest",
-      "Origin",
-      "Destination",
-      "Weight",
-      "Price",
-      "Converted",
-      "Date",
-    ];
-    const rows = leads.map((lead) => [
-      lead.id,
-      lead.user?.name || lead.email || lead.guestId || "Anonymous",
-      `${lead.pickupLocation.city}, ${lead.pickupLocation.countryCode}`,
-      `${lead.dropoffLocation.city}, ${lead.dropoffLocation.countryCode}`,
-      `${lead.weight.value} ${lead.weight.units}`,
-      `${lead.rates?.[0]?.actualPrice ?? "—"} ${
-        lead.rates?.[0]?.currency ?? ""
-      }`,
-      lead.converted ? "Yes" : "No",
-      new Date(lead.createdAt).toISOString(),
-    ]);
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers, ...rows].map((e) => e.join(",")).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute(
-      "download",
-      `estimates_export_${new Date().toISOString().split("T")[0]}.csv`,
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const shipments = allShipmentsPool?.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -118,14 +117,6 @@ export default function LeadsPage() {
             Track anonymous and user-generated shipping quotes.
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={handleExport}
-          disabled={!leads.length}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
       </div>
 
       <div className="flex items-center gap-4">
@@ -147,12 +138,13 @@ export default function LeadsPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead>Customer / Guest</TableHead>
+              <TableHead className="w-[360px]">Customer / Guest</TableHead>
               <TableHead>Route</TableHead>
               <TableHead>Weight</TableHead>
               <TableHead>Best Price</TableHead>
               <TableHead>Conversion</TableHead>
               <TableHead>Date</TableHead>
+              <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -182,24 +174,56 @@ export default function LeadsPage() {
                 return (
                   <TableRow
                     key={lead.id}
-                    className="cursor-pointer hover:bg-muted/30 transition-colors"
+                    className="cursor-pointer hover:bg-muted/30 transition-colors group"
                     onClick={() => setSelectedEstimate(lead)}
                   >
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium text-sm">
+                        <span className="font-extrabold text-sm truncate max-w-[280px] text-foreground">
                           {lead.user?.name || lead.email || "Guest User"}
                         </span>
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {lead.user?.userCode ||
-                            (lead.guestId
-                              ? `G: ${lead.guestId.slice(0, 8)}…`
-                              : "Anonymous")}
-                        </span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {lead.user?.userCode ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+                                {lead.user.userCode}
+                              </span>
+                              <CopyButton
+                                text={lead.user.userCode}
+                                className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] font-bold py-0 h-4 bg-accent-light/5 text-accent-dark border-accent-light/20"
+                              >
+                                GUEST
+                              </Badge>
+                              {lead.email && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] text-muted-foreground italic truncate max-w-[150px]">
+                                    {lead.email}
+                                  </span>
+                                  <CopyButton
+                                    text={lead.email}
+                                    className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  />
+                                </div>
+                              )}
+                              {!lead.email && lead.guestId && (
+                                <span className="text-[11px] text-muted-foreground opacity-50 font-mono">
+                                  ID: {lead.guestId.slice(0, 8)}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-xs">
+                      <div className="text-xs font-medium">
                         {lead.pickupLocation.city},{" "}
                         {lead.pickupLocation.countryCode} →{" "}
                         {lead.dropoffLocation.city},{" "}
@@ -209,16 +233,74 @@ export default function LeadsPage() {
                     <TableCell className="text-sm">
                       {lead.weight.value} {lead.weight.units}
                     </TableCell>
-                    <TableCell className="text-sm font-medium">
+                    <TableCell className="text-sm font-black text-brand-blue">
                       {bestRate
-                        ? `${bestRate.actualPrice} ${bestRate.currency}`
+                        ? formatCurrency(
+                            bestRate.currency,
+                            bestRate.actualPrice,
+                          )
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      <ConversionBadge converted={lead.converted ?? false} />
+                      <ConversionBadge
+                        converted={
+                          lead.converted ||
+                          !!findShipmentForEstimate(lead, shipments)
+                        }
+                      />
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(lead.createdAt)}
+                    <TableCell className="text-sm text-muted-foreground font-medium">
+                      {formatDateTime(lead.createdAt)}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => setSelectedEstimate(lead)}
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          {lead.user?.userCode && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  lead.user!.userCode,
+                                );
+                              }}
+                            >
+                              <Copy className="mr-2 h-4 w-4" />
+                              Copy User Code
+                            </DropdownMenuItem>
+                          )}
+                          {!lead.user && lead.email && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                navigator.clipboard.writeText(lead.email!);
+                              }}
+                            >
+                              <Copy className="mr-2 h-4 w-4" />
+                              Copy Guest Email
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setLeadToDelete(lead.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Lead
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
@@ -229,10 +311,34 @@ export default function LeadsPage() {
       </div>
 
       <div className="flex items-center justify-between px-2">
-        <p className="text-sm text-muted-foreground">
-          Showing page {page} of {pagination?.totalPages ?? 1} (
-          {pagination?.total ?? 0} total)
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-muted-foreground">
+            Showing page {page} of {pagination?.totalPages ?? 1} (
+            {pagination?.total ?? 0} total)
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Rows per page:
+            </span>
+            <Select
+              value={limit.toString()}
+              onValueChange={(val) => {
+                setLimit(parseInt(val));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={limit.toString()} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="30">30</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -259,6 +365,22 @@ export default function LeadsPage() {
         open={!!selectedEstimate}
         onOpenChange={(open) => !open && setSelectedEstimate(null)}
         linkedShipment={linkedShipment}
+      />
+
+      {/* Action Dialogs */}
+      <ConfirmDialog
+        open={!!leadToDelete}
+        onOpenChange={(open) => !open && setLeadToDelete(null)}
+        title="Delete Shipping Estimate?"
+        description="This will permanently remove this record from the marketing leads list. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (leadToDelete) {
+            deleteLead(leadToDelete);
+            setLeadToDelete(null);
+          }
+        }}
       />
     </div>
   );

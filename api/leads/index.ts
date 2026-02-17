@@ -26,3 +26,12 @@ export const getUserLeads = async (
   });
   return response.data;
 };
+
+/**
+ * Deletes a shipping estimate lead.
+ *
+ * @param id - The UUID of the lead to delete.
+ */
+export const deleteLead = async (id: string): Promise<void> => {
+  await apiClient.delete(`/leads/${id}`);
+};

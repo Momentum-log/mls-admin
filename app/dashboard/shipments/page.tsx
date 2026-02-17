@@ -2,7 +2,10 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { useShipments } from "@/hooks/shipments/use-shipments";
+import {
+  useShipments,
+  useDeleteShipment,
+} from "@/hooks/shipments/use-shipments";
 import { useUserLeads } from "@/hooks/leads/use-leads";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -16,23 +19,44 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Search, Truck } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Loader2,
+  Plus,
+  Search,
+  Truck,
+  MoreHorizontal,
+  FileText,
+  Trash2,
+  Copy,
+} from "lucide-react";
 import CopyButton from "@/components/ui/copy-button";
 import ShipmentDetailSheet from "@/components/shipments/shipment-detail-sheet";
 import type { AdminShipment } from "@/types/admin-user-resources";
-import { formatDate } from "@/utils/format-date";
+import { formatDateTime } from "@/utils/format-date";
 import { findEstimateForShipment } from "@/utils/estimate-shipment-correlation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+const DEFAULT_PAGE_SIZE = 20;
 
 const PAGE_SIZE = 10;
 
-/**
- * Main Shipments dashboard page.
- * Lists all shipments across the system with filtering.
- */
 export default function ShipmentsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
+  const [limit, setLimit] = useState(20);
 
   // Detail Sheet State
   const [selectedShipment, setSelectedShipment] =
@@ -40,9 +64,15 @@ export default function ShipmentsPage() {
 
   const { data: responseData, isLoading } = useShipments({
     page,
-    limit: PAGE_SIZE,
+    limit,
     search: debouncedSearch,
   });
+
+  const shipments = responseData?.data ?? [];
+  const pagination = responseData?.pagination;
+
+  const { mutate: deleteShipment } = useDeleteShipment();
+  const [shipmentToDelete, setShipmentToDelete] = useState<string | null>(null);
 
   /**
    * Fetch leads for the selected shipment to show correlation.
@@ -61,9 +91,6 @@ export default function ShipmentsPage() {
         : null,
     [selectedShipment, leadsData],
   );
-
-  const shipments = responseData?.data ?? [];
-  const pagination = responseData?.pagination;
 
   // Badge variants
   const getPaymentVariant = (status: string) => {
@@ -88,12 +115,14 @@ export default function ShipmentsPage() {
             Manage all customer shipments and tracking.
           </p>
         </div>
-        <Link href="/dashboard/shipments/new">
-          <Button className="bg-brand-blue hover:bg-brand-blue/90">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Shipment
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/shipments/new">
+            <Button className="bg-brand-blue hover:bg-brand-blue/90">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Shipment
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">
@@ -116,11 +145,12 @@ export default function ShipmentsPage() {
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="w-[180px]">Tracking #</TableHead>
-              <TableHead>User / Customer</TableHead>
+              <TableHead className="w-[240px]">User / Customer</TableHead>
               <TableHead>Route</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Payment</TableHead>
               <TableHead>Date</TableHead>
+              <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -148,7 +178,7 @@ export default function ShipmentsPage() {
               shipments.map((shipment) => (
                 <TableRow
                   key={shipment.id}
-                  className="cursor-pointer hover:bg-muted/30 transition-colors"
+                  className="cursor-pointer hover:bg-muted/30 transition-colors group"
                   onClick={() => setSelectedShipment(shipment)}
                 >
                   <TableCell>
@@ -156,28 +186,34 @@ export default function ShipmentsPage() {
                       className="flex items-center gap-1"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <span className="font-mono text-sm font-medium">
+                      <span className="font-mono text-sm font-bold">
                         {shipment.customTrackingNumber}
                       </span>
                       <CopyButton
                         text={shipment.customTrackingNumber}
                         tooltipText="Copy tracking #"
-                        className="h-6 w-6"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                       />
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="font-medium text-sm">
+                      <span className="font-bold text-sm">
                         {shipment.user.name}
                       </span>
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {shipment.user.userCode}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {shipment.user.userCode}
+                        </span>
+                        <CopyButton
+                          text={shipment.user.userCode}
+                          className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                        />
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-xs">
+                    <div className="text-xs font-medium">
                       {shipment.pickupAddress.city},{" "}
                       {shipment.pickupAddress.countryCode} →{" "}
                       {shipment.dropoffAddress.city},{" "}
@@ -185,20 +221,64 @@ export default function ShipmentsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-xs font-semibold">
+                    <Badge variant="outline" className="text-xs font-black">
                       {shipment.shipmentStatus}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant={getPaymentVariant(shipment.paymentStatus) as any}
-                      className="text-xs font-semibold"
+                      className="text-xs font-black"
                     >
                       {shipment.paymentStatus}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDate(shipment.createdAt)}
+                  <TableCell className="text-sm text-muted-foreground font-medium">
+                    {formatDateTime(shipment.createdAt)}
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => setSelectedShipment(shipment)}
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              shipment.customTrackingNumber,
+                            );
+                          }}
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy Tracking #
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              shipment.user.userCode,
+                            );
+                          }}
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy User Code
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setShipmentToDelete(shipment.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Shipment
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -208,10 +288,34 @@ export default function ShipmentsPage() {
       </div>
 
       <div className="flex items-center justify-between px-2">
-        <p className="text-sm text-muted-foreground">
-          Showing page {page} of {pagination?.totalPages ?? 1} (
-          {pagination?.total ?? 0} total)
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-muted-foreground">
+            Showing page {page} of {pagination?.totalPages ?? 1} (
+            {pagination?.total ?? 0} total)
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Rows per page:
+            </span>
+            <Select
+              value={limit.toString()}
+              onValueChange={(val) => {
+                setLimit(parseInt(val));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={limit.toString()} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="30">30</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -238,6 +342,22 @@ export default function ShipmentsPage() {
         open={!!selectedShipment}
         onOpenChange={(open) => !open && setSelectedShipment(null)}
         linkedEstimate={linkedEstimate}
+      />
+
+      {/* Action Dialogs */}
+      <ConfirmDialog
+        open={!!shipmentToDelete}
+        onOpenChange={(open) => !open && setShipmentToDelete(null)}
+        title="Delete Shipment?"
+        description="This will permanently remove this shipment and its history from the database. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (shipmentToDelete) {
+            deleteShipment(shipmentToDelete);
+            setShipmentToDelete(null);
+          }
+        }}
       />
     </div>
   );

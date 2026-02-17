@@ -18,7 +18,11 @@ import {
   Mail,
   UserPlus,
   Truck,
+  Copy,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import CopyButton from "@/components/ui/copy-button";
+import { formatDateTime } from "@/utils/format-date";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -67,58 +71,61 @@ export default function DashboardPage() {
     limit: 5,
   });
 
-  const revenueEntries = stats ? Object.entries(stats.revenue) : [];
+  const revenueEntries = stats
+    ? Object.entries(stats.revenue).filter(([curr]) => curr !== "LMP")
+    : [];
 
   const statCards = [
     {
       title: "Revenue",
-      value:
-        revenueEntries.length > 0
-          ? revenueEntries
-              .map(([curr, amt]) => formatCurrencyAmount(curr, amt))
-              .join(" / ")
-          : "—",
+      entries: revenueEntries,
       icon: DollarSign,
-      color: "bg-brand-blue",
+      color: "bg-brand-blue shadow-brand-blue/20",
       textColor: "text-white",
-      iconColor: "text-brand-blue-foreground/20",
+      iconColor: "text-white/20",
       description: "Total generated revenue",
+      isPremium: true,
+      isRevenue: true,
     },
     {
       title: "Total Users",
       value: stats?.totalUsers?.toLocaleString("pl-PL") ?? "—",
       icon: Users,
-      color: "bg-brand-yellow",
-      textColor: "text-black",
-      iconColor: "text-black/10",
+      color: "bg-brand-yellow shadow-brand-yellow/20",
+      textColor: "text-white",
+      iconColor: "text-white/20",
       description: "Total registered customers",
+      isPremium: true,
     },
     {
       title: "Total Shipments",
       value: stats?.totalShipments?.toLocaleString("pl-PL") ?? "—",
       icon: Package,
-      color: "bg-accent-dark",
+      color: "bg-accent-dark shadow-accent-dark/20",
       textColor: "text-white",
       iconColor: "text-white/20",
       description: "Total shipments created",
+      isPremium: true,
     },
     {
       title: "Marketing Leads",
       value: stats?.totalLeads?.toLocaleString("pl-PL") ?? "—",
       icon: Mail,
-      color: "bg-accent-light",
+      color: "bg-accent-light shadow-accent-light/20",
       textColor: "text-white",
       iconColor: "text-white/20",
       description: "Active shipping estimates",
+      isPremium: true,
     },
     {
-      title: "In Transit",
+      title: "Active Shipments",
       value: stats?.inTransit?.toLocaleString("pl-PL") ?? "—",
       icon: TrendingUp,
-      color: "bg-secondary",
-      textColor: "text-secondary-foreground",
-      iconColor: "text-primary/20",
+      color: "bg-brand-blue shadow-brand-blue/20",
+      textColor: "text-white",
+      iconColor: "text-white/20",
       description: "Shipments currently moving",
+      isPremium: true,
     },
   ];
 
@@ -145,24 +152,74 @@ export default function DashboardPage() {
         {statCards.map((card, idx) => (
           <motion.div key={card.title} variants={item}>
             <Card
-              className={`overflow-hidden border-none shadow-lg hover:shadow-xl transition-shadow relative ${card.color} ${card.textColor}`}
+              className={cn(
+                "overflow-hidden transition-all duration-300 relative min-h-[140px] flex flex-col justify-between group",
+                card.isPremium
+                  ? `${card.color} ${card.textColor} border-none shadow-xl hover:scale-[1.02] z-10`
+                  : "bg-white shadow-sm hover:shadow-md border-border hover:border-brand-blue/30",
+              )}
             >
               <card.icon
-                className={`absolute -right-2 -bottom-2 h-24 w-24 opacity-10 rotate-12 ${card.iconColor}`}
+                className={cn(
+                  "absolute -right-4 -bottom-4 h-24 w-24 opacity-10 rotate-12 transition-transform group-hover:rotate-0",
+                  card.iconColor,
+                )}
               />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium opacity-90">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 relative z-10">
+                <CardTitle
+                  className={cn(
+                    "text-xs font-bold uppercase tracking-wider",
+                    card.isPremium ? "text-white/80" : "text-muted-foreground",
+                  )}
+                >
                   {card.title}
                 </CardTitle>
-                <card.icon className="h-4 w-4 opacity-70" />
+                <div
+                  className={cn(
+                    "p-2 rounded-lg",
+                    card.isPremium ? "bg-white/10" : "bg-muted",
+                  )}
+                >
+                  <card.icon className="h-4 w-4" />
+                </div>
               </CardHeader>
-              <CardContent className="relative z-10">
+              <CardContent className="relative z-10 pb-4">
                 {statsLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin opacity-50" />
+                  <Loader2 className="h-6 w-6 animate-spin opacity-50" />
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{card.value}</div>
-                    <p className="text-[10px] mt-1 opacity-70 uppercase tracking-wider font-semibold">
+                    <div className="relative z-10">
+                      {card.isRevenue ? (
+                        <div className="flex flex-col gap-0.5">
+                          {card.entries && card.entries.length > 0 ? (
+                            card.entries.map(([curr, amt]) => (
+                              <div
+                                key={curr}
+                                className="text-xl font-black tracking-tight leading-none"
+                              >
+                                {formatCurrencyAmount(curr, amt)}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-2xl font-black tracking-tight">
+                              —
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-2xl font-black tracking-tight">
+                          {card.value}
+                        </div>
+                      )}
+                    </div>
+                    <p
+                      className={cn(
+                        "text-[10px] mt-1 font-medium relative z-10",
+                        card.isPremium
+                          ? "text-white/60"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       {card.description}
                     </p>
                   </>
@@ -174,204 +231,311 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Activity Section */}
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-        {/* Recent Shipments */}
-        <motion.div variants={item}>
-          <Card className="h-full">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg font-bold">
-                  Recent Shipments
-                </CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Latest 5 shipments created
-                </p>
-              </div>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/dashboard/shipments">
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {shipmentsLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="space-y-4">
+        <h3 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <Clock className="h-5 w-5 text-brand-blue" />
+          Recent Activity & Operations
+        </h3>
+        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3 items-start">
+          {/* Recent Shipments */}
+          <motion.div variants={item}>
+            <Card className="h-full">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-bold">
+                    Recent Shipments
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Latest 5 shipments created
+                  </p>
                 </div>
-              ) : recentShipmentsData?.data.length === 0 ? (
-                <p className="text-sm text-center text-muted-foreground py-8">
-                  No recent shipments
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {recentShipmentsData?.data.map((shipment) => (
-                    <div
-                      key={shipment.id}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden md:flex text-muted-foreground hover:text-brand-blue"
+                    asChild
+                  >
+                    <Link
+                      href="/dashboard/shipments"
+                      className="flex items-center gap-1 text-xs"
                     >
-                      <div className="h-10 w-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue">
-                        <Package className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {shipment.customTrackingNumber}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {shipment.user.name}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-bold text-brand-blue">
-                          {formatCurrencyAmount(
-                            shipment.currency,
-                            shipment.actualPrice,
-                          )}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {format(new Date(shipment.createdAt), "MMM d, HH:mm")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  <Button variant="outline" className="w-full mt-2" asChild>
-                    <Link href="/dashboard/shipments">View All Shipments</Link>
+                      See All
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden"
+                    asChild
+                  >
+                    <Link href="/dashboard/shipments">
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+              </CardHeader>
+              <CardContent>
+                {shipmentsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : recentShipmentsData?.data.length === 0 ? (
+                  <p className="text-sm text-center text-muted-foreground py-8">
+                    No recent shipments
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {recentShipmentsData?.data.map((shipment) => (
+                      <div
+                        key={shipment.id}
+                        className="group flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-all border border-transparent hover:border-border"
+                      >
+                        <div className="h-10 w-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue shrink-0">
+                          <Package className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1">
+                            <p className="text-sm font-bold truncate font-mono">
+                              {shipment.customTrackingNumber}
+                            </p>
+                            <CopyButton
+                              text={shipment.customTrackingNumber}
+                              className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {shipment.user.name} ({shipment.user.userCode})
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-black text-brand-blue">
+                            {formatCurrencyAmount(
+                              shipment.currency,
+                              shipment.actualPrice,
+                            )}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-medium">
+                            {formatDateTime(shipment.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    <Button variant="outline" className="w-full mt-2" asChild>
+                      <Link href="/dashboard/shipments">
+                        View All Shipments
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
 
-        {/* Recent Marketing Leads */}
-        <motion.div variants={item}>
-          <Card className="h-full">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg font-bold">
-                  Marketing Leads
-                </CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Recent shipping estimates
-                </p>
-              </div>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/dashboard/leads">
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {leadsLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          {/* Recent Marketing Leads */}
+          <motion.div variants={item}>
+            <Card className="h-full">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-bold">
+                    Marketing Leads
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Recent shipping estimates
+                  </p>
                 </div>
-              ) : recentLeadsData?.data.length === 0 ? (
-                <p className="text-sm text-center text-muted-foreground py-8">
-                  No recent leads
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {recentLeadsData?.data.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden md:flex text-muted-foreground hover:text-brand-yellow"
+                    asChild
+                  >
+                    <Link
+                      href="/dashboard/leads"
+                      className="flex items-center gap-1 text-xs"
                     >
-                      <div className="h-10 w-10 rounded-full bg-brand-yellow/10 flex items-center justify-center text-brand-yellow">
-                        <Mail className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {lead.email || lead.user?.email || "Guest"}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {lead.pickupLocation.city} →{" "}
-                          {lead.dropoffLocation.city}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${lead.converted ? "bg-green-100 text-green-700" : "bg-brand-yellow/20 text-brand-yellow-foreground"}`}
-                        >
-                          {lead.converted ? "Converted" : "New"}
-                        </span>
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          {format(new Date(lead.createdAt), "MMM d, HH:mm")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  <Button variant="outline" className="w-full mt-2" asChild>
-                    <Link href="/dashboard/leads">View All Leads</Link>
+                      See All
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden"
+                    asChild
+                  >
+                    <Link href="/dashboard/leads">
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+              </CardHeader>
+              <CardContent>
+                {leadsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : recentLeadsData?.data.length === 0 ? (
+                  <p className="text-sm text-center text-muted-foreground py-8">
+                    No recent leads
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {recentLeadsData?.data.map((lead) => (
+                      <div
+                        key={lead.id}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+                      >
+                        <div className="h-10 w-10 rounded-full bg-brand-yellow/10 flex items-center justify-center text-brand-yellow">
+                          <Mail className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-black truncate text-foreground">
+                            {lead.user
+                              ? lead.user.name
+                              : lead.email || "Guest User"}
+                          </p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1 rounded truncate max-w-[120px]">
+                              {lead.user
+                                ? lead.user.userCode
+                                : lead.email ||
+                                  (lead.guestId
+                                    ? `G: ${lead.guestId.slice(0, 8)}`
+                                    : "Anon")}
+                            </p>
+                            {(lead.user?.userCode || lead.email) && (
+                              <CopyButton
+                                text={lead.user?.userCode || lead.email || ""}
+                                className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                              />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-brand-blue uppercase tracking-tighter mb-0.5">
+                            Route
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate font-medium">
+                            {lead.pickupLocation.city},{" "}
+                            {lead.pickupLocation.countryCode} →{" "}
+                            {lead.dropoffLocation.city},{" "}
+                            {lead.dropoffLocation.countryCode}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span
+                            className={cn(
+                              "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase",
+                              lead.converted
+                                ? "bg-green-100 text-green-700"
+                                : "bg-brand-yellow/10 text-brand-yellow",
+                            )}
+                          >
+                            {lead.converted ? "Converted" : "New"}
+                          </span>
+                          <p className="text-[10px] text-muted-foreground mt-1 font-medium">
+                            {formatDateTime(lead.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    <Button variant="outline" className="w-full mt-2" asChild>
+                      <Link href="/dashboard/leads">View All Leads</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
 
-        {/* Recent User Signups */}
-        <motion.div variants={item}>
-          <Card className="h-full">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg font-bold">
-                  Recent Signups
-                </CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Latest registered users
-                </p>
-              </div>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/dashboard/users">
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {usersLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          {/* Recent User Signups */}
+          <motion.div variants={item}>
+            <Card className="h-full">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-bold">
+                    Recent Signups
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Latest registered users
+                  </p>
                 </div>
-              ) : recentUsersData?.users.length === 0 ? (
-                <p className="text-sm text-center text-muted-foreground py-8">
-                  No recent signups
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {recentUsersData?.users.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden md:flex text-muted-foreground hover:text-accent-dark"
+                    asChild
+                  >
+                    <Link
+                      href="/dashboard/users"
+                      className="flex items-center gap-1 text-xs"
                     >
-                      <div className="h-10 w-10 rounded-full bg-accent-dark/10 flex items-center justify-center text-accent-dark">
-                        <UserPlus className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {user.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {user.email}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-bold text-accent-dark">
-                          {user.userCode || "MLS-U-..."}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {format(new Date(user.createdAt), "MMM d, HH:mm")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  <Button variant="outline" className="w-full mt-2" asChild>
-                    <Link href="/dashboard/users">View All Users</Link>
+                      See All
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden"
+                    asChild
+                  >
+                    <Link href="/dashboard/users">
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+              </CardHeader>
+              <CardContent>
+                {usersLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : recentUsersData?.users.length === 0 ? (
+                  <p className="text-sm text-center text-muted-foreground py-8">
+                    No recent signups
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {recentUsersData?.users.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+                      >
+                        <div className="h-10 w-10 rounded-full bg-accent-dark/10 flex items-center justify-center text-accent-dark">
+                          <UserPlus className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold truncate">
+                            {user.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-black text-accent-dark">
+                            {user.userCode}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-medium">
+                            {formatDateTime(user.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    <Button variant="outline" className="w-full mt-2" asChild>
+                      <Link href="/dashboard/users">View All Users</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
     </motion.div>
   );

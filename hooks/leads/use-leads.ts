@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { getLeads, getUserLeads } from "@/api/leads";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getLeads, getUserLeads, deleteLead } from "@/api/leads";
 import { LeadFilter, UserLeadFilter } from "@/types/leads";
+import { toast } from "react-hot-toast";
 
 export const useLeads = (filters: LeadFilter) => {
   return useQuery({
@@ -22,5 +23,24 @@ export const useUserLeads = (filters: UserLeadFilter) => {
     queryFn: () => getUserLeads(filters),
     enabled: !!filters.userId,
     placeholderData: (previousData) => previousData,
+  });
+};
+
+/**
+ * Hook to delete a shipping estimate lead.
+ */
+export const useDeleteLead = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteLead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["user-leads"] });
+      toast.success("Lead deleted successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to delete lead");
+    },
   });
 };

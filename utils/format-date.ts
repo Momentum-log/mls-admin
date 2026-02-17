@@ -23,12 +23,13 @@ export function formatDate(dateStr: string): string {
  */
 export function formatDateTime(dateStr: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString("en-GB", {
+  return date.toLocaleString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
+    hour12: true,
   });
 }
 

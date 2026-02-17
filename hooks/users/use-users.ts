@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUsers, getUserByCode, banUser, verifyUser } from "@/api/users";
+import {
+  getUsers,
+  getUserByCode,
+  banUser,
+  verifyUser,
+  deleteUser,
+} from "@/api/users";
 import { UserFilter, BanUserPayload } from "@/types/user";
 import { toast } from "react-hot-toast";
 
@@ -62,6 +68,23 @@ export const useVerifyUser = () => {
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Failed to verify user");
+    },
+  });
+};
+
+/**
+ * Mutation hook for deleting a user.
+ */
+export const useDeleteUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => deleteUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("User deleted successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to delete user");
     },
   });
 };

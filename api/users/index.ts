@@ -48,3 +48,12 @@ export const banUser = async (
 export const verifyUser = async (userId: string): Promise<void> => {
   await apiClient.post(`/users/${userId}/verify`);
 };
+
+/**
+ * Deletes a user profile and all associated data.
+ *
+ * @param userId - The UUID of the user to delete.
+ */
+export const deleteUser = async (userId: string): Promise<void> => {
+  await apiClient.delete(`/users/${userId}`);
+};

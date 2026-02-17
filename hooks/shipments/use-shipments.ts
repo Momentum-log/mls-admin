@@ -5,6 +5,7 @@ import {
   bypassPayment,
   overrideStatus,
   getUserShipments,
+  deleteShipment,
 } from "@/api/shipments";
 import { toast } from "react-hot-toast";
 import {
@@ -90,6 +91,25 @@ export const useOverrideStatus = () => {
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Failed to update status");
+    },
+  });
+};
+
+/**
+ * Hook to delete a shipment.
+ */
+export const useDeleteShipment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteShipment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["user-shipments"] });
+      toast.success("Shipment deleted successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to delete shipment");
     },
   });
 };

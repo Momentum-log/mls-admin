@@ -59,3 +59,12 @@ export const getUserShipments = async (
   );
   return response.data;
 };
+
+/**
+ * Deletes a shipment.
+ *
+ * @param id - The UUID of the shipment to delete.
+ */
+export const deleteShipment = async (id: string): Promise<void> => {
+  await apiClient.delete(`/shipments/${id}`);
+};

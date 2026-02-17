@@ -15,6 +15,7 @@ import ConversionBadge from "@/components/ui/conversion-badge";
 import { OverrideStatusModal } from "@/components/shipments/override-status-modal";
 import { BypassPaymentModal } from "@/components/shipments/bypass-payment-modal";
 import { formatDate, formatDateTime } from "@/utils/format-date";
+import { formatPhoneNumber } from "@/utils/format-phone";
 import type { AdminShipment, AdminLead } from "@/types/admin-user-resources";
 import {
   Truck,
@@ -224,7 +225,7 @@ export default function ShipmentDetailSheet({
                   <p className="text-xs text-muted-foreground">
                     {shipment.pickupAddress.contact.personName}
                     {shipment.pickupAddress.contact.phoneNumber &&
-                      ` · ${shipment.pickupAddress.contact.phoneNumber}`}
+                      ` · ${formatPhoneNumber(shipment.pickupAddress.contact.phoneNumber)}`}
                   </p>
                 )}
               </div>
@@ -239,7 +240,7 @@ export default function ShipmentDetailSheet({
                   <p className="text-xs text-muted-foreground">
                     {shipment.dropoffAddress.contact.personName}
                     {shipment.dropoffAddress.contact.phoneNumber &&
-                      ` · ${shipment.dropoffAddress.contact.phoneNumber}`}
+                      ` · ${formatPhoneNumber(shipment.dropoffAddress.contact.phoneNumber)}`}
                   </p>
                 )}
               </div>

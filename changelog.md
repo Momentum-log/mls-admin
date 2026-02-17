@@ -5,6 +5,24 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [0.8.0] - 2026-02-17 - Dashboard Polish & Operations Optimization
+
+- Added: Premium Revenue card styling with multi-currency line-item display and high-contrast visuals.
+- Added: Uniform heights for all dashboard stat cards (`h-[140px]`) with glassmorphism hover effects.
+- Added: **Rows Per Page Selector** (10, 20, 30, 50) for all management tables (Users, Shipments, Leads).
+- Added: **Localized Currency Symbols** (zł, €, $) for all prices across the dashboard using a new `formatCurrency` utility.
+- Added: **Enhanced Conversion Tracking**:
+  - Real-time shipment correlation: The leads list now cross-references active shipments to accurately show "Shipment Created."
+  - Visual overhaul: Non-converted leads now use a vibrant **Purple/Accent** theme with a **Zap (⚡)** icon to highlight them as open opportunities.
+- Added: Delete functionality for Marketing Leads, Shipments, and Users with mandatory `ConfirmDialog` guards.
+- Added: Standardized user identification: `Name (User Code)` for authenticated users and explicit `GUEST` badge for guest records.
+- Added: Copy icons and buttons for User Codes, Guest Emails, and Tracking Numbers across all tables and detail sheets.
+- Added: Dedicated "Guest Contact" section in estimate details with one-click copy for email and phone.
+- Changed: Widened Name/Customer columns across all tables to `240px`-`360px` for better readability.
+- Changed: Global 12-hour time formatting (`h:mm a`) support in `utils/format-date.ts`.
+- Removed: Legacy "Export to CSV" buttons from all pages (pending new background export endpoint).
+- Fixed: Standardized table cell formatting with extra-bold names and consistent price colors.
+
 ### [0.7.1] - 2026-02-16 - Branding, Font System & Login Content Refinement
 
 - Changed: Switched application logo from `favicon.svg` to the official `logo-landscape.svg` on the login page.

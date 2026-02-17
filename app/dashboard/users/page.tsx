@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUsers, useBanUser, useVerifyUser } from "@/hooks/users/use-users";
+import {
+  useUsers,
+  useBanUser,
+  useVerifyUser,
+  useDeleteUser,
+} from "@/hooks/users/use-users";
 import { useDebounce } from "@/hooks/use-debounce";
 import { User } from "@/types/user";
 import { formatDate, formatRelativeTime } from "@/utils/format-date";
@@ -33,6 +38,8 @@ import {
   Eye,
   BadgeCheck,
   BadgeX,
+  Trash2,
+  Copy,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -55,19 +62,22 @@ export default function UsersPage() {
 
   const debouncedSearch = useDebounce(search, 500);
 
+  const [limit, setLimit] = useState(20);
+
   const { data, isLoading } = useUsers({
     page,
-    limit: 10,
+    limit,
     search: debouncedSearch,
     status: status === "ALL" ? undefined : status,
   });
 
   const { mutate: banUser } = useBanUser();
   const { mutate: verifyUser } = useVerifyUser();
+  const { mutate: deleteUser } = useDeleteUser();
 
   // Dialog state
   const [confirmAction, setConfirmAction] = useState<{
-    type: "ban" | "verify";
+    type: "ban" | "verify" | "delete";
     user: User;
   } | null>(null);
 
@@ -78,8 +88,10 @@ export default function UsersPage() {
         userId: confirmAction.user.id,
         data: { status: "BANNED", banType: "FULL" },
       });
-    } else {
+    } else if (confirmAction.type === "verify") {
       verifyUser(confirmAction.user.id);
+    } else {
+      deleteUser(confirmAction.user.id);
     }
     setConfirmAction(null);
   };
@@ -119,7 +131,7 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead className="w-[300px]">Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>User Code</TableHead>
               <TableHead>Joined</TableHead>
@@ -210,6 +222,7 @@ export default function UsersPage() {
                             )
                           }
                         >
+                          <Copy className="mr-2 h-4 w-4" />
                           Copy User Code
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -230,6 +243,15 @@ export default function UsersPage() {
                           <ShieldAlert className="mr-2 h-4 w-4" />
                           Ban User
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-600"
+                          onClick={() =>
+                            setConfirmAction({ type: "delete", user })
+                          }
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete User
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -239,36 +261,54 @@ export default function UsersPage() {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1 || isLoading}
-        >
-          Previous
-        </Button>
-        <span className="text-sm text-muted-foreground">
-          Page {page}
-          {data?.pagination?.totalPages
-            ? ` of ${data.pagination.totalPages}`
-            : ""}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => p + 1)}
-          disabled={
-            !data ||
-            data.users.length < 10 ||
-            page >= (data.pagination?.totalPages ?? Infinity) ||
-            isLoading
-          }
-        >
-          Next
-        </Button>
+      <div className="mt-4 flex items-center justify-between px-2">
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-muted-foreground whitespace-nowrap">
+            Showing page {page} of {data?.pagination.totalPages ?? 1} (
+            {data?.pagination.total ?? 0} total users)
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Rows per page:
+            </span>
+            <Select
+              value={limit.toString()}
+              onValueChange={(val) => {
+                setLimit(parseInt(val));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={limit.toString()} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="30">30</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1 || isLoading}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page >= (data?.pagination.totalPages ?? 1) || isLoading}
+          >
+            Next
+          </Button>
+        </div>
       </div>
-
       {/* Confirm Dialog for ban/verify */}
       {confirmAction && (
         <ConfirmDialog
@@ -277,15 +317,29 @@ export default function UsersPage() {
             if (!open) setConfirmAction(null);
           }}
           title={
-            confirmAction.type === "ban" ? "Ban User" : "Manually Verify User"
+            confirmAction.type === "ban"
+              ? "Ban User"
+              : confirmAction.type === "verify"
+                ? "Manually Verify User"
+                : "Delete User"
           }
           description={
             confirmAction.type === "ban"
               ? `Are you sure you want to ban ${confirmAction.user.name}? This will restrict their access.`
-              : `Manually verify ${confirmAction.user.name}'s email? This action cannot be undone.`
+              : confirmAction.type === "verify"
+                ? `Manually verify ${confirmAction.user.name}'s email? This action cannot be undone.`
+                : `Are you sure you want to permanently delete ${confirmAction.user.name}? All their shipments, estimates, and data will be lost forever.`
           }
-          confirmLabel={confirmAction.type === "ban" ? "Ban" : "Verify"}
-          destructive={confirmAction.type === "ban"}
+          confirmLabel={
+            confirmAction.type === "ban"
+              ? "Ban"
+              : confirmAction.type === "verify"
+                ? "Verify"
+                : "Delete"
+          }
+          destructive={
+            confirmAction.type === "ban" || confirmAction.type === "delete"
+          }
           onConfirm={handleConfirm}
         />
       )}
