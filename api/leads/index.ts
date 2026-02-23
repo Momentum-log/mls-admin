@@ -35,3 +35,12 @@ export const getUserLeads = async (
 export const deleteLead = async (id: string): Promise<void> => {
   await apiClient.delete(`/leads/${id}`);
 };
+
+/**
+ * Bulk deletes multiple leads.
+ *
+ * @param ids - Array of lead UUIDs to delete.
+ */
+export const bulkDeleteLeads = async (ids: string[]): Promise<void> => {
+  await apiClient.post("/admin/leads/bulk-delete", { ids });
+};

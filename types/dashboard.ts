@@ -7,8 +7,6 @@ export interface DashboardStats {
   totalUsers: number;
   totalShipments: number;
   revenue: Record<string, number>;
-  pendingPayments: number;
-  inTransit: number;
-  totalLeads: number;
-  recentSignupsCount: number;
+  leads: number;
+  activeShipments: number;
 }

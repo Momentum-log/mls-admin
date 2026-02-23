@@ -6,6 +6,7 @@ import {
   overrideStatus,
   getUserShipments,
   deleteShipment,
+  bulkDeleteShipments,
 } from "@/api/shipments";
 import { toast } from "react-hot-toast";
 import {
@@ -102,7 +103,11 @@ export const useDeleteShipment = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => deleteShipment(id),
+    mutationFn: (variables: string | { id: string; force?: boolean }) => {
+      const id = typeof variables === "string" ? variables : variables.id;
+      const force = typeof variables === "string" ? false : variables.force;
+      return deleteShipment(id, force);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       queryClient.invalidateQueries({ queryKey: ["user-shipments"] });
@@ -110,6 +115,25 @@ export const useDeleteShipment = () => {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to delete shipment");
+    },
+  });
+};
+
+export const useBulkDeleteShipments = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids, force }: { ids: string[]; force?: boolean }) =>
+      bulkDeleteShipments(ids, force),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["user-shipments"] });
+      toast.success("Shipments deleted successfully");
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || "Failed to delete shipments",
+      );
     },
   });
 };

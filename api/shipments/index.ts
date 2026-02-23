@@ -64,7 +64,26 @@ export const getUserShipments = async (
  * Deletes a shipment.
  *
  * @param id - The UUID of the shipment to delete.
+ * @param force - If true, bypasses terminal status checks (Admin only).
  */
-export const deleteShipment = async (id: string): Promise<void> => {
-  await apiClient.delete(`/shipments/${id}`);
+export const deleteShipment = async (
+  id: string,
+  force = false,
+): Promise<void> => {
+  // Use admin endpoint for forced deletion to ensure permissions/logic
+  const url = force ? `/admin/shipments/${id}` : `/shipments/${id}`;
+  await apiClient.delete(url, { params: { force } });
+};
+
+/**
+ * Bulk deletes multiple shipments.
+ *
+ * @param ids - Array of shipment UUIDs to delete.
+ * @param force - If true, bypasses terminal status checks.
+ */
+export const bulkDeleteShipments = async (
+  ids: string[],
+  force = false,
+): Promise<void> => {
+  await apiClient.post("/admin/shipments/bulk-delete", { ids, force });
 };

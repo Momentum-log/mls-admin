@@ -57,3 +57,25 @@ export const verifyUser = async (userId: string): Promise<void> => {
 export const deleteUser = async (userId: string): Promise<void> => {
   await apiClient.delete(`/users/${userId}`);
 };
+
+/**
+ * Force deletes a user and cascades the deletion to all linked data.
+ *
+ * @param userId - The UUID of the user to delete.
+ */
+export const forceDeleteUser = async (userId: string): Promise<void> => {
+  await apiClient.post(`/admin/users/${userId}/cascade`);
+};
+
+/**
+ * Bulk deletes multiple users.
+ *
+ * @param ids - Array of user UUIDs to delete.
+ * @param force - If true, bypasses safe delete checks.
+ */
+export const bulkDeleteUsers = async (
+  ids: string[],
+  force = false,
+): Promise<void> => {
+  await apiClient.post("/admin/users/bulk-delete", { ids, force });
+};

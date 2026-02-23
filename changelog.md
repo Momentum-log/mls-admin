@@ -5,7 +5,32 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### [0.8.0] - 2026-02-17 - Dashboard Polish & Operations Optimization
+### [1.0.0] - 2026-02-23 - Staff Role Management & Permissions UI (RBAC)
+
+- **Added**: Comprehensive Role-Based Access Control (RBAC) Management UI.
+- **Added**: `PermissionSelector` component for grouped, user-friendly permission selection with descriptions.
+- **Added**: `StaffTable` enhancement: **Inline Custom Role Creation**. Admins can now define permissions for a new role while adding a staff member.
+- **Added**: `RolesTable` full CRUD: Create, Edit, and Delete system roles with real-time permission mapping.
+- **Added**: **Frontend Enforcement**:
+  - `AdminSidebar` now grays out and locks unauthorized modules based on user permissions.
+  - `PermissionGuard` layout wrapper protects against direct URL access to restricted pages.
+  - Dedicated **Access Denied** redirection page (`/dashboard/denied`).
+- **Added**: Optional **Email Notifications** toggle when assigning or changing staff roles.
+- **Added**: New hooks: `usePermissions` (global access check), `useAvailablePermissions`, `useUpdateRole`, and `useDeleteRole`.
+- **Changed**: Simplified Staff & Role navigation under a unified responsive management interface.
+- **Fixed**: Role deletion protection to prevent breaking active staff accounts.
+- **Fixed**: Synced `types/staff.ts` and `api/staff/index.ts` with updated RBAC backend endpoints.
+
+### [0.9.0] - 2026-02-18 - Carrier & Commission Management
+
+- Added: Full Carrier Management system (CRUD) at `/dashboard/carriers`.
+- Added: Commission Management with 4-stage rules (Local, Export, Import, International) and CL02 logic.
+- Added: Enhanced deletion endpoints (Cascade/Force Delete) for Users and Shipments.
+- Added: Delete Shipment functionality in Shipment Detail Sheet.
+- Changed: Dashboard stats now reflect backend fields (`leads`, `activeShipments`).
+- Fixed: Sidebar navigation highlight for nested routes.
+
+### [0.8.0] - 2026-02-17 - Dashboard Stats & LeadsOperations Optimization
 
 - Added: Premium Revenue card styling with multi-currency line-item display and high-contrast visuals.
 - Added: Uniform heights for all dashboard stat cards (`h-[140px]`) with glassmorphism hover effects.

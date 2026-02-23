@@ -37,10 +37,12 @@ export const useLogout = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: logout,
-    onSuccess: () => {
+    onSettled: () => {
       Cookies.remove("accessToken");
       queryClient.setQueryData(["me"], null);
+      queryClient.clear(); // Clear all cache on logout
       router.push("/login");
+      toast.success("Logged out successfully");
     },
   });
 };

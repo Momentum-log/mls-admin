@@ -28,7 +28,10 @@ import {
   Link2,
   Shield,
   Banknote,
+  Trash2,
 } from "lucide-react";
+import { DeleteResourceDialog } from "@/components/admin/delete-resource-dialog";
+import { useDeleteShipment } from "@/hooks/shipments/use-shipments";
 
 /**
  * Props for ShipmentDetailSheet.
@@ -83,6 +86,16 @@ export default function ShipmentDetailSheet({
 }: ShipmentDetailSheetProps) {
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
   const [bypassModalOpen, setBypassModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const { mutate: deleteShipment, isPending: isDeleting } = useDeleteShipment();
+
+  const handleDelete = (force: boolean) => {
+    if (shipment) {
+      deleteShipment({ id: shipment.id, force });
+      setDeleteConfirmOpen(false);
+      onOpenChange(false);
+    }
+  };
 
   if (!shipment) return null;
 
@@ -383,10 +396,28 @@ export default function ShipmentDetailSheet({
                   Mark as Paid (Bypass)
                 </Button>
               )}
+              <Button
+                variant="destructive"
+                className="w-full justify-start mt-2"
+                onClick={() => setDeleteConfirmOpen(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Shipment
+              </Button>
             </div>
           </section>
         </div>
       </SheetContent>
+
+      <DeleteResourceDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete Shipment?"
+        description="This will permanently remove this shipment."
+        resourceName="Shipment"
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+      />
 
       {/* Modals */}
       <OverrideStatusModal

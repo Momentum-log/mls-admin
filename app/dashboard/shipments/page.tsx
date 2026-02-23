@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   useShipments,
   useDeleteShipment,
+  useBulkDeleteShipments,
 } from "@/hooks/shipments/use-shipments";
 import { useUserLeads } from "@/hooks/leads/use-leads";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -38,6 +39,9 @@ import {
 } from "lucide-react";
 import CopyButton from "@/components/ui/copy-button";
 import ShipmentDetailSheet from "@/components/shipments/shipment-detail-sheet";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DeleteResourceDialog } from "@/components/admin/delete-resource-dialog";
+import { BulkDeleteBar } from "@/components/admin/bulk-delete-bar";
 import type { AdminShipment } from "@/types/admin-user-resources";
 import { formatDateTime } from "@/utils/format-date";
 import { findEstimateForShipment } from "@/utils/estimate-shipment-correlation";
@@ -71,8 +75,47 @@ export default function ShipmentsPage() {
   const shipments = responseData?.data ?? [];
   const pagination = responseData?.pagination;
 
-  const { mutate: deleteShipment } = useDeleteShipment();
+  const { mutate: deleteShipment, isPending: isDeleting } = useDeleteShipment();
+  const { mutate: bulkDelete, isPending: isBulkDeleting } =
+    useBulkDeleteShipments();
+
   const [shipmentToDelete, setShipmentToDelete] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+
+  // Selection Logic
+  const allIds = shipments.map((s) => s.id);
+  const isAllSelected =
+    shipments.length > 0 && allIds.every((id) => selectedIds.includes(id));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !allIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...allIds])));
+    }
+  };
+
+  const toggleSelectRow = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    );
+  };
+
+  const handleBulkDelete = (force: boolean) => {
+    bulkDelete({ ids: selectedIds, force });
+    setShowBulkDelete(false);
+    setSelectedIds([]);
+  };
+
+  const handleSingleDelete = (force: boolean) => {
+    if (shipmentToDelete) {
+      // If using force, we need to call delete with object (if hook updated) or update hook usage
+      // Current usage: deleteShipment(id, force) via updated hook
+      deleteShipment({ id: shipmentToDelete, force });
+      setShipmentToDelete(null);
+    }
+  };
 
   /**
    * Fetch leads for the selected shipment to show correlation.
@@ -144,6 +187,13 @@ export default function ShipmentsPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
+              <TableHead className="w-[40px]">
+                <Checkbox
+                  checked={isAllSelected}
+                  onChange={toggleSelectAll}
+                  className="translate-y-[2px]"
+                />
+              </TableHead>
               <TableHead className="w-[180px]">Tracking #</TableHead>
               <TableHead className="w-[240px]">User / Customer</TableHead>
               <TableHead>Route</TableHead>
@@ -181,6 +231,13 @@ export default function ShipmentsPage() {
                   className="cursor-pointer hover:bg-muted/30 transition-colors group"
                   onClick={() => setSelectedShipment(shipment)}
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedIds.includes(shipment.id)}
+                      onChange={() => toggleSelectRow(shipment.id)}
+                      className="translate-y-[2px]"
+                    />
+                  </TableCell>
                   <TableCell>
                     <div
                       className="flex items-center gap-1"
@@ -344,20 +401,31 @@ export default function ShipmentsPage() {
         linkedEstimate={linkedEstimate}
       />
 
-      {/* Action Dialogs */}
-      <ConfirmDialog
+      <DeleteResourceDialog
         open={!!shipmentToDelete}
         onOpenChange={(open) => !open && setShipmentToDelete(null)}
         title="Delete Shipment?"
-        description="This will permanently remove this shipment and its history from the database. This action cannot be undone."
-        confirmLabel="Delete"
-        destructive
-        onConfirm={() => {
-          if (shipmentToDelete) {
-            deleteShipment(shipmentToDelete);
-            setShipmentToDelete(null);
-          }
-        }}
+        description="This will permanently remove this shipment. Use force delete to cascade remove linked records."
+        resourceName="Shipment"
+        onConfirm={handleSingleDelete}
+        isLoading={isDeleting}
+      />
+
+      <DeleteResourceDialog
+        open={showBulkDelete}
+        onOpenChange={setShowBulkDelete}
+        title={`Delete ${selectedIds.length} Shipments?`}
+        description={`This will permanently remove ${selectedIds.length} selected shipments.`}
+        resourceName="Shipments"
+        onConfirm={handleBulkDelete}
+        isLoading={isBulkDeleting}
+      />
+
+      <BulkDeleteBar
+        selectedCount={selectedIds.length}
+        resourceName="Shipments"
+        onDelete={() => setShowBulkDelete(true)}
+        onClear={() => setSelectedIds([])}
       />
     </div>
   );

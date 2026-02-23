@@ -28,6 +28,7 @@ export interface AdminShipmentAddress {
 export interface AdminShipment {
   id: string;
   customTrackingNumber: string;
+  estimateId?: string; // Link to the source estimate (if converted)
   carrierTrackingNumber?: string;
   pickupAddress: AdminShipmentAddress;
   dropoffAddress: AdminShipmentAddress;

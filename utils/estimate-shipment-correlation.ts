@@ -45,6 +45,10 @@ export function findShipmentForEstimate(
   estimate: AdminLead,
   shipments: AdminShipment[],
 ): AdminShipment | null {
+  // Priority 1: Check for direct ID link (Backend correlation)
+  const linkedShipment = shipments.find((s) => s.estimateId === estimate.id);
+  if (linkedShipment) return linkedShipment;
+
   const estimateDate = new Date(estimate.createdAt).getTime();
   const rateServiceTypes = new Set(
     estimate.rates?.map((r) => r.serviceType) ?? [],

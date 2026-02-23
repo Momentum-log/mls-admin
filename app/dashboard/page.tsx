@@ -109,7 +109,7 @@ export default function DashboardPage() {
     },
     {
       title: "Marketing Leads",
-      value: stats?.totalLeads?.toLocaleString("pl-PL") ?? "—",
+      value: stats?.leads?.toLocaleString("pl-PL") ?? "—",
       icon: Mail,
       color: "bg-accent-light shadow-accent-light/20",
       textColor: "text-white",
@@ -119,7 +119,7 @@ export default function DashboardPage() {
     },
     {
       title: "Active Shipments",
-      value: stats?.inTransit?.toLocaleString("pl-PL") ?? "—",
+      value: stats?.activeShipments?.toLocaleString("pl-PL") ?? "—",
       icon: TrendingUp,
       color: "bg-brand-blue shadow-brand-blue/20",
       textColor: "text-white",

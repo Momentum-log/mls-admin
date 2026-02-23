@@ -1,0 +1,1720 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "MLS Admin API",
+    "description": "Exclusive API Documentation for MLS Admin Panel. All endpoints are prefixed with `/api/admin`. \n\n**CRITICAL NOTE TO FRONTEND/MOBILE DEV**: You MUST use the exact explicit endpoints as described below (e.g. `/carriers/get-all-carriers` instead of `/carriers`). Do NOT default to standard REST paths. Following explicit explicit naming avoids routing errors and 404s."
+  },
+  "servers": [
+    {
+      "url": "/api/admin",
+      "description": "Admin Base URL"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "AdminLogin": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "admin@mls.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "securePassword123!"
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "AdminProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "example": "Super Admin"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["user:read", "user:write", "shipment:read"]
+          }
+        }
+      },
+      "StaffCreate": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["email", "name", "roleId"]
+      },
+      "StaffUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "UserStatusUpdate": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ACTIVE", "FLAGGED", "WARNED", "BANNED"]
+          },
+          "banType": {
+            "type": "string",
+            "enum": ["NONE", "PARTIAL", "FULL"]
+          }
+        },
+        "required": ["status"]
+      },
+      "ProxyShipment": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carrierName": {
+            "type": "string",
+            "enum": ["FedEx"]
+          },
+          "pickupAddress": {
+            "type": "object"
+          },
+          "dropoffAddress": {
+            "type": "object"
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "weight": {
+                "type": "object"
+              },
+              "dimensions": {
+                "type": "object"
+              }
+            }
+          },
+          "rate": {
+            "type": "object",
+            "properties": {
+              "serviceType": {
+                "type": "string"
+              },
+              "serviceName": {
+                "type": "string"
+              },
+              "carrierPrice": {
+                "type": "number"
+              },
+              "actualPrice": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string",
+                "default": "PLN"
+              }
+            }
+          },
+          "estimateId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "targetUserId",
+          "carrierName",
+          "pickupAddress",
+          "dropoffAddress",
+          "package",
+          "rate"
+        ]
+      },
+      "PaymentBypass": {
+        "type": "object",
+        "properties": {
+          "manualTransactionId": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": ["manualTransactionId"]
+      },
+      "EmailTemplate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          },
+          "design": {
+            "type": "object"
+          }
+        },
+        "required": ["name", "subject", "html"]
+      },
+      "CarrierProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "apiKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "apiSecret": {
+            "type": "string",
+            "nullable": true
+          },
+          "baseUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "localCommission": {
+            "type": "object"
+          },
+          "exportCommission": {
+            "type": "object"
+          },
+          "importCommission": {
+            "type": "object"
+          },
+          "internationalCommission": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Admin Login",
+        "description": "Authenticates an admin and returns a JWT token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLogin"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    },
+                    "admin": {
+                      "$ref": "#/components/schemas/AdminProfile"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Get Admin Profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current Admin Profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProfile"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/developer-mode": {
+      "post": {
+        "summary": "Toggle Developer Mode",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New mode state returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "developerMode": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "summary": "List Users",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["ACTIVE", "FLAGGED", "WARNED", "BANNED"]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated user list"
+          }
+        }
+      }
+    },
+    "/users/{id}/status": {
+      "put": {
+        "summary": "Update User Status (Moderation)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated"
+          }
+        }
+      }
+    },
+    "/users/{id}/verify": {
+      "post": {
+        "summary": "Manual Verification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User manually verified"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Safe Delete User",
+        "description": "Deletes a user only if they have no active/in-transit shipments.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted"
+          },
+          "400": {
+            "description": "Deletion blocked by active shipments"
+          }
+        }
+      }
+    },
+    "/users/{id}/cascade": {
+      "post": {
+        "summary": "Force Delete User (Cascade)",
+        "description": "Deletes a user and all related records (shipments, estimates, etc.) regardless of status.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User and related records deleted"
+          }
+        }
+      }
+    },
+    "/users/bulk-delete": {
+      "post": {
+        "summary": "Bulk Delete Users",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "force": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": ["ids"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Users deleted"
+          }
+        }
+      }
+    },
+    "/users/{identifier}": {
+      "get": {
+        "summary": "Get User Details",
+        "description": "Retrieve full user profile by UUID or userCode. Returns counts and recent activity.",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "description": "User UUID (id) or userCode (e.g., MLS-U-12345)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details with counts and recent activity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "userCode": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "phone": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "address": {
+                          "type": "object",
+                          "nullable": true
+                        },
+                        "is_verified": {
+                          "type": "boolean"
+                        },
+                        "is_phone_verified": {
+                          "type": "boolean"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["ACTIVE", "FLAGGED", "WARNED", "BANNED"]
+                        },
+                        "banType": {
+                          "type": "string",
+                          "enum": ["NONE", "PARTIAL", "FULL"]
+                        },
+                        "lastActive": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "lastLogin": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "_count": {
+                          "type": "object",
+                          "properties": {
+                            "shipments": {
+                              "type": "integer"
+                            },
+                            "estimates": {
+                              "type": "integer"
+                            },
+                            "activity": {
+                              "type": "integer"
+                            },
+                            "sessions": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "recentActivity": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "action": {
+                                "type": "string"
+                              },
+                              "ipAddress": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "userAgent": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "timestamp": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/shipments": {
+      "get": {
+        "summary": "List Shipments",
+        "description": "List all shipments with full filtering. Supports filtering by user, status, search, and date range.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search by tracking number, user name, email, or userCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by shipment status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CREATED",
+                "PAID",
+                "IN_TRANSIT",
+                "DELIVERED",
+                "COMPLETED",
+                "CANCELLED",
+                "FAILED"
+              ]
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "Filter by user UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date (ISO string)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date (ISO string)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated shipment list with user and carrier details"
+          }
+        }
+      }
+    },
+    "/leads": {
+      "get": {
+        "summary": "List Marketing Leads (Estimates)",
+        "description": "List shipping estimates as marketing leads. Supports filtering by user, conversion status, search, and date range.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "converted",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "isGuest",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "Filter by user UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search by email, phone, user name, or userCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date (ISO string)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date (ISO string)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of shipping estimates with user details"
+          }
+        }
+      }
+    },
+    "/leads/{id}": {
+      "delete": {
+        "summary": "Delete Lead",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lead deleted"
+          }
+        }
+      }
+    },
+    "/leads/bulk-delete": {
+      "post": {
+        "summary": "Bulk Delete Leads",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                },
+                "required": ["ids"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Leads deleted"
+          }
+        }
+      }
+    },
+    "/shipments/proxy": {
+      "post": {
+        "summary": "Create Proxy Shipment",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProxyShipment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Proxy shipment created"
+          }
+        }
+      }
+    },
+    "/shipments/{id}": {
+      "get": {
+        "summary": "Get Shipment Details",
+        "description": "Returns full shipment details, including user, carrier, payments, and audit logs.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full shipment details retrieved"
+          },
+          "404": {
+            "description": "Shipment not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Shipment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipment deleted"
+          }
+        }
+      }
+    },
+    "/shipments/bulk-delete": {
+      "post": {
+        "summary": "Bulk Delete Shipments",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "force": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": ["ids"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shipments deleted"
+          }
+        }
+      }
+    },
+    "/shipments/{id}/complete": {
+      "post": {
+        "summary": "Mark Shipment as Completed",
+        "description": "Sets status to COMPLETED and sends notification to the user.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipment completed"
+          }
+        }
+      }
+    },
+    "/shipments/{id}/manual-status": {
+      "put": {
+        "summary": "Manual Status Override",
+        "description": "Force a shipment into any status. Optionally disables carrier sync and notifies the user.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "manualOverride": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "trackingSyncEnabled": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "notify": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated"
+          }
+        }
+      }
+    },
+    "/shipments/{id}/bypass-payment": {
+      "post": {
+        "summary": "Bypass Payment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentBypass"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment marked as PAID"
+          }
+        }
+      }
+    },
+    "/emails/templates": {
+      "get": {
+        "summary": "List Email Templates",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of templates"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upsert Email Template",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailTemplate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Template saved"
+          }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "summary": "Get System Settings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current system settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "passwordRotationFrequency": {
+                      "type": "string",
+                      "enum": ["HOURLY", "DAILY", "WEEKLY", "MONTHLY"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update System Settings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "passwordRotationFrequency": {
+                    "type": "string",
+                    "enum": ["HOURLY", "DAILY", "WEEKLY", "MONTHLY"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settings updated"
+          }
+        }
+      }
+    },
+    "/staff/create-new-role": {
+      "post": {
+        "summary": "Create Explicit Role",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["name", "permissions"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Role created"
+          }
+        }
+      }
+    },
+    "/staff/get-all-roles": {
+      "get": {
+        "summary": "List roles",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List array of roles"
+          }
+        }
+      }
+    },
+    "/staff/roles/permissions": {
+      "get": {
+        "summary": "List all RBAC permissions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List array of available permissions mapped by groups."
+          }
+        }
+      }
+    },
+    "/staff/update-role/{id}": {
+      "put": {
+        "summary": "Update Role Details",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "permissions": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Role updated successfully"
+          }
+        }
+      }
+    },
+    "/staff/delete-role/{id}": {
+      "delete": {
+        "summary": "Delete an exist Role",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Role successfully expunged"
+          }
+        }
+      }
+    },
+    "/staff/get-all-staff": {
+      "get": {
+        "summary": "List explicit staff members",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List staff"
+          }
+        }
+      }
+    },
+    "/staff/create-new-staff": {
+      "post": {
+        "summary": "Explicit Staff Create",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Staff created"
+          }
+        }
+      }
+    },
+    "/staff/update-staff/{id}": {
+      "put": {
+        "summary": "Update Staff Details",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          }
+        }
+      }
+    },
+    "/staff/assign-staff-role/{id}": {
+      "put": {
+        "summary": "Assign distinct Role dynamically",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "roleId": {
+                    "type": "string"
+                  },
+                  "notify": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": ["roleId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Role assigned"
+          }
+        }
+      }
+    },
+    "/staff/suspend-staff/{id}": {
+      "put": {
+        "summary": "Suspend Staff",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Staff suspended"
+          }
+        }
+      }
+    },
+    "/staff/enable-staff/{id}": {
+      "put": {
+        "summary": "Enable Staff",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Staff active"
+          }
+        }
+      }
+    },
+    "/staff/delete-staff/{id}": {
+      "delete": {
+        "summary": "Delete Admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin deleted"
+          },
+          "403": {
+            "description": "Super Admin Protected"
+          }
+        }
+      }
+    },
+    "/carriers/get-all-carriers": {
+      "get": {
+        "summary": "List All Carriers (Explicit)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of CarrierProfile objects"
+          }
+        }
+      }
+    },
+    "/carriers/get-single-carrier/{id}": {
+      "get": {
+        "summary": "Get Single Carrier Explicit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Single Carrier Details"
+          }
+        }
+      }
+    },
+    "/carriers/create-new-carrier": {
+      "post": {
+        "summary": "Create Carrier Explicit",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarrierProfile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/carriers/update-carrier/{id}": {
+      "put": {
+        "summary": "Update Carrier Explicit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarrierProfile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          }
+        }
+      }
+    },
+    "/carriers/update-carrier-commissions/{id}": {
+      "put": {
+        "summary": "Update Carrier Commissions Explicit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Commissions modified"
+          }
+        }
+      }
+    },
+    "/carriers/delete-carrier/{id}": {
+      "delete": {
+        "summary": "Delete Carrier Explicit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    }
+  }
+}
