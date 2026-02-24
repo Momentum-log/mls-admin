@@ -5,6 +5,15 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [1.2.2] - 2026-02-24 - Super Admin Password Rotation & Security Overhaul
+
+- **Added**: **Manual Password Rotation**: Super Admins can now manually trigger a full 16-character password rotate using their **Weekly Reset Key**.
+- **Added**: **Emergency Recovery (Login Page)**: Integrated a public-facing rotation trigger on the login page for cases where rotation emails are missing or access is lost.
+- **Added**: **Security Dashboard**: New dedicated `/dashboard/security` page for system-level security controls.
+- **Added**: **High-Friction Confirmation**: Automated rotation triggers are guarded by `ConfirmDialog` to prevent accidental credential invalidation.
+- **Added**: **RBAC Visibility**: The Security module is dynamically hidden from non-Super Admin staff in the sidebar and protected via layout guards.
+- **Improved**: Login page accessibility with specialized recovery paths for administrative personnel.
+
 ### [1.2.1] - 2026-02-24 - Code Quality & Component Consolidation
 
 - **Changed**: **Unified Confirmation System**: Merged `DeleteResourceDialog` into an enhanced `ConfirmDialog`. The new unified component now supports loading states, optional "Force Delete" toggles, and resource-specific warnings.
