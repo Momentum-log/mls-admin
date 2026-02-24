@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLogin } from "@/hooks/auth/use-auth";
+import { useRotatePassword } from "@/hooks/admin/use-security";
 import {
   Form,
   FormControl,
@@ -14,10 +15,22 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowRight } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Label } from "@/components/ui/label";
+import { Loader2, ArrowRight, Shield, Key, Eye, EyeOff } from "lucide-react";
 import { LoginBackground } from "@/components/login-background";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { useState } from "react";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -31,6 +44,13 @@ const formSchema = z.object({
  */
 export default function LoginPage() {
   const { mutate: login, isPending } = useLogin();
+  const { mutate: rotatePassword, isPending: isRotating } = useRotatePassword();
+
+  const [isRotationOpen, setIsRotationOpen] = useState(false);
+  const [resetKey, setResetKey] = useState("");
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showResetKey, setShowResetKey] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -192,12 +212,25 @@ export default function LoginPage() {
                         </button>
                       </div>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="••••••••"
-                          className="h-12 border-gray-200 focus:border-brand-blue focus:ring-brand-blue/10 bg-gray-50/50"
-                          {...field}
-                        />
+                        <div className="relative group">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            className="h-12 border-gray-200 focus:border-brand-blue focus:ring-brand-blue/10 bg-gray-50/50 pr-12"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-blue transition-colors p-2"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage className="text-xs" />
                     </FormItem>
@@ -221,6 +254,105 @@ export default function LoginPage() {
               </Button>
             </form>
           </Form>
+
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <Dialog open={isRotationOpen} onOpenChange={setIsRotationOpen}>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="text-sm font-bold text-destructive hover:text-red-700 transition-colors flex items-center gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  Rotate Super Admin Access
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-brand-blue" />
+                    Emergency Rotation
+                  </DialogTitle>
+                  <DialogDescription>
+                    Lost access? Use your 8-character Weekly Reset Key to
+                    trigger a credentials refresh.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label className="font-bold text-gray-700">
+                      Weekly Reset Key
+                    </Label>
+                    <div className="relative group">
+                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-brand-blue" />
+                      <Input
+                        type={showResetKey ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="pl-10 pr-12 h-12 font-mono tracking-widest text-lg"
+                        value={resetKey}
+                        onChange={(e) =>
+                          setResetKey(e.target.value.toUpperCase().slice(0, 8))
+                        }
+                        maxLength={8}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowResetKey(!showResetKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-blue transition-colors p-2"
+                      >
+                        {showResetKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-blue-50 p-3 text-xs text-blue-800 border border-blue-100 italic">
+                    Note: Rotating will immediately invalidate the current Super
+                    Admin password. New credentials will be sent to your email.
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="w-full h-11 font-bold rounded-xl"
+                    disabled={resetKey.length < 8 || isRotating}
+                    onClick={() => setIsConfirmOpen(true)}
+                  >
+                    {isRotating ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Shield className="h-4 w-4 mr-2" />
+                    )}
+                    Trigger Rotation
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <ConfirmDialog
+            open={isConfirmOpen}
+            onOpenChange={setIsConfirmOpen}
+            title="Confirm Emergency Rotation?"
+            description="This action cannot be undone. All active Super Admin sessions will be terminated. Do you have access to your email?"
+            confirmLabel="Rotate Now"
+            destructive
+            isLoading={isRotating}
+            onConfirm={() => {
+              rotatePassword(resetKey, {
+                onSuccess: () => {
+                  setResetKey("");
+                  setIsConfirmOpen(false);
+                  setIsRotationOpen(false);
+                },
+                onError: () => {
+                  setIsConfirmOpen(false);
+                },
+              });
+            }}
+          />
 
           <div className="mt-10 pt-8 border-t border-gray-100">
             <p className="text-center text-sm text-gray-400">

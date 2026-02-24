@@ -11,6 +11,7 @@ import {
   Mail,
   Truck,
   Lock,
+  Shield,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -50,6 +51,12 @@ const routes = [
     icon: Truck,
     href: "/dashboard/carriers",
     permission: "carrier:read",
+  },
+  {
+    label: "Security",
+    icon: Shield,
+    href: "/dashboard/security",
+    permission: "system:security",
   },
 ];
 
