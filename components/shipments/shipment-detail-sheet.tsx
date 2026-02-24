@@ -30,7 +30,7 @@ import {
   Banknote,
   Trash2,
 } from "lucide-react";
-import { DeleteResourceDialog } from "@/components/admin/delete-resource-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useDeleteShipment } from "@/hooks/shipments/use-shipments";
 
 /**
@@ -409,12 +409,14 @@ export default function ShipmentDetailSheet({
         </div>
       </SheetContent>
 
-      <DeleteResourceDialog
+      <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
         title="Delete Shipment?"
-        description="This will permanently remove this shipment."
+        description="This will permanently remove this shipment. If it has active tracking, it may affect historical logs."
         resourceName="Shipment"
+        destructive
+        enableForce
         onConfirm={handleDelete}
         isLoading={isDeleting}
       />

@@ -1,11 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getUsers,
-  getUserByCode,
-  banUser,
-  verifyUser,
-  deleteUser,
-} from "@/api/users";
+import { getUsers, banUser, verifyUser, deleteUser } from "@/api/users";
 import { UserFilter, BanUserPayload } from "@/types/user";
 import { toast } from "react-hot-toast";
 
@@ -17,21 +11,6 @@ export const useUsers = (filters: UserFilter) => {
     queryKey: ["users", filters],
     queryFn: () => getUsers(filters),
     placeholderData: (previousData) => previousData,
-  });
-};
-
-/**
- * Hook to fetch a single user by their unique userCode.
- * Uses the search endpoint as a workaround until a dedicated
- * GET /users/:code endpoint is available.
- *
- * @param userCode - The unique user code (e.g., "MLS-U-15O8B2W6").
- */
-export const useUserByCode = (userCode: string) => {
-  return useQuery({
-    queryKey: ["user", userCode],
-    queryFn: () => getUserByCode(userCode),
-    enabled: !!userCode,
   });
 };
 

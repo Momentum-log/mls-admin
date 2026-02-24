@@ -81,7 +81,7 @@ export default function UsersPage() {
     user: User;
   } | null>(null);
 
-  const handleConfirm = () => {
+  const handleConfirm = (force: boolean) => {
     if (!confirmAction) return;
     if (confirmAction.type === "ban") {
       banUser({

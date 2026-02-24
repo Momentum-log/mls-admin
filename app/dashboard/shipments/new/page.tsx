@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useUsers, useUserByCode } from "@/hooks/users/use-users";
+import { useUsers } from "@/hooks/users/use-users";
 import { useShippingEstimates } from "@/hooks/shipping/use-shipping";
 import { useCreateProxyShipment } from "@/hooks/shipments/use-shipments";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -112,7 +112,14 @@ export default function CreateShipmentPage() {
     search: debouncedUserSearch || undefined,
   });
 
-  const { data: preselectedUser } = useUserByCode(preselectedUserCode || "");
+  const { data: preselectedUserData } = useUsers({
+    search: preselectedUserCode || "",
+    limit: 1,
+  });
+  const preselectedUser =
+    preselectedUserData?.users.find(
+      (u) => u.userCode === preselectedUserCode,
+    ) || null;
 
   const {
     mutate: getEstimates,

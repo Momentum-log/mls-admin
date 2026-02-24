@@ -158,7 +158,7 @@ export default function CarrierDetailSheet({
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = (force: boolean) => {
     if (carrier) {
       remove(carrier.id);
       setDeleteConfirmOpen(false);
@@ -393,6 +393,7 @@ export default function CarrierDetailSheet({
         confirmLabel="Delete Carrier"
         destructive
         onConfirm={handleDelete}
+        isLoading={isDeleting}
       />
     </>
   );
