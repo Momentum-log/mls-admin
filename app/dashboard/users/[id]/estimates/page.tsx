@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useUserByCode } from "@/hooks/users/use-users";
+import { useUsers } from "@/hooks/users/use-users";
 import { useUserLeads } from "@/hooks/leads/use-leads";
 import { useUserShipments } from "@/hooks/shipments/use-shipments";
 import { findShipmentForEstimate } from "@/utils/estimate-shipment-correlation";
@@ -56,7 +56,11 @@ export default function UserEstimatesPage() {
     null,
   );
 
-  const { data: user, isLoading: userLoading } = useUserByCode(userCode);
+  const { data: usersData, isLoading: userLoading } = useUsers({
+    search: userCode,
+    limit: 1,
+  });
+  const user = usersData?.users.find((u) => u.userCode === userCode) || null;
 
   const { data: responseData, isLoading } = useUserLeads({
     userId: user?.id ?? "",

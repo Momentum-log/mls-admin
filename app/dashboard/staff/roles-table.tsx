@@ -95,7 +95,7 @@ export default function RolesTable() {
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = (force: boolean) => {
     if (!deleteConfirm) return;
     deleteRole(deleteConfirm.id, {
       onSuccess: () => setDeleteConfirm(null),

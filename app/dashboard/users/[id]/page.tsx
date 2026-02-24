@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useUserByCode } from "@/hooks/users/use-users";
+import { useUsers } from "@/hooks/users/use-users";
 import { useUserShipments } from "@/hooks/shipments/use-shipments";
 import { useUserLeads } from "@/hooks/leads/use-leads";
 import { useVerifyUser } from "@/hooks/users/use-users";
@@ -89,7 +89,11 @@ export default function UserDetailPage() {
   const router = useRouter();
   const userCode = params.id as string;
 
-  const { data: user, isLoading } = useUserByCode(userCode);
+  const { data: usersData, isLoading: isUserLoading } = useUsers({
+    search: userCode,
+    limit: 1,
+  });
+  const user = usersData?.users.find((u) => u.userCode === userCode) || null;
   const { mutate: verifyUser } = useVerifyUser();
 
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
@@ -115,7 +119,7 @@ export default function UserDetailPage() {
     limit: 5,
   });
 
-  const handleVerify = () => {
+  const handleVerify = (force: boolean) => {
     if (!user) return;
     verifyUser(user.id);
     setShowVerifyDialog(false);
@@ -142,7 +146,7 @@ export default function UserDetailPage() {
     [selectedEstimate, shipments],
   );
 
-  if (isLoading) {
+  if (isUserLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -175,7 +179,7 @@ export default function UserDetailPage() {
           <Badge variant={getStatusVariant(user.status)}>{user.status}</Badge>
         </div>
         <div className="flex items-center gap-2">
-          {!user.is_verified && (
+          {user && !user.is_verified && (
             <Button
               variant="outline"
               size="sm"

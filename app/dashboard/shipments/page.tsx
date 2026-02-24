@@ -40,7 +40,6 @@ import {
 import CopyButton from "@/components/ui/copy-button";
 import ShipmentDetailSheet from "@/components/shipments/shipment-detail-sheet";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DeleteResourceDialog } from "@/components/admin/delete-resource-dialog";
 import { BulkDeleteBar } from "@/components/admin/bulk-delete-bar";
 import type { AdminShipment } from "@/types/admin-user-resources";
 import { formatDateTime } from "@/utils/format-date";
@@ -401,22 +400,26 @@ export default function ShipmentsPage() {
         linkedEstimate={linkedEstimate}
       />
 
-      <DeleteResourceDialog
+      <ConfirmDialog
         open={!!shipmentToDelete}
         onOpenChange={(open) => !open && setShipmentToDelete(null)}
         title="Delete Shipment?"
         description="This will permanently remove this shipment. Use force delete to cascade remove linked records."
         resourceName="Shipment"
+        destructive
+        enableForce
         onConfirm={handleSingleDelete}
         isLoading={isDeleting}
       />
 
-      <DeleteResourceDialog
+      <ConfirmDialog
         open={showBulkDelete}
-        onOpenChange={setShowBulkDelete}
+        onOpenChange={(open) => setShowBulkDelete(open)}
         title={`Delete ${selectedIds.length} Shipments?`}
-        description={`This will permanently remove ${selectedIds.length} selected shipments.`}
+        description={`This will permanently remove ${selectedIds.length} selected shipments. Advanced deletion will bypass safety checks.`}
         resourceName="Shipments"
+        destructive
+        enableForce
         onConfirm={handleBulkDelete}
         isLoading={isBulkDeleting}
       />
