@@ -5,6 +5,19 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [1.2.0] - 2026-02-24 - Dynamic Carrier Management & Health Monitoring
+
+- **Added**: **Programmable Carrier Slugs**: Migrated from static `.env` (`ACTIVE_CARRIERS`) to database-driven adapter routing.
+- **Added**: **Custom Slug Creation**: Administrators can now create new lowercased slugs directly from the UI for future integrations.
+- **Added**: **Carrier Name Validation**: Custom slugs must now include the carrier's name to ensure descriptive and unique identifiers.
+- **Added**: **Slug Selector**: Integrated a unified dropdown in carrier configuration for FedEx, DHL, and InPost adapters, with a fallback for custom entries.
+- **Added**: **System Health Monitoring**: New real-time warning banners on the Carriers page for inactive or misconfigured shipping providers.
+- **Added**: **Validation Logic**: Enforced slug selection for all carrier creations and updates to ensure integration reliability.
+- **Changed**: Enhanced the Carriers table with a "Programmatic Slug" column for immediate visibility.
+- **Changed**: Improved **Custom Slug Normalization**: Slugs are automatically lowercased and kebab-cased in real-time.
+- **Changed**: Updated **Comprehensive Admin Guide** with instructions for dynamic carrier configuration and slug mapping.
+- **Fixed**: **Custom Slug Input Bug**: Refactored state management with an explicit `isCustom` flag to prevent the input field from vanishing when cleared.
+
 ### [1.1.0] - 2026-02-24 - Admin Profile & Dynamic Documentation System
 
 - **Added**: Integrated **Admin Profile & Help Drawer** for quick access to personal details and system guides.

@@ -20,6 +20,8 @@ export interface Commission {
 export interface Carrier {
   id: string;
   name: string;
+  /** Programmatic slug for backend adapter routing (e.g. "fedex") */
+  slug: string;
   baseUrl?: string;
   /** Masked API key (e.g. "sk_live_...4321") */
   apiKey?: string;
@@ -40,6 +42,7 @@ export interface Carrier {
 /** Payload for creating a new carrier. */
 export interface CreateCarrierPayload {
   name: string;
+  slug: string;
   baseUrl?: string;
   apiKey?: string;
   apiSecret?: string;
@@ -49,6 +52,7 @@ export interface CreateCarrierPayload {
 /** Payload for updating a carrier profile. */
 export interface UpdateCarrierPayload {
   name?: string;
+  slug?: string;
   baseUrl?: string;
   apiKey?: string;
   apiSecret?: string;

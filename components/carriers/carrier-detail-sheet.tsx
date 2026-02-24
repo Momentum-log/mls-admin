@@ -11,8 +11,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Globe } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CARRIER_SLUGS } from "@/api/carriers/constants";
 import CommissionEditor from "./commission-editor";
 import {
   Carrier,
@@ -57,10 +65,12 @@ export default function CarrierDetailSheet({
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCustomSlug, setIsCustomSlug] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<Partial<CreateCarrierPayload>>({
     name: "",
+    slug: "",
     baseUrl: "",
     apiKey: "",
     apiSecret: "",
@@ -75,11 +85,15 @@ export default function CarrierDetailSheet({
     if (carrier) {
       setFormData({
         name: carrier.name,
+        slug: carrier.slug || "",
         baseUrl: carrier.baseUrl || "",
         apiKey: "", // Don't pre-fill sensitive data (it's masked anyway)
         apiSecret: "",
         isActive: carrier.isActive,
       });
+      setIsCustomSlug(
+        !!carrier.slug && !CARRIER_SLUGS.some((s) => s.id === carrier.slug),
+      );
       setCommissions({
         local: carrier.localCommission || { type: "PERCENT", value: 0 },
         export: carrier.exportCommission || { type: "PERCENT", value: 0 },
@@ -92,11 +106,13 @@ export default function CarrierDetailSheet({
     } else {
       setFormData({
         name: "",
+        slug: "",
         baseUrl: "",
         apiKey: "",
         apiSecret: "",
         isActive: true,
       });
+      setIsCustomSlug(false);
       setCommissions(defaultCommissions);
     }
   }, [carrier, open]);
@@ -109,6 +125,7 @@ export default function CarrierDetailSheet({
       if (isEditMode && carrier) {
         const payload: UpdateCarrierPayload = {
           name: formData.name,
+          slug: formData.slug,
           baseUrl: formData.baseUrl || undefined,
           isActive: formData.isActive,
         };
@@ -121,6 +138,7 @@ export default function CarrierDetailSheet({
       } else {
         const payload: CreateCarrierPayload = {
           name: formData.name as string,
+          slug: formData.slug as string,
           baseUrl: formData.baseUrl || undefined,
           apiKey: formData.apiKey || undefined,
           apiSecret: formData.apiSecret || undefined,
@@ -188,6 +206,84 @@ export default function CarrierDetailSheet({
                       setFormData({ ...formData, name: e.target.value })
                     }
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="slug">Programmatic Slug *</Label>
+                  <Select
+                    value={
+                      isCustomSlug
+                        ? "other"
+                        : CARRIER_SLUGS.some((s) => s.id === formData.slug)
+                          ? formData.slug
+                          : ""
+                    }
+                    onValueChange={(value) => {
+                      if (value === "other") {
+                        setIsCustomSlug(true);
+                        setFormData({ ...formData, slug: "" });
+                      } else {
+                        setIsCustomSlug(false);
+                        setFormData({ ...formData, slug: value });
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="slug">
+                      <SelectValue placeholder="Select a carrier adapter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CARRIER_SLUGS.map((slug) => (
+                        <SelectItem key={slug.id} value={slug.id}>
+                          {slug.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem
+                        value="other"
+                        className="text-brand-blue font-medium"
+                      >
+                        Other / Custom...
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {isCustomSlug && (
+                    <div className="pt-2 animate-in fade-in slide-in-from-top-1">
+                      <Label
+                        htmlFor="custom-slug"
+                        className="text-xs text-muted-foreground uppercase font-semibold"
+                      >
+                        Custom Slug Name
+                      </Label>
+                      <Input
+                        id="custom-slug"
+                        placeholder="e.g. ups, dpd"
+                        className="mt-1"
+                        value={formData.slug}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            slug: e.target.value
+                              .toLowerCase()
+                              .replace(/\s+/g, "-"),
+                          })
+                        }
+                      />
+                      {formData.slug &&
+                        formData.name &&
+                        !formData.slug.includes(
+                          formData.name.toLowerCase().replace(/\s+/g, "-"),
+                        ) && (
+                          <p className="text-[0.8rem] text-destructive mt-1">
+                            Slug must include the carrier name (
+                            {formData.name.toLowerCase().replace(/\s+/g, "-")})
+                          </p>
+                        )}
+                    </div>
+                  )}
+
+                  <p className="text-[0.8rem] text-muted-foreground">
+                    Crucial: This maps the carrier to its backend integration
+                    adapter.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -270,7 +366,15 @@ export default function CarrierDetailSheet({
               )}
               <Button
                 type="submit"
-                disabled={isLoading || !formData.name}
+                disabled={
+                  isLoading ||
+                  !formData.name ||
+                  !formData.slug ||
+                  (isCustomSlug &&
+                    !formData.slug.includes(
+                      formData.name.toLowerCase().replace(/\s+/g, "-"),
+                    ))
+                }
                 className="w-full sm:w-auto min-w-[130px]"
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

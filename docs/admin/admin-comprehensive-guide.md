@@ -42,6 +42,8 @@ _Permissions required to view this section: `shipment:read` or `shipment:write`_
 The **Carriers** section dictates how the system interfaces with delivery partners (e.g., FedEx, DHL).
 
 - **Carrier Configurations**: View API integrations, tracking settings, and base URL configurations.
+- **Programmatic Slugs**: Each carrier must be mapped to a backend adapter via a **Slug** (e.g., `fedex`, `dhl`). You can select from standard adapters or choose **"Other / Custom..."** to enter a new, lowercase programmatic key for new integrations.
+- **System Health Warnings**: If no active carriers are configured with a valid slug, or if any carrier is missing its slug assignment, the system will display a warning banner at the top of the Carriers page.
 - **Commissions & Rates**: Configure the percentage commission MLS charges on top of base carrier rates. To adjust commissions, simply enter the whole number (e.g., `10` for 10%) and save changes.
 
 _Permissions required to view this section: `carrier:read` or `carrier:write`_

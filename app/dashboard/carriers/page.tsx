@@ -45,6 +45,10 @@ export default function CarriersPage() {
     setIsSheetOpen(true);
   };
 
+  const hasActiveCarriers = carriers?.some((c) => c.isActive && c.slug);
+  const carriersWithoutSlug = carriers?.filter((c) => !c.slug);
+  const hasConfigErrors = (carriersWithoutSlug?.length ?? 0) > 0;
+
   if (isError) {
     return (
       <div className="space-y-6">
@@ -88,11 +92,34 @@ export default function CarriersPage() {
         </Button>
       </div>
 
+      {!isLoading && !hasActiveCarriers && carriers?.length! > 0 && (
+        <div className="rounded-md border border-amber-500/50 bg-amber-50 p-4 text-amber-800 flex items-center gap-3">
+          <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+          <p className="text-sm font-medium">
+            <span className="font-bold">System Warning:</span> No active
+            shipping carriers are configured with a valid slug. Users will not
+            be able to get shipping estimates.
+          </p>
+        </div>
+      )}
+
+      {!isLoading && hasConfigErrors && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-4 text-destructive flex items-center gap-3">
+          <div className="h-2 w-2 rounded-full bg-destructive animate-pulse shrink-0" />
+          <p className="text-sm font-medium">
+            <span className="font-bold">Configuration Error:</span>{" "}
+            {carriersWithoutSlug?.length} carrier(s) are missing a programmatic
+            slug. Please configure them to enable integrations.
+          </p>
+        </div>
+      )}
+
       <div className="rounded-md border bg-white">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Carrier Name</TableHead>
+              <TableHead>Programmatic Slug</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Base URL</TableHead>
               <TableHead>API Key (Masked)</TableHead>
@@ -103,7 +130,7 @@ export default function CarriersPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   <div className="flex justify-center items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     Loading carriers...
@@ -112,7 +139,7 @@ export default function CarriersPage() {
               </TableRow>
             ) : carriers?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center">
+                <TableCell colSpan={7} className="h-32 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Truck className="h-8 w-8 opacity-20" />
                     <p>No carriers configured yet.</p>
@@ -131,6 +158,17 @@ export default function CarriersPage() {
                 >
                   <TableCell className="font-bold text-base">
                     {carrier.name}
+                  </TableCell>
+                  <TableCell>
+                    {carrier.slug ? (
+                      <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
+                        {carrier.slug}
+                      </code>
+                    ) : (
+                      <span className="text-destructive text-xs font-medium italic">
+                        Missing Slug
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge
