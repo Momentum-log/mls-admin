@@ -16,6 +16,9 @@ import { Menu, LogOut, Shield } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AdminSidebar } from "./admin-sidebar";
 
+import { AdminProfileDrawer } from "./admin-profile/AdminProfileDrawer";
+import { HelpCircle } from "lucide-react";
+
 /**
  * Admin topbar with mobile sidebar toggle and user profile dropdown.
  * Displays the logged-in admin's initials, name, email, role, and a red logout button.
@@ -53,7 +56,7 @@ export function AdminTopbar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-              <Avatar className="h-9 w-9">
+              <Avatar className="h-9 w-9 border-2 border-transparent hover:border-brand-blue/20 transition-all">
                 <AvatarImage src={user?.avatarUrl} alt={user?.name} />
                 <AvatarFallback className="bg-brand-blue text-white text-sm font-semibold">
                   {getInitials(user?.name)}
@@ -79,6 +82,19 @@ export function AdminTopbar() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+
+            <AdminProfileDrawer>
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                className="cursor-pointer font-medium text-brand-blue focus:text-brand-blue focus:bg-brand-blue/5"
+              >
+                <HelpCircle className="mr-2 h-4 w-4" />
+                Help & System Guide
+              </DropdownMenuItem>
+            </AdminProfileDrawer>
+
+            <DropdownMenuSeparator />
+
             <DropdownMenuItem
               onClick={() => logout()}
               className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"

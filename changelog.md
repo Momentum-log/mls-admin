@@ -5,6 +5,15 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [1.1.0] - 2026-02-24 - Admin Profile & Dynamic Documentation System
+
+- **Added**: Integrated **Admin Profile & Help Drawer** for quick access to personal details and system guides.
+- **Added**: **Dynamic Documentation Viewer** (`DocsViewer`) providing contextual, permission-aware tutorials.
+- **Added**: **RBAC-Driven Visibility**: Documentation sections (Shipments, Users, Staff, etc.) automatically hide if the user lacks the required system permissions.
+- **Added**: **Comprehensive Admin Guide**: In-depth tutorials for Dashboard modules, plus step-by-step instructions for Role creation and Staff management.
+- **Added**: New UI component: `Accordion` (based on Radix UI) for a structured documentation experience.
+- **Changed**: Updated `AdminTopbar` with a "Help & System Guide" trigger in the profile dropdown.
+
 ### [1.0.0] - 2026-02-23 - Staff Role Management & Permissions UI (RBAC)
 
 - **Added**: Comprehensive Role-Based Access Control (RBAC) Management UI.
