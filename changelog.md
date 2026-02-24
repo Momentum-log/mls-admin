@@ -5,6 +5,14 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [1.2.1] - 2026-02-24 - Code Quality & Component Consolidation
+
+- **Changed**: **Unified Confirmation System**: Merged `DeleteResourceDialog` into an enhanced `ConfirmDialog`. The new unified component now supports loading states, optional "Force Delete" toggles, and resource-specific warnings.
+- **Changed**: **Refactored Deletion Flow**: Standardized deletion confirmations across Carriers, Roles, Users, and Shipments to use the enhanced `ConfirmDialog`.
+- **Changed**: **Simplified User Data Fetching**: Removed redundant `getUserByCode` API and `useUserByCode` hook. The User Detail page now leverages the generic `useUsers` list hook with specific search filters for better code reuse and consistency.
+- **Removed**: `components/admin/delete-resource-dialog.tsx` (consolidated into `ConfirmDialog`).
+- **Improved**: Logic in `ConfirmDialog` to prevent accidental double-submits by disabling form controls and adding a loader during asynchronous operations.
+
 ### [1.2.0] - 2026-02-24 - Dynamic Carrier Management & Health Monitoring
 
 - **Added**: **Programmable Carrier Slugs**: Migrated from static `.env` (`ACTIVE_CARRIERS`) to database-driven adapter routing.
