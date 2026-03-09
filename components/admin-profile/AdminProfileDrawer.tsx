@@ -15,6 +15,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Shield, Mail, User, HelpCircle } from "lucide-react";
 import { DocsViewer } from "./DocsViewer";
 import { ReactNode } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProfileDetails } from "./ProfileDetails";
+import { PasswordChange } from "./PasswordChange";
+import { ActivityLogs } from "./ActivityLogs";
 
 interface AdminProfileDrawerProps {
   children: ReactNode;
@@ -80,12 +84,47 @@ export function AdminProfileDrawer({ children }: AdminProfileDrawerProps) {
         </SheetHeader>
 
         <ScrollArea className="flex-1 px-6 py-8">
-          <div className="space-y-8 pb-10">
-            {/* Quick Stats or Additional Info could go here if needed */}
+          <Tabs defaultValue="profile" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-xl">
+              <TabsTrigger
+                value="profile"
+                className="rounded-lg text-xs font-medium"
+              >
+                Profile
+              </TabsTrigger>
+              <TabsTrigger
+                value="security"
+                className="rounded-lg text-xs font-medium"
+              >
+                Security
+              </TabsTrigger>
+              <TabsTrigger
+                value="activity"
+                className="rounded-lg text-xs font-medium"
+              >
+                Activity
+              </TabsTrigger>
+            </TabsList>
 
-            <section>
-              <DocsViewer />
-            </section>
+            <TabsContent value="profile" className="mt-0 outline-none">
+              <ProfileDetails />
+            </TabsContent>
+
+            <TabsContent value="security" className="mt-0 outline-none">
+              <PasswordChange />
+            </TabsContent>
+
+            <TabsContent value="activity" className="mt-0 outline-none">
+              <ActivityLogs />
+            </TabsContent>
+          </Tabs>
+
+          <div className="mt-12 mb-4">
+            <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
+              <HelpCircle className="h-4 w-4 text-brand-blue" />
+              System Documentation
+            </h4>
+            <DocsViewer />
           </div>
         </ScrollArea>
 

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { CARRIER_SLUGS } from "@/api/carriers/constants";
 import CommissionEditor from "./commission-editor";
+import ThresholdEditor from "./threshold-editor";
 import {
   Carrier,
   CreateCarrierPayload,
@@ -34,6 +35,11 @@ import {
   useDeleteCarrier,
   useUpdateCommissions,
 } from "@/hooks/carriers/use-carriers";
+import {
+  useCarrierCommissionSettings,
+  useUpdateCarrierCommissionSettings,
+} from "@/hooks/settings/use-settings";
+import { CarrierCommissionSettings } from "@/types/settings";
 
 interface CarrierDetailSheetProps {
   open: boolean;
@@ -46,6 +52,34 @@ const defaultCommissions: UpdateCommissionsPayload = {
   export: { type: "PERCENT", value: 0 },
   import: { type: "PERCENT", value: 0 },
   international: { type: "PERCENT", value: 0 },
+};
+
+const defaultSettings: Partial<CarrierCommissionSettings> = {
+  minRateThresholdPln: null,
+  minFlatCommissionPln: null,
+  isEurManual: false,
+  minRateThresholdEur: null,
+  minFlatCommissionEur: null,
+  localMinRatePln: null,
+  localMinFlatPln: null,
+  isLocalEurManual: false,
+  localMinRateEur: null,
+  localMinFlatEur: null,
+  exportMinRatePln: null,
+  exportMinFlatPln: null,
+  isExportEurManual: false,
+  exportMinRateEur: null,
+  exportMinFlatEur: null,
+  importMinRatePln: null,
+  importMinFlatPln: null,
+  isImportEurManual: false,
+  importMinRateEur: null,
+  importMinFlatEur: null,
+  internationalMinRatePln: null,
+  internationalMinFlatPln: null,
+  isInternationalEurManual: false,
+  internationalMinRateEur: null,
+  internationalMinFlatEur: null,
 };
 
 export default function CarrierDetailSheet({
@@ -61,7 +95,12 @@ export default function CarrierDetailSheet({
     useUpdateCarrier();
   const { mutateAsync: updateCommsAsync, isPending: isUpdatingComms } =
     useUpdateCommissions();
+  const { mutateAsync: updateSettingsAsync, isPending: isUpdatingSettings } =
+    useUpdateCarrierCommissionSettings();
   const { mutate: remove, isPending: isDeleting } = useDeleteCarrier();
+
+  const { data: serverSettings, isLoading: isFetchingSettings } =
+    useCarrierCommissionSettings(isEditMode ? carrier.id : null);
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,6 +119,9 @@ export default function CarrierDetailSheet({
   const [commissions, setCommissions] =
     useState<UpdateCommissionsPayload>(defaultCommissions);
 
+  const [settings, setSettings] =
+    useState<Partial<CarrierCommissionSettings>>(defaultSettings);
+
   // Load carrier data when opening in edit mode
   useEffect(() => {
     if (carrier) {
@@ -87,7 +129,7 @@ export default function CarrierDetailSheet({
         name: carrier.name,
         slug: carrier.slug || "",
         baseUrl: carrier.baseUrl || "",
-        apiKey: "", // Don't pre-fill sensitive data (it's masked anyway)
+        apiKey: "",
         apiSecret: "",
         isActive: carrier.isActive,
       });
@@ -103,6 +145,9 @@ export default function CarrierDetailSheet({
           value: 0,
         },
       });
+      if (serverSettings) {
+        setSettings(serverSettings as Partial<CarrierCommissionSettings>);
+      }
     } else {
       setFormData({
         name: "",
@@ -114,8 +159,9 @@ export default function CarrierDetailSheet({
       });
       setIsCustomSlug(false);
       setCommissions(defaultCommissions);
+      setSettings(defaultSettings);
     }
-  }, [carrier, open]);
+  }, [carrier, open, serverSettings]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,6 +181,7 @@ export default function CarrierDetailSheet({
 
         await updateAsync({ id: carrier.id, data: payload });
         await updateCommsAsync({ id: carrier.id, data: commissions });
+        await updateSettingsAsync({ carrierId: carrier.id, payload: settings });
       } else {
         const payload: CreateCarrierPayload = {
           name: formData.name as string,
@@ -148,6 +195,10 @@ export default function CarrierDetailSheet({
         const newCarrier = await createAsync(payload);
         if (newCarrier?.id) {
           await updateCommsAsync({ id: newCarrier.id, data: commissions });
+          await updateSettingsAsync({
+            carrierId: newCarrier.id,
+            payload: settings,
+          });
         }
       }
       onOpenChange(false);
@@ -167,7 +218,12 @@ export default function CarrierDetailSheet({
   };
 
   const isLoading =
-    isCreating || isUpdating || isDeleting || isUpdatingComms || isSubmitting;
+    isCreating ||
+    isUpdating ||
+    isDeleting ||
+    isUpdatingComms ||
+    isUpdatingSettings ||
+    isSubmitting;
 
   return (
     <>
@@ -349,6 +405,10 @@ export default function CarrierDetailSheet({
                   commissions={commissions}
                   onChange={setCommissions}
                 />
+
+                <hr className="my-8 border-t border-border/40" />
+
+                <ThresholdEditor settings={settings} onChange={setSettings} />
               </TabsContent>
             </Tabs>
 
