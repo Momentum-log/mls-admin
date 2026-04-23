@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 
 const routePermissions: Record<string, string> = {
   "/dashboard/users": "user:read",
+  "/dashboard/address-requests": "user:read",
   "/dashboard/staff": "staff:read",
   "/dashboard/shipments": "shipment:read",
   "/dashboard/leads": "leads:read",
