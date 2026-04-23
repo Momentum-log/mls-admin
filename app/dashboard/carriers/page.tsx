@@ -30,10 +30,14 @@ import CarrierDetailSheet from "@/components/carriers/carrier-detail-sheet";
 import { Carrier } from "@/types/carriers";
 import { formatDateTime } from "@/utils/format-date";
 
+import GlobalCommissionSheet from "@/components/carriers/global-commission-sheet";
+import { ShieldAlert } from "lucide-react";
+
 export default function CarriersPage() {
   const { data: carriers, isLoading, isError, error } = useCarriers();
   const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isGlobalSheetOpen, setIsGlobalSheetOpen] = useState(false);
 
   const handleCreate = () => {
     setSelectedCarrier(null);
@@ -83,13 +87,23 @@ export default function CarriersPage() {
             Manage shipping providers and commission rules.
           </p>
         </div>
-        <Button
-          onClick={handleCreate}
-          className="bg-brand-blue hover:bg-brand-blue/90"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Carrier
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setIsGlobalSheetOpen(true)}
+            className="hidden sm:flex"
+          >
+            <ShieldAlert className="mr-2 h-4 w-4 text-brand-blue" />
+            Global Safety Net
+          </Button>
+          <Button
+            onClick={handleCreate}
+            className="bg-brand-blue hover:bg-brand-blue/90"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Carrier
+          </Button>
+        </div>
       </div>
 
       {!isLoading && !hasActiveCarriers && carriers?.length! > 0 && (
@@ -220,6 +234,10 @@ export default function CarriersPage() {
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         carrier={selectedCarrier}
+      />
+      <GlobalCommissionSheet
+        open={isGlobalSheetOpen}
+        onOpenChange={setIsGlobalSheetOpen}
       />
     </div>
   );

@@ -34,6 +34,15 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Globally rewrite the error.message to use the server's descriptive message
+    if (error.response?.data) {
+      const data = error.response.data;
+      const serverMessage = data.details || data.message || data.error;
+      if (serverMessage && typeof serverMessage === "string") {
+        error.message = serverMessage;
+      }
+    }
+
     if (error.response?.status === 401) {
       if (
         typeof window !== "undefined" &&

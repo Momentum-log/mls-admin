@@ -153,7 +153,7 @@ export default function DashboardPage() {
           <motion.div key={card.title} variants={item}>
             <Card
               className={cn(
-                "overflow-hidden transition-all duration-300 relative min-h-[140px] flex flex-col justify-between group",
+                "overflow-hidden transition-all duration-300 relative min-h-35 flex flex-col justify-between group",
                 card.isPremium
                   ? `${card.color} ${card.textColor} border-none shadow-xl hover:scale-[1.02] z-10`
                   : "bg-white shadow-sm hover:shadow-md border-border hover:border-brand-blue/30",
@@ -398,7 +398,7 @@ export default function DashboardPage() {
                               : lead.email || "Guest User"}
                           </p>
                           <div className="flex items-center gap-1 mt-0.5">
-                            <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1 rounded truncate max-w-[120px]">
+                            <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1 rounded truncate max-w-30">
                               {lead.user
                                 ? lead.user.userCode
                                 : lead.email ||

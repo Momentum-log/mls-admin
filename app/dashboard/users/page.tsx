@@ -115,7 +115,7 @@ export default function UsersPage() {
           className="max-w-sm"
         />
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-45">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -131,7 +131,7 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[300px]">Name</TableHead>
+              <TableHead className="w-75">Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>User Code</TableHead>
               <TableHead>Joined</TableHead>
@@ -278,7 +278,7 @@ export default function UsersPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-17.5">
                 <SelectValue placeholder={limit.toString()} />
               </SelectTrigger>
               <SelectContent>
