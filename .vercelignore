@@ -1,0 +1,8 @@
+node_modules
+.next/cache
+.env.local
+.env
+*.md
+changelog.md
+docs
+public/*.svg
