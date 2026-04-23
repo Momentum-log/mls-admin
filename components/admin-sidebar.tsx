@@ -12,6 +12,7 @@ import {
   Truck,
   Lock,
   Shield,
+  MapPin,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -39,6 +40,12 @@ const routes = [
     icon: Package,
     href: "/dashboard/shipments",
     permission: "shipment:read",
+  },
+  {
+    label: "Address Requests",
+    icon: MapPin,
+    href: "/dashboard/address-requests",
+    permission: "user:read",
   },
   {
     label: "Marketing Leads",

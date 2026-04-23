@@ -17,7 +17,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AdminSidebar } from "./admin-sidebar";
 
 import { AdminProfileDrawer } from "./admin-profile/AdminProfileDrawer";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, User } from "lucide-react";
 
 /**
  * Admin topbar with mobile sidebar toggle and user profile dropdown.
@@ -86,10 +86,10 @@ export function AdminTopbar() {
             <AdminProfileDrawer>
               <DropdownMenuItem
                 onSelect={(e) => e.preventDefault()}
-                className="cursor-pointer font-medium text-brand-blue focus:text-brand-blue focus:bg-brand-blue/5"
+                className="cursor-pointer font-medium focus:bg-brand-blue/5"
               >
-                <HelpCircle className="mr-2 h-4 w-4" />
-                Help & System Guide
+                <User className="mr-2 h-4 w-4" />
+                My Profile
               </DropdownMenuItem>
             </AdminProfileDrawer>
 

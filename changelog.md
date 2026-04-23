@@ -5,6 +5,17 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [1.3.0] - 2026-03-09 - Add Commission Thresholds and Admin Profile
+
+- Added: Global commission safety net thresholds (PLN and EUR with manual override options).
+- Added: Carrier-level fallback commission thresholds.
+- Added: Route-specific commission threshold safety nets (Local, Export, Import, International).
+- Added: User profile side drawer for quick profile access.
+- Added: Ability for admins to update their passwords from the profile drawer.
+- Added: Activity logger display inside the profile drawer with collapsible JSON details viewer.
+- Changed: Updated global Axios response interceptor to map backend JSON error messages (`.details`, `.error`) directly to UI toast notifications.
+- Fixed: Resolved invalid date formatting crash in Activity Logs and improved time display to be fully explicit.
+
 ### [1.2.2] - 2026-02-24 - Super Admin Password Rotation & Security Overhaul
 
 - **Added**: **Manual Password Rotation**: Super Admins can now manually trigger a full 16-character password rotate using their **Weekly Reset Key**.
