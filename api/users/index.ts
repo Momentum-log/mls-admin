@@ -1,9 +1,8 @@
 import apiClient from "../index";
 import {
-  User,
   UserListResponse,
   UserFilter,
-  BanUserPayload,
+  UpdateUserStatusPayload,
 } from "@/types/user";
 
 /**
@@ -12,25 +11,34 @@ import {
 export const getUsers = async (
   params: UserFilter,
 ): Promise<UserListResponse> => {
-  const response = await apiClient.get<UserListResponse>("/users", { params });
+  const response = await apiClient.get<UserListResponse>("/admin/users", {
+    params,
+  });
   return response.data;
 };
 
 /**
- * Updates a user's status (ban/flag/warn).
+ * Updates a user's moderation status.
+ *
+ * Handles the whole range the server accepts — active, flagged, warned and
+ * banned, with a full or partial ban — so restoring an account is the same
+ * call as banning one.
+ *
+ * @param userId - The user to update.
+ * @param data - Target status, plus ban type when banning.
  */
-export const banUser = async (
+export const updateUserStatus = async (
   userId: string,
-  data: BanUserPayload,
+  data: UpdateUserStatusPayload,
 ): Promise<void> => {
-  await apiClient.put(`/users/${userId}/status`, data);
+  await apiClient.put(`/admin/users/${userId}/status`, data);
 };
 
 /**
  * Manually verifies a user's identity.
  */
 export const verifyUser = async (userId: string): Promise<void> => {
-  await apiClient.post(`/users/${userId}/verify`);
+  await apiClient.post(`/admin/users/${userId}/verify`);
 };
 
 /**
@@ -39,7 +47,7 @@ export const verifyUser = async (userId: string): Promise<void> => {
  * @param userId - The UUID of the user to delete.
  */
 export const deleteUser = async (userId: string): Promise<void> => {
-  await apiClient.delete(`/users/${userId}`);
+  await apiClient.delete(`/admin/users/${userId}`);
 };
 
 /**

@@ -5,6 +5,57 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [1.6.0] - 2026-08-11 - Permission Enforcement & Reversible Moderation
+
+- **Added**: `<Can>` — one wrapper for gating any control on permissions, with hide and disable modes. Disable is the default choice for destructive actions: staff see the capability exists and can ask for access, rather than concluding the feature is missing.
+- **Changed**: `usePermissions` now mirrors the server's `RbacService` exactly — granting on the `*` wildcard, an exact match, or a `<resource>:*` wildcard. Previously only exact matches were understood, so a role holding `shipment:*` would have been shown nothing.
+- **Fixed**: **Super Admin was identified by role name.** Renaming the role would have revoked super-admin access and simultaneously unlocked the staff rows that the same comparison protected. Identity now comes from the `*` wildcard, with the name kept only as a fallback for a session whose permissions failed to load.
+- **Fixed**: **Permissions are parsed defensively.** `Role.permissions` is a `Json` column, so nothing guarantees its shape. A role stored as a stringified array would have made `.includes()` do substring matching and silently grant permissions never assigned.
+- **Fixed**: **Two routes were guarded too permissively.** The server chains two `requirePermission` calls on shipments (`user:read` + `shipment:read`) and leads (`user:read` + `leads:read`); the guard checked only one, letting an admin open a page whose every request then 403s. Guard entries now accept multiple permissions.
+- **Fixed**: Route matching picks the longest match rather than the first, so the new `/dashboard` root guard cannot shadow more specific entries depending on key order.
+- **Fixed**: `/dashboard/settings` is gated on `staff:write` — the server gates even the GET on a write permission — and the dead `email:read` entry pointing at it was removed.
+- **Added**: **Un-ban.** Banning was irreversible from the UI: `BanUserPayload` was typed to the literal `"BANNED"`, so no shape could express restoring an account. The payload now covers the server's full range, and a banned user gets a Restore Access action that clears the ban type alongside the status.
+- **Added**: The `inquiries:read` / `inquiries:write` group, absent from the permission catalog.
+
+### [1.5.0] - 2026-08-10 - Hub Routing & Multi-Leg Operations
+
+Hub routing can now be enabled safely. Before this, turning it on would have
+stranded every hub-routed parcel at the sorting centre, because nothing in the
+dashboard could confirm arrival.
+
+- **Added**: **Hub & Routing page** (`/dashboard/hub`). Master routing switch, compete-best-price switch, and full sorting-centre CRUD. The current mode is rendered from the server's own `routingMode` sentence rather than re-derived, so the two cannot drift.
+- **Added**: **Honest no-op reporting on both toggles.** Enabling hub routing with no centre configured, or flipping compete while routing is off, are accepted by the API but change nothing. Both responses carry `effective` and a `warning`; the UI raises the warning and snaps the switch back instead of showing a success it did not earn.
+- **Added**: **Environment-fallback banner.** When the active hub resolves from deploy-time configuration rather than the database, the page says so — activating any centre replaces it.
+- **Added**: **Multi-Leg Ops queue** (`/dashboard/multi-leg`). Lists hub-routed shipments waiting on a person, oldest first. Confirm hub arrival and create leg 2, both driven by the server's `canConfirmArrival`/`canCreateLegTwo` flags so the state rules live in one place.
+- **Added**: **Leg-2 re-pricing decision.** When leg 2's live rate exceeds the quoted price by more than 10% the server refuses with a 409 carrying both figures. That is a decision, not a failure: the dialog shows what the customer paid, what it costs now, and the shortfall MLS absorbs, and proceeding is explicit.
+- **Added**: **Centre-printed label warning.** Leg 2's label is flagged as never to be sent to the customer — they already hold leg 1's, and a parcel with two barcodes fails physically.
+- **Added**: Central shipment status model (`lib/shipment-status.ts`). The enum grew from 7 to 15 values; the override modal offered only 7, so no fulfillment or multi-leg state could be set by hand. Multi-leg states are hidden for single-leg shipments to avoid stranding them in a state the ops queue filters out.
+- **Added**: Status filter on the shipments list — the API has always supported it and the type declared it, but no control ever set it.
+- **Added**: `api/_shared/envelope.ts` — normalises the API's four response envelopes and two pagination styles behind one shape.
+- **Fixed**: Carrier credentials no longer reach the client. The multi-leg detail endpoint spreads the full carrier row including `apiKey`/`apiSecret`; the API layer strips them before they can land in component state.
+- **Fixed**: Three divergent copies of `getPaymentVariant`, none of which knew about `REFUNDED`, consolidated into one.
+- **Changed**: Sidebar grouped into Operations / Growth / Configuration / System. Ten flat entries had stopped being scannable, and more are coming. Locked entries stay visible with a tooltip naming the permission they need, so staff can ask for access rather than assume a feature is missing.
+- **Fixed**: The Security entry guarded on `system:security`, a permission absent from the server's catalog. It could never be granted, so it always evaluated false — correct behaviour by accident. Now an explicit Super Admin flag.
+
+### [1.4.0] - 2026-08-09 - API Path Realignment & Broken Flow Repairs
+
+**Breaking (deployment):** `NEXT_PUBLIC_API_URL` must now be `https://<host>/api`,
+not `.../api/admin`. Every admin path carries its own `/admin` prefix.
+
+- **Fixed**: **API paths were half-prefixed.** Some calls included `/admin` and most did not, so one set was always wrong. All 40+ paths now resolve consistently against a single base. Bulk delete, force delete and cascade delete were among those returning 404.
+- **Fixed**: **Two pages crashed on load.** `users/[id]/shipments` and `users/[id]/estimates` called `useMemo` after early returns, throwing "Rendered more hooks than during the previous render" the moment the user query resolved. Both hooks hoisted above the guards.
+- **Fixed**: **"Create & Bypass Payment" never bypassed anything.** The handler ignored its own `bypass` argument, so the shipment was created and left unpaid behind a success toast. It now chains the bypass call and collects the required payment reference instead of confirming blindly.
+- **Fixed**: **Create Shipment wizard could not fetch rates.** It posted to `/shipping/estimates`, which does not exist. Repointed at `/shipments/get-shipping-quote`, and the request now sends the canonical address shape (`streetLines[]`, `stateOrProvinceCode`) and a `packages` array rather than a flat address and a singular `package`.
+- **Fixed**: **EUR rates booked as PLN.** The proxy payload omitted `currency`, which the server defaults to PLN while calculating commission — roughly a 4x undercharge on EUR routes. It now sends `currency`, `actualPrice`, `carrierSlug` (not a display name) and `estimateId`.
+- **Fixed**: **Rate list rendered blank prices.** `ShippingRate` declared `price`/`estimatedDays`; the API returns `carrierPrice`/`actualPrice`/`deliveryDescription`. Types corrected and carrier errors are now surfaced.
+- **Fixed**: **Session cookie outlived its token 168x.** Admin tokens expire after one hour; the cookie was set for seven days, so the middleware admitted admins to a dead session that 401'd on every request. Cookie lifetime now matches the token, with `sameSite=strict` and `secure` over HTTPS.
+- **Fixed**: **ESLint could not run at all.** `zod` was pinned at `3.24.1`, below the `^3.25.0 || ^4.0.0` range `eslint-plugin-react-hooks@7` requires via `zod-validation-error`. Bumped to `^3.25.76`, which ships the `zod/v4` subpaths while keeping the v3 classic API `@hookform/resolvers@3` depends on. This is why the hooks-order crashes shipped unnoticed.
+- **Fixed**: Pagination on the user sub-pages advanced past the last page — it inferred "has more" from row count instead of `pagination.totalPages`.
+- **Added**: `lib/api-error.ts` and `types/api.ts` — one place to read the API's `{ error, code, details }` envelope, including structured `details` objects. Replaces 28 hand-rolled `catch (error: any)` chains.
+- **Added**: `residential` toggle on wizard addresses. Carriers price residential delivery differently and the field is required by the schema.
+- **Removed**: The admin logout API call. No `/admin/auth/logout` route exists — the 404 was invisible because the mutation used `onSettled`. Session teardown is client-side, which is all a stateless token allows.
+- **Changed**: Reconciled version drift — `package.json`, the changelog and the profile drawer footer had disagreed since 0.5.1.
+
 ### [1.3.0] - 2026-03-09 - Add Commission Thresholds and Admin Profile
 
 - Added: Global commission safety net thresholds (PLN and EUR with manual override options).

@@ -25,6 +25,12 @@ interface AdminProfileDrawerProps {
 }
 
 /**
+ * Displayed in the drawer footer. Kept in one place so it cannot drift from
+ * `package.json` the way a hardcoded string did.
+ */
+const APP_VERSION = "1.6.0";
+
+/**
  * AdminProfileDrawer Component
  * A slide-out drawer triggered by the admin profile that shows user details
  * and the comprehensive dynamic system guide.
@@ -129,7 +135,7 @@ export function AdminProfileDrawer({ children }: AdminProfileDrawerProps) {
         </ScrollArea>
 
         <div className="p-6 bg-muted/30 border-t border-border/40 text-[10px] text-center text-muted-foreground uppercase tracking-widest font-semibold">
-          Momentum Logistics Service • v0.5.1
+          Momentum Logistics Service • v{APP_VERSION}
         </div>
       </SheetContent>
     </Sheet>

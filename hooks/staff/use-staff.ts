@@ -13,6 +13,7 @@ import {
   deleteStaff,
 } from "@/api/staff";
 import { toast } from "react-hot-toast";
+import { getApiErrorMessage } from "@/lib/api-error";
 import {
   CreateRolePayload,
   CreateStaffPayload,
@@ -35,8 +36,8 @@ export const useCreateRole = () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
       toast.success("Role created successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to create role");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to create role"));
     },
   });
 };
@@ -50,8 +51,8 @@ export const useUpdateRole = () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
       toast.success("Role updated successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to update role");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update role"));
     },
   });
 };
@@ -64,8 +65,8 @@ export const useDeleteRole = () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
       toast.success("Role deleted successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to delete role");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete role"));
     },
   });
 };
@@ -93,8 +94,8 @@ export const useCreateStaff = () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] }); // Roles might have changed if inlineRole was used
       toast.success("Staff member created successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to create staff");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to create staff"));
     },
   });
 };
@@ -108,8 +109,8 @@ export const useAssignStaffRole = () => {
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       toast.success("Staff role updated successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to assign role");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to assign role"));
     },
   });
 };
@@ -122,8 +123,8 @@ export const useSuspendStaff = () => {
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       toast.success("Staff suspended successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to suspend staff");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to suspend staff"));
     },
   });
 };
@@ -136,8 +137,8 @@ export const useEnableStaff = () => {
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       toast.success("Staff enabled successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to enable staff");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to enable staff"));
     },
   });
 };
@@ -150,8 +151,8 @@ export const useDeleteStaff = () => {
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       toast.success("Staff member deleted successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to delete staff");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete staff"));
     },
   });
 };

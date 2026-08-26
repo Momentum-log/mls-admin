@@ -6,8 +6,9 @@ import {
   ApproveAddressRequestPayload,
   RejectAddressRequestPayload,
 } from "@/types/address-request";
+import { unwrapOne } from "@/api/_shared/envelope";
 
-const BASE_ROUTE = "/address-requests";
+const BASE_ROUTE = "/admin/address-requests";
 
 /**
  * Fetches address verification requests for admin review.
@@ -23,22 +24,15 @@ export const getAddressRequests = async (
 
 /**
  * Fetches the full details of a single address request.
+ *
+ * The endpoint has been observed returning the request bare, nested under
+ * `request`, and nested under `data`; `unwrapOne` covers all three.
  */
 export const getAddressRequestById = async (
   requestId: string,
 ): Promise<AddressRequest> => {
   const { data } = await apiClient.get<unknown>(`${BASE_ROUTE}/${requestId}`);
-  const payload = data as Record<string, unknown>;
-
-  if (payload?.request) {
-    return payload.request as AddressRequest;
-  }
-
-  if (payload?.data && typeof payload.data === "object") {
-    return payload.data as AddressRequest;
-  }
-
-  return payload as AddressRequest;
+  return unwrapOne<AddressRequest>(data, "request");
 };
 
 /**

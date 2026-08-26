@@ -1,7 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUsers, banUser, verifyUser, deleteUser } from "@/api/users";
-import { UserFilter, BanUserPayload } from "@/types/user";
+import {
+  getUsers,
+  updateUserStatus,
+  verifyUser,
+  deleteUser,
+} from "@/api/users";
+import { UserFilter, UpdateUserStatusPayload } from "@/types/user";
 import { toast } from "react-hot-toast";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 /**
  * Hook to fetch a paginated list of users with optional filters.
@@ -15,21 +21,24 @@ export const useUsers = (filters: UserFilter) => {
 };
 
 /**
- * Mutation hook for banning/flagging a user.
+ * Mutation hook for any moderation status change — ban, restore, flag, warn.
  */
-export const useBanUser = () => {
+export const useUpdateUserStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, data }: { userId: string; data: BanUserPayload }) =>
-      banUser(userId, data),
+    mutationFn: ({
+      userId,
+      data,
+    }: {
+      userId: string;
+      data: UpdateUserStatusPayload;
+    }) => updateUserStatus(userId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("User status updated successfully");
     },
-    onError: (error: any) => {
-      toast.error(
-        error?.response?.data?.message || "Failed to update user status",
-      );
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update user status"));
     },
   });
 };
@@ -45,8 +54,8 @@ export const useVerifyUser = () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("User verified successfully");
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to verify user");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to verify user"));
     },
   });
 };
@@ -62,8 +71,8 @@ export const useDeleteUser = () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("User deleted successfully");
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to delete user");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete user"));
     },
   });
 };

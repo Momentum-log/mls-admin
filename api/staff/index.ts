@@ -12,7 +12,7 @@ import {
 // ─── STAFF MANAGEMENT ────────────────────────────────────────────────────────
 
 export const getAllRoles = async (): Promise<Role[]> => {
-  const { data } = await apiClient.get<Role[]>("/staff/get-all-roles");
+  const { data } = await apiClient.get<Role[]>("/admin/staff/get-all-roles");
   return data;
 };
 
@@ -20,7 +20,7 @@ export const createNewRole = async (
   payload: CreateRolePayload,
 ): Promise<Role> => {
   const { data } = await apiClient.post<Role>(
-    "/staff/create-new-role",
+    "/admin/staff/create-new-role",
     payload,
   );
   return data;
@@ -31,25 +31,25 @@ export const updateRole = async (
   payload: UpdateRolePayload,
 ): Promise<Role> => {
   const { data } = await apiClient.put<Role>(
-    `/staff/update-role/${id}`,
+    `/admin/staff/update-role/${id}`,
     payload,
   );
   return data;
 };
 
 export const deleteRole = async (id: string): Promise<void> => {
-  await apiClient.delete(`/staff/delete-role/${id}`);
+  await apiClient.delete(`/admin/staff/delete-role/${id}`);
 };
 
 export const getPermissions = async (): Promise<PermissionGroup[]> => {
   const { data } = await apiClient.get<PermissionGroup[]>(
-    "/staff/roles/permissions",
+    "/admin/staff/roles/permissions",
   );
   return data;
 };
 
 export const getAllStaff = async (): Promise<Staff[]> => {
-  const { data } = await apiClient.get<Staff[]>("/staff/get-all-staff");
+  const { data } = await apiClient.get<Staff[]>("/admin/staff/get-all-staff");
   return data;
 };
 
@@ -57,7 +57,7 @@ export const createNewStaff = async (
   payload: CreateStaffPayload,
 ): Promise<Staff> => {
   const { data } = await apiClient.post<Staff>(
-    "/staff/create-new-staff",
+    "/admin/staff/create-new-staff",
     payload,
   );
   return data;
@@ -68,22 +68,22 @@ export const assignStaffRole = async (
   payload: AssignRolePayload,
 ): Promise<Staff> => {
   const { data } = await apiClient.put<Staff>(
-    `/staff/assign-staff-role/${id}`,
+    `/admin/staff/assign-staff-role/${id}`,
     payload,
   );
   return data;
 };
 
 export const suspendStaff = async (id: string): Promise<Staff> => {
-  const { data } = await apiClient.put<Staff>(`/staff/suspend-staff/${id}`);
+  const { data } = await apiClient.put<Staff>(`/admin/staff/suspend-staff/${id}`);
   return data;
 };
 
 export const enableStaff = async (id: string): Promise<Staff> => {
-  const { data } = await apiClient.put<Staff>(`/staff/enable-staff/${id}`);
+  const { data } = await apiClient.put<Staff>(`/admin/staff/enable-staff/${id}`);
   return data;
 };
 
 export const deleteStaff = async (id: string): Promise<void> => {
-  await apiClient.delete(`/staff/delete-staff/${id}`);
+  await apiClient.delete(`/admin/staff/delete-staff/${id}`);
 };

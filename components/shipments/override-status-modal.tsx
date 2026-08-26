@@ -22,48 +22,11 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Bell, BellOff, RefreshCcw, Shield } from "lucide-react";
-
-/**
- * All valid shipment statuses the backend recognises.
- * Mapped with labels and descriptions for the admin UI.
- */
-const SHIPMENT_STATUSES = [
-  {
-    value: "CREATED",
-    label: "Created",
-    description: "Shipment has been created but not yet processed",
-  },
-  {
-    value: "PAID",
-    label: "Paid",
-    description: "Payment confirmed, awaiting pickup",
-  },
-  {
-    value: "IN_TRANSIT",
-    label: "In Transit",
-    description: "Shipment is on the way to destination",
-  },
-  {
-    value: "DELIVERED",
-    label: "Delivered",
-    description: "Package has been delivered to the recipient",
-  },
-  {
-    value: "COMPLETED",
-    label: "Completed",
-    description: "Shipment is completed and finalised",
-  },
-  {
-    value: "CANCELLED",
-    label: "Cancelled",
-    description: "Shipment has been cancelled",
-  },
-  {
-    value: "FAILED",
-    label: "Failed",
-    description: "Shipment failed due to an issue",
-  },
-] as const;
+import {
+  getShipmentStatusMeta,
+  getShipmentStatusOptions,
+  isMultiLegStatus,
+} from "@/lib/shipment-status";
 
 /**
  * Props for the Override Status Modal.
@@ -79,6 +42,12 @@ interface OverrideStatusModalProps {
   isOpen: boolean;
   /** Callback to close the dialog. */
   onClose: () => void;
+  /**
+   * Whether this shipment is hub-routed. When false, the multi-leg states are
+   * hidden — forcing one onto a single-leg shipment strands it in a state the
+   * ops queue filters out and never surfaces.
+   */
+  isMultiLeg?: boolean;
 }
 
 /**
@@ -96,11 +65,20 @@ export function OverrideStatusModal({
   currentSync,
   isOpen,
   onClose,
+  isMultiLeg = false,
 }: OverrideStatusModalProps) {
   const [status, setStatus] = useState(currentStatus);
   const [trackingSyncEnabled, setTrackingSyncEnabled] = useState(currentSync);
   const [notify, setNotify] = useState(true);
   const { mutate: overrideStatus, isPending } = useOverrideStatus();
+
+  /**
+   * Multi-leg states stay available when the shipment is already in one, so a
+   * shipment that reached the hub can still be corrected by hand.
+   */
+  const statusOptions = getShipmentStatusOptions(
+    isMultiLeg || isMultiLegStatus(currentStatus),
+  );
 
   /** Reset form state whenever the dialog opens with new values. */
   useEffect(() => {
@@ -111,7 +89,9 @@ export function OverrideStatusModal({
     }
   }, [isOpen, currentStatus, currentSync]);
 
-  const isDestructive = status === "CANCELLED" || status === "FAILED";
+  // The four failure states carry the destructive badge variant; COMPLETED is
+  // terminal too but is not a bad outcome, so it gets no warning.
+  const isDestructive = getShipmentStatusMeta(status).variant === "destructive";
   const hasChanged = status !== currentStatus;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -165,7 +145,7 @@ export function OverrideStatusModal({
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                {SHIPMENT_STATUSES.map((s) => (
+                {statusOptions.map((s) => (
                   <SelectItem key={s.value} value={s.value}>
                     <div className="flex flex-col">
                       <span className="font-medium">{s.label}</span>

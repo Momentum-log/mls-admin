@@ -31,7 +31,22 @@ export interface UserFilter {
   status?: string;
 }
 
-export interface BanUserPayload {
-  status: "BANNED";
-  banType: "FULL" | "PARTIAL";
+export type UserStatus = "ACTIVE" | "FLAGGED" | "WARNED" | "BANNED";
+export type BanType = "NONE" | "PARTIAL" | "FULL";
+
+/**
+ * Payload for `PUT /admin/users/:id/status`.
+ *
+ * Mirrors the server's `UserStatusUpdate`. An earlier revision typed `status`
+ * as the literal `"BANNED"`, which made banning irreversible from the UI —
+ * there was no shape that could express restoring an account.
+ *
+ * `banType` should be `NONE` for any non-banned status.
+ */
+export interface UpdateUserStatusPayload {
+  status: UserStatus;
+  banType?: BanType;
 }
+
+/** @deprecated Use `UpdateUserStatusPayload`. */
+export type BanUserPayload = UpdateUserStatusPayload;

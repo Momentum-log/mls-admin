@@ -5,7 +5,7 @@ import { AdminLeadListResponse } from "@/types/admin-user-resources";
 export const getLeads = async (
   params: LeadFilter,
 ): Promise<AdminLeadListResponse> => {
-  const response = await apiClient.get<AdminLeadListResponse>("/leads", {
+  const response = await apiClient.get<AdminLeadListResponse>("/admin/leads", {
     params,
   });
   return response.data;
@@ -13,7 +13,7 @@ export const getLeads = async (
 
 /**
  * Fetches a paginated list of leads (shipping estimates) for a specific user.
- * Uses the shared `/leads` endpoint with a `userId` filter.
+ * Uses the shared `/admin/leads` endpoint with a `userId` filter.
  *
  * @param params - Filter params including required userId.
  * @returns Paginated lead list with actual API shape (`data` array).
@@ -21,7 +21,7 @@ export const getLeads = async (
 export const getUserLeads = async (
   params: UserLeadFilter,
 ): Promise<AdminLeadListResponse> => {
-  const response = await apiClient.get<AdminLeadListResponse>("/leads", {
+  const response = await apiClient.get<AdminLeadListResponse>("/admin/leads", {
     params,
   });
   return response.data;
@@ -33,7 +33,7 @@ export const getUserLeads = async (
  * @param id - The UUID of the lead to delete.
  */
 export const deleteLead = async (id: string): Promise<void> => {
-  await apiClient.delete(`/leads/${id}`);
+  await apiClient.delete(`/admin/leads/${id}`);
 };
 
 /**

@@ -7,7 +7,7 @@ import {
 export const getGlobalCommissionSettings =
   async (): Promise<GlobalCommissionSettings> => {
     const { data } = await apiClient.get<GlobalCommissionSettings>(
-      "/settings/global-commission",
+      "/admin/settings/global-commission",
     );
     return data;
   };
@@ -16,7 +16,7 @@ export const updateGlobalCommissionSettings = async (
   payload: Partial<GlobalCommissionSettings>,
 ): Promise<GlobalCommissionSettings> => {
   const { data } = await apiClient.put<GlobalCommissionSettings>(
-    "/settings/global-commission",
+    "/admin/settings/global-commission",
     payload,
   );
   return data;
@@ -26,7 +26,7 @@ export const getCarrierCommissionSettings = async (
   carrierId: string,
 ): Promise<CarrierCommissionSettings> => {
   const { data } = await apiClient.get<CarrierCommissionSettings>(
-    `/settings/commission/${carrierId}`,
+    `/admin/settings/commission/${carrierId}`,
   );
   return data;
 };
@@ -36,7 +36,7 @@ export const updateCarrierCommissionSettings = async (
   payload: Partial<CarrierCommissionSettings>,
 ): Promise<CarrierCommissionSettings> => {
   const { data } = await apiClient.put<CarrierCommissionSettings>(
-    `/settings/commission/${carrierId}`,
+    `/admin/settings/commission/${carrierId}`,
     payload,
   );
   return data;

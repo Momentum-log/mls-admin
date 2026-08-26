@@ -15,7 +15,7 @@ import {
  * @returns List of all carrier profiles.
  */
 export const getCarriers = async (): Promise<Carrier[]> => {
-  const { data } = await apiClient.get<Carrier[]>("/carriers/get-all-carriers");
+  const { data } = await apiClient.get<Carrier[]>("/admin/carriers/get-all-carriers");
   return data;
 };
 
@@ -26,7 +26,7 @@ export const getCarriers = async (): Promise<Carrier[]> => {
  */
 export const getSingleCarrier = async (id: string): Promise<Carrier> => {
   const { data } = await apiClient.get<Carrier>(
-    `/carriers/get-single-carrier/${id}`,
+    `/admin/carriers/get-single-carrier/${id}`,
   );
   return data;
 };
@@ -41,7 +41,7 @@ export const createCarrier = async (
   payload: CreateCarrierPayload,
 ): Promise<Carrier> => {
   const { data } = await apiClient.post<Carrier>(
-    "/carriers/create-new-carrier",
+    "/admin/carriers/create-new-carrier",
     payload,
   );
   return data;
@@ -59,7 +59,7 @@ export const updateCarrier = async (
   payload: UpdateCarrierPayload,
 ): Promise<Carrier> => {
   const { data } = await apiClient.put<Carrier>(
-    `/carriers/update-carrier/${id}`,
+    `/admin/carriers/update-carrier/${id}`,
     payload,
   );
   return data;
@@ -72,7 +72,7 @@ export const updateCarrier = async (
  * @param id - Carrier ID (UUID).
  */
 export const deleteCarrier = async (id: string): Promise<void> => {
-  await apiClient.delete(`/carriers/delete-carrier/${id}`);
+  await apiClient.delete(`/admin/carriers/delete-carrier/${id}`);
 };
 
 // ─── COMMISSION MANAGEMENT (CL02 RULES) ──────────────────────────────────────
@@ -89,7 +89,7 @@ export const updateCommissions = async (
   payload: UpdateCommissionsPayload,
 ): Promise<Carrier> => {
   const { data } = await apiClient.put<Carrier>(
-    `/carriers/update-carrier-commissions/${id}`,
+    `/admin/carriers/update-carrier-commissions/${id}`,
     payload,
   );
   return data;

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
+import { getApiErrorMessage } from "@/lib/api-error";
 import {
   getGlobalCommissionSettings,
   updateGlobalCommissionSettings,
@@ -28,10 +29,8 @@ export const useUpdateGlobalCommissionSettings = () => {
       });
       toast.success("Global commission settings updated");
     },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || "Failed to update global settings",
-      );
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update global settings"));
     },
   });
 };
@@ -60,11 +59,8 @@ export const useUpdateCarrierCommissionSettings = () => {
       });
       // Might want to silently update without toast if it's part of a larger save, but can keep toast.
     },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to update carrier threshold settings",
-      );
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update carrier threshold settings"));
     },
   });
 };

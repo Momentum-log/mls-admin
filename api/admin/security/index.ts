@@ -17,7 +17,9 @@ export interface RotationResponse {
 export const rotateSuperAdminPassword = async (
   resetKey: string,
 ): Promise<RotationResponse> => {
-  const { data } = await apiClient.post<RotationResponse>("/security/rotate", {
+  const { data } = await apiClient.post<RotationResponse>(
+    "/admin/security/rotate",
+    {
     resetKey,
   });
   return data;
