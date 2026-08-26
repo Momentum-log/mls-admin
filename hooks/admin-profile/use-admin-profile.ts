@@ -4,7 +4,7 @@ import {
   getMyProfile,
   updateMyPassword,
   getMyActivityLogs,
-} from "@/api/profile";
+} from "@/lib/api/profile";
 import { ActivityLogsResponse } from "@/types/profile";
 import { getApiErrorMessage } from "@/lib/api-error";
 

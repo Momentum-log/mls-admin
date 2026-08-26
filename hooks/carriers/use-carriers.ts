@@ -5,7 +5,7 @@ import {
   updateCarrier,
   deleteCarrier,
   updateCommissions,
-} from "@/api/carriers";
+} from "@/lib/api/carriers";
 import { toast } from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {

@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CARRIER_SLUGS } from "@/api/carriers/constants";
+import { CARRIER_SLUGS } from "@/lib/api/carriers/constants";
 import CommissionEditor from "./commission-editor";
 import ThresholdEditor from "./threshold-editor";
 import {

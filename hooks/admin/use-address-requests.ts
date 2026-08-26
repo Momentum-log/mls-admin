@@ -4,7 +4,7 @@ import {
   getAddressRequestById,
   getAddressRequests,
   rejectAddressRequest,
-} from "@/api/admin/address-requests";
+} from "@/lib/api/admin/address-requests";
 import {
   AddressRequestListFilters,
   ApproveAddressRequestPayload,

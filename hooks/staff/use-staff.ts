@@ -11,7 +11,7 @@ import {
   suspendStaff,
   enableStaff,
   deleteStaff,
-} from "@/api/staff";
+} from "@/lib/api/staff";
 import { toast } from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {

@@ -7,7 +7,7 @@ import {
   getUserShipments,
   deleteShipment,
   bulkDeleteShipments,
-} from "@/api/shipments";
+} from "@/lib/api/shipments";
 import { toast } from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {

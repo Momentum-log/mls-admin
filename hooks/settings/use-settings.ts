@@ -6,7 +6,7 @@ import {
   updateGlobalCommissionSettings,
   getCarrierCommissionSettings,
   updateCarrierCommissionSettings,
-} from "@/api/settings";
+} from "@/lib/api/settings";
 import {
   GlobalCommissionSettings,
   CarrierCommissionSettings,

@@ -5,7 +5,7 @@ import {
   getMultiLegShipment,
   confirmHubArrival,
   createLegTwo,
-} from "@/api/admin/multi-leg";
+} from "@/lib/api/admin/multi-leg";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 const QUEUE_KEY = ["multi-leg"];

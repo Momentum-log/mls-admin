@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { rotateSuperAdminPassword } from "@/api/admin/security";
+import { rotateSuperAdminPassword } from "@/lib/api/admin/security";
 import toast from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";
 

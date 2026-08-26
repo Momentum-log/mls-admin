@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { getShippingQuote } from "@/api/shipping";
+import { getShippingQuote } from "@/lib/api/shipping";
 import { ShippingQuoteRequest } from "@/types/shipping-estimate";
 
 /**

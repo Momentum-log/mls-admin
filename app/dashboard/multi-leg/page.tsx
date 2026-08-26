@@ -6,7 +6,7 @@ import {
   useConfirmHubArrival,
   useCreateLegTwo,
 } from "@/hooks/admin/use-multi-leg";
-import { parseRepriceError } from "@/api/admin/multi-leg";
+import { parseRepriceError } from "@/lib/api/admin/multi-leg";
 import type { MultiLegShipment, RepriceDetails } from "@/types/multi-leg";
 import RepriceDialog from "@/components/multi-leg/reprice-dialog";
 import MultiLegDetailSheet from "@/components/multi-leg/multi-leg-detail-sheet";

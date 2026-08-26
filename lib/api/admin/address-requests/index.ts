@@ -6,7 +6,7 @@ import {
   ApproveAddressRequestPayload,
   RejectAddressRequestPayload,
 } from "@/types/address-request";
-import { unwrapOne } from "@/api/_shared/envelope";
+import { unwrapOne } from "@/lib/api/_shared/envelope";
 
 const BASE_ROUTE = "/admin/address-requests";
 

@@ -7,7 +7,7 @@ import {
   createSortingCenter,
   updateSortingCenter,
   deleteSortingCenter,
-} from "@/api/admin/hub";
+} from "@/lib/api/admin/hub";
 import type {
   HubToggleResponse,
   CreateSortingCenterPayload,

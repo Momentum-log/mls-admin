@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { login, logout, getMe } from "@/api/auth";
+import { login, logout, getMe } from "@/lib/api/auth";
 import { LoginPayload, AuthResponse } from "@/types/auth";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";

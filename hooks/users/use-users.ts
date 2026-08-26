@@ -4,7 +4,7 @@ import {
   updateUserStatus,
   verifyUser,
   deleteUser,
-} from "@/api/users";
+} from "@/lib/api/users";
 import { UserFilter, UpdateUserStatusPayload } from "@/types/user";
 import { toast } from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";

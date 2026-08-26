@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getLeads, getUserLeads, deleteLead } from "@/api/leads";
+import { getLeads, getUserLeads, deleteLead } from "@/lib/api/leads";
 import { LeadFilter, UserLeadFilter } from "@/types/leads";
 import { toast } from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";

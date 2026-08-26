@@ -5,6 +5,17 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### [1.6.2] - 2026-08-26 - API Client Relocated Out of Vercel's Function Namespace
+
+Deployments had begun failing at the "Deploying outputs..." step with *"No more
+than 12 Serverless Functions can be added to a Deployment on the Hobby plan."*
+The build itself always succeeded — nothing was wrong with the code.
+
+- **Fixed**: **The API client directory was being deployed as backend endpoints.** Vercel's zero-config detection treats any root-level `/api` directory as a source of Serverless Functions, independently of the Next.js framework preset, and turns every non-underscore-prefixed file inside it into one. That counted 16 functions — the 15 client modules plus `api/carriers/constants.ts`, a plain constants file — against a ceiling of 12, before Next.js's own output was considered. None of them are backend code: `api/index.ts` is a browser-side Axios instance that reads a cookie via `js-cookie` and redirects with `window.location`, and the project has no route handlers at all. The directory moved to `lib/api/`, alongside the cross-cutting code it belongs with (`lib/api-error.ts`, `lib/rbac.ts`, `lib/shipment-status.ts`).
+- **Changed**: All 17 consumer imports repointed from `@/api/…` to `@/lib/api/…` across 14 hooks, 2 pages and `carrier-detail-sheet.tsx`. Relative imports inside the tree were untouched — they moved together and stayed correct. No configuration changed: the `@/*` → `./*` alias already resolves the new path, and `vercel.json` carries no `builds` or `functions` block.
+- **Note**: Nothing was consolidated into a single shared function, which was the other obvious route out of the limit. There were no functions to consolidate, and a barrel export over every domain's client would have defeated tree-shaking to solve a problem that did not exist. Purely a relocation — no runtime behaviour changed.
+- **Note**: Earlier entries in this file refer to these modules by their original `api/…` paths. Those readings were accurate when written and are left as they stand.
+
 ### [1.6.1] - 2026-08-26 - Next.js 16 Proxy Migration
 
 - **Changed**: Migrated deprecated `middleware.ts` file convention to `proxy.ts` with exported `proxy()` function as required by Next.js 16.
