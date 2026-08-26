@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+/**
+ * Next.js 16 Proxy handler for authentication and route protection.
+ * Redirects unauthenticated requests from protected routes to login,
+ * and authenticated users away from the login page.
+ *
+ * @param request - Incoming NextRequest object
+ * @returns NextResponse redirect or next response
+ */
+export function proxy(request: NextRequest) {
   // Check for common auth cookie names
   const token =
     request.cookies.get("accessToken")?.value ||
