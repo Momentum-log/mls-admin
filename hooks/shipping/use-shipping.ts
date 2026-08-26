@@ -1,14 +1,14 @@
 import { useMutation } from "@tanstack/react-query";
-import { getShippingEstimates } from "@/api/shipping";
-import { ShippingEstimateRequest } from "@/types/shipping-estimate";
+import { getShippingQuote } from "@/lib/api/shipping";
+import { ShippingQuoteRequest } from "@/types/shipping-estimate";
 
 /**
- * Mutation hook for fetching shipping estimates.
- * Uses a mutation (not query) because we POST to get rates
- * and the admin triggers it manually.
+ * Mutation hook for fetching live carrier rates.
+ * A mutation rather than a query because the request is a POST the admin
+ * triggers explicitly from the Create Shipment wizard.
  */
-export const useShippingEstimates = () => {
+export const useShippingQuote = () => {
   return useMutation({
-    mutationFn: (data: ShippingEstimateRequest) => getShippingEstimates(data),
+    mutationFn: (data: ShippingQuoteRequest) => getShippingQuote(data),
   });
 };

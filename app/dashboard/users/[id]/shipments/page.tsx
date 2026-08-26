@@ -22,27 +22,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2, Package } from "lucide-react";
+import {
+  getPaymentStatusVariant,
+  getShipmentStatusMeta,
+} from "@/lib/shipment-status";
 
 /** Items per page for the paginated table. */
 const PAGE_SIZE = 10;
-
-/**
- * Returns the badge variant for a shipment payment status.
- */
-function getPaymentVariant(
-  status: string,
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "PAID":
-      return "default";
-    case "PENDING":
-      return "secondary";
-    case "FAILED":
-      return "destructive";
-    default:
-      return "outline";
-  }
-}
 
 /**
  * "See All" page for a user's shipments.
@@ -78,6 +64,27 @@ export default function UserShipmentsPage() {
     limit: 100,
   });
 
+  /** Resolved shipments from the `data` wrapper. */
+  const shipments = responseData?.data ?? [];
+  const pagination = responseData?.pagination;
+  const allEstimates = estimatesData?.data ?? [];
+
+  /**
+   * Compute correlation for the selected shipment.
+   *
+   * Must stay above the early returns below — React counts hooks per render,
+   * so a `useMemo` placed after them runs on the loaded render but not the
+   * loading one, and the mismatch throws "Rendered more hooks than during the
+   * previous render" the moment the user query resolves.
+   */
+  const linkedEstimate = useMemo(
+    () =>
+      selectedShipment
+        ? findEstimateForShipment(selectedShipment, allEstimates)
+        : null,
+    [selectedShipment, allEstimates],
+  );
+
   if (userLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -97,20 +104,6 @@ export default function UserShipmentsPage() {
       </div>
     );
   }
-
-  /** Resolved shipments from the `data` wrapper. */
-  const shipments = responseData?.data ?? [];
-  const pagination = responseData?.pagination;
-  const allEstimates = estimatesData?.data ?? [];
-
-  /** Compute correlation for the selected shipment. */
-  const linkedEstimate = useMemo(
-    () =>
-      selectedShipment
-        ? findEstimateForShipment(selectedShipment, allEstimates)
-        : null,
-    [selectedShipment, allEstimates],
-  );
 
   return (
     <div className="space-y-6">
@@ -176,11 +169,17 @@ export default function UserShipmentsPage() {
                     {shipment.carrier?.name ?? "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{shipment.shipmentStatus}</Badge>
+                    <Badge
+                      variant={
+                        getShipmentStatusMeta(shipment.shipmentStatus).variant
+                      }
+                    >
+                      {getShipmentStatusMeta(shipment.shipmentStatus).label}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={getPaymentVariant(shipment.paymentStatus) as any}
+                      variant={getPaymentStatusVariant(shipment.paymentStatus)}
                     >
                       {shipment.paymentStatus}
                     </Badge>
@@ -214,9 +213,7 @@ export default function UserShipmentsPage() {
             variant="outline"
             size="sm"
             onClick={() => setPage((p) => p + 1)}
-            disabled={
-              !shipments.length || shipments.length < PAGE_SIZE || isLoading
-            }
+            disabled={page >= (pagination?.totalPages ?? 1) || isLoading}
           >
             Next
           </Button>

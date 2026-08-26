@@ -16,11 +16,9 @@ import { motion } from "framer-motion";
 export default function SecurityPage() {
   const [resetKey, setResetKey] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const { role, isLoading: isRoleLoading } = usePermissions();
+  const { isSuperAdmin, isLoading: isRoleLoading } = usePermissions();
   const { mutate: rotatePassword, isPending } = useRotatePassword();
   const [showResetKey, setShowResetKey] = useState(false);
-
-  const isSuperAdmin = role === "Super Admin";
 
   const handleRotate = () => {
     if (!resetKey.trim()) return;

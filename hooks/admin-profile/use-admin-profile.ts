@@ -4,8 +4,9 @@ import {
   getMyProfile,
   updateMyPassword,
   getMyActivityLogs,
-} from "@/api/profile";
+} from "@/lib/api/profile";
 import { ActivityLogsResponse } from "@/types/profile";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export const useMyProfile = () => {
   return useQuery({
@@ -20,14 +21,8 @@ export const useUpdateMyPassword = () => {
     onSuccess: () => {
       toast.success("Password updated successfully");
     },
-    onError: (error: any) => {
-      const msg =
-        error.response?.data?.details ||
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to update password";
-      toast.error(msg);
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update password"));
     },
   });
 };

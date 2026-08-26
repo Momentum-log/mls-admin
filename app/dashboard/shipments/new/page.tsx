@@ -3,11 +3,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUsers } from "@/hooks/users/use-users";
-import { useShippingEstimates } from "@/hooks/shipping/use-shipping";
-import { useCreateProxyShipment } from "@/hooks/shipments/use-shipments";
+import { useShippingQuote } from "@/hooks/shipping/use-shipping";
+import {
+  useCreateProxyShipment,
+  useBypassPayment,
+} from "@/hooks/shipments/use-shipments";
 import { useDebounce } from "@/hooks/use-debounce";
 import { User } from "@/types/user";
-import { ShippingRate } from "@/types/shipping-estimate";
+import type {
+  ShippingRate,
+  CarrierAddress,
+} from "@/types/shipping-estimate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +32,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Loader2,
   ArrowLeft,
@@ -39,6 +44,18 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { formatCurrency } from "@/utils/format-currency";
 
 /** Steps in the shipment creation flow. */
 const STEPS = [
@@ -49,7 +66,7 @@ const STEPS = [
   { id: 5, label: "Confirm", icon: CheckCircle },
 ] as const;
 
-/** Default address state. */
+/** Default address state for the form inputs. */
 const emptyAddress = {
   street1: "",
   street2: "",
@@ -57,7 +74,34 @@ const emptyAddress = {
   state: "",
   postalCode: "",
   countryCode: "",
+  residential: false,
 };
+
+type AddressForm = typeof emptyAddress;
+
+/**
+ * Maps the wizard's flat form state onto the canonical address every
+ * carrier-facing endpoint expects.
+ *
+ * The API has no concept of `street1`/`street2`/`state` — it takes a
+ * `streetLines` array (max 3, carriers reject more) and `stateOrProvinceCode`.
+ *
+ * @param form - Flat form state.
+ * @returns The canonical carrier address.
+ */
+function toCarrierAddress(form: AddressForm): CarrierAddress {
+  return {
+    streetLines: [form.street1, form.street2]
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(0, 3),
+    city: form.city.trim(),
+    stateOrProvinceCode: form.state.trim() || undefined,
+    postalCode: form.postalCode.trim(),
+    countryCode: form.countryCode.trim().toUpperCase(),
+    residential: form.residential,
+  };
+}
 
 /**
  * Multi-step shipment creation page.
@@ -103,7 +147,15 @@ export default function CreateShipmentPage() {
 
   // Step 5: Confirm
   const [showBypassDialog, setShowBypassDialog] = useState(false);
-  const [createMode, setCreateMode] = useState<"normal" | "bypass">("normal");
+  const [bypassReference, setBypassReference] = useState("");
+  const [bypassNotes, setBypassNotes] = useState("");
+
+  /**
+   * Estimate the rates came from. Passing it to the proxy endpoint links the
+   * shipment to its quote, which is what lets the dashboard show a real source
+   * estimate instead of guessing at one by matching cities and dates.
+   */
+  const [estimateId, setEstimateId] = useState<string | null>(null);
 
   // Data hooks
   const { data: userData } = useUsers({
@@ -122,14 +174,16 @@ export default function CreateShipmentPage() {
     ) || null;
 
   const {
-    mutate: getEstimates,
-    data: estimatesData,
+    mutate: getQuote,
+    data: quoteData,
     isPending: estimatesPending,
     error: estimatesError,
-  } = useShippingEstimates();
+  } = useShippingQuote();
 
   const { mutate: createShipment, isPending: createPending } =
     useCreateProxyShipment();
+  const { mutate: bypassPayment, isPending: bypassPending } =
+    useBypassPayment();
 
   // Auto-select user from URL param
   useEffect(() => {
@@ -139,42 +193,81 @@ export default function CreateShipmentPage() {
     }
   }, [preselectedUser, selectedUser]);
 
-  /** Fetch shipping estimates from the API. */
+  /** Fetch live carrier rates for the entered route. */
   const handleGetRates = () => {
-    getEstimates(
+    getQuote(
       {
-        pickup,
-        dropoff,
-        package: { weight, dimensions },
+        pickup: toCarrierAddress(pickup),
+        dropoff: toCarrierAddress(dropoff),
+        packages: [{ weight, dimensions }],
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          setEstimateId(data.estimateId ?? null);
+          setSelectedRate(null);
           setStep(4);
         },
       },
     );
   };
 
-  /** Create the shipment via proxy endpoint. */
+  /**
+   * Creates the shipment on the selected user's behalf.
+   *
+   * When `bypass` is set, the shipment is created first and then marked paid —
+   * the bypass endpoint is shipment-scoped, so it cannot run until an id
+   * exists. A failed bypass leaves a valid unpaid shipment rather than rolling
+   * back, so the admin is told exactly which half succeeded.
+   *
+   * @param bypass - Whether to mark the new shipment as paid immediately.
+   */
   const handleCreate = (bypass: boolean) => {
     if (!selectedUser || !selectedRate) return;
 
     createShipment(
       {
         targetUserId: selectedUser.id,
-        carrierName: selectedRate.carrier,
-        pickupAddress: pickup,
-        dropoffAddress: dropoff,
-        package: { weight, dimensions },
+        carrierSlug: selectedRate.carrierSlug,
+        pickupAddress: toCarrierAddress(pickup),
+        dropoffAddress: toCarrierAddress(dropoff),
+        packages: [{ weight, dimensions }],
         rate: {
           serviceType: selectedRate.serviceType,
           serviceName: selectedRate.serviceName,
-          carrierPrice: selectedRate.price,
+          carrierPrice: selectedRate.carrierPrice,
+          actualPrice: selectedRate.actualPrice,
+          // Commission is calculated against this currency server-side and
+          // defaults to PLN, so a EUR rate sent without it books at roughly
+          // a quarter of its price.
+          currency: selectedRate.currency,
         },
+        ...(estimateId ? { estimateId } : {}),
       },
       {
-        onSuccess: () => {
-          router.push("/dashboard/shipments");
+        onSuccess: (created) => {
+          if (!bypass) {
+            router.push("/dashboard/shipments");
+            return;
+          }
+
+          if (!created?.id) {
+            toast.error(
+              "Shipment created, but no id came back — mark it paid from the shipments list.",
+            );
+            router.push("/dashboard/shipments");
+            return;
+          }
+
+          bypassPayment(
+            {
+              shipmentId: created.id,
+              data: {
+                manualTransactionId: bypassReference.trim(),
+                notes: bypassNotes.trim() || undefined,
+              },
+            },
+            { onSettled: () => router.push("/dashboard/shipments") },
+          );
         },
       },
     );
@@ -314,7 +407,7 @@ export default function CreateShipmentPage() {
               <CardTitle>Pickup Address</CardTitle>
             </CardHeader>
             <CardContent>
-              <AddressForm
+              <AddressFields
                 value={pickup}
                 onChange={setPickup}
                 prefix="pickup"
@@ -326,7 +419,7 @@ export default function CreateShipmentPage() {
               <CardTitle>Dropoff Address</CardTitle>
             </CardHeader>
             <CardContent>
-              <AddressForm
+              <AddressFields
                 value={dropoff}
                 onChange={setDropoff}
                 prefix="dropoff"
@@ -479,45 +572,67 @@ export default function CreateShipmentPage() {
                   Edit Addresses
                 </Button>
               </div>
-            ) : estimatesData?.rates.length === 0 ? (
+            ) : quoteData?.rates.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 No rates available for this route.
               </p>
             ) : (
               <div className="space-y-3">
-                {estimatesData?.rates.map((rate, index) => (
+                {quoteData?.rates.map((rate, index) => (
                   <button
-                    key={`${rate.carrier}-${rate.serviceType}-${index}`}
+                    key={`${rate.carrierSlug}-${rate.serviceType}-${index}`}
                     onClick={() => setSelectedRate(rate)}
                     className={`w-full text-left p-4 rounded-lg border transition-colors ${
                       selectedRate?.serviceType === rate.serviceType &&
-                      selectedRate?.carrier === rate.carrier
+                      selectedRate?.carrierSlug === rate.carrierSlug
                         ? "border-brand-blue bg-brand-blue/5"
                         : "border-border hover:border-brand-blue/30"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
                         <p className="font-medium text-sm">
                           {rate.serviceName}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {rate.carrier} · {rate.estimatedDays} day
-                          {rate.estimatedDays !== 1 ? "s" : ""}
+                          {rate.carrier}
+                          {rate.deliveryDescription
+                            ? ` · ${rate.deliveryDescription}`
+                            : ""}
                         </p>
                       </div>
-                      <p className="font-bold text-lg">
-                        {new Intl.NumberFormat(
-                          rate.currency === "PLN" ? "pl-PL" : "en-IE",
-                          {
-                            style: "currency",
-                            currency: rate.currency,
-                          },
-                        ).format(rate.price)}
-                      </p>
+                      <div className="text-right shrink-0">
+                        <p className="font-bold text-lg">
+                          {formatCurrency(rate.currency, rate.actualPrice)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          carrier {formatCurrency(
+                            rate.currency,
+                            rate.carrierPrice,
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </button>
                 ))}
+
+                {quoteData?.errors && quoteData.errors.length > 0 && (
+                  <div className="rounded-lg border border-amber-500/40 bg-amber-50 p-3">
+                    <p className="text-xs font-semibold text-amber-800">
+                      {quoteData.errors.length} carrier
+                      {quoteData.errors.length !== 1 ? "s" : ""} returned no
+                      rates
+                    </p>
+                    <ul className="mt-1 space-y-0.5">
+                      {quoteData.errors.map((err, i) => (
+                        <li key={i} className="text-[11px] text-amber-800/80">
+                          <span className="font-medium">{err.carrier}</span>:{" "}
+                          {err.details}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -551,13 +666,10 @@ export default function CreateShipmentPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {selectedRate.carrier} ·{" "}
-                  {new Intl.NumberFormat(
-                    selectedRate.currency === "PLN" ? "pl-PL" : "en-IE",
-                    {
-                      style: "currency",
-                      currency: selectedRate.currency,
-                    },
-                  ).format(selectedRate.price)}
+                  {formatCurrency(
+                    selectedRate.currency,
+                    selectedRate.actualPrice,
+                  )}
                 </p>
               </div>
               <div className="space-y-2">
@@ -653,18 +765,66 @@ export default function CreateShipmentPage() {
         )}
       </div>
 
-      {/* Bypass Payment Confirmation */}
-      <ConfirmDialog
-        open={showBypassDialog}
-        onOpenChange={setShowBypassDialog}
-        title="Bypass Payment?"
-        description="This will create the shipment and mark it as paid without requiring actual payment from the user."
-        confirmLabel="Create & Bypass"
-        onConfirm={() => {
-          setShowBypassDialog(false);
-          handleCreate(true);
-        }}
-      />
+      {/* Bypass Payment — needs a reference, so it collects one rather than
+          confirming blindly. The bypass endpoint requires a transaction id. */}
+      <Dialog open={showBypassDialog} onOpenChange={setShowBypassDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create &amp; Bypass Payment</DialogTitle>
+            <DialogDescription>
+              Creates the shipment and immediately marks it paid without the
+              user paying. Record where the money actually came from.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="bypass-reference">
+                Payment reference <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="bypass-reference"
+                value={bypassReference}
+                onChange={(e) => setBypassReference(e.target.value)}
+                placeholder="BANK-REF-123"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bypass-notes">Notes</Label>
+              <Textarea
+                id="bypass-notes"
+                value={bypassNotes}
+                onChange={(e) => setBypassNotes(e.target.value)}
+                placeholder="Reason for the bypass…"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowBypassDialog(false)}
+              disabled={createPending || bypassPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={
+                !bypassReference.trim() || createPending || bypassPending
+              }
+              onClick={() => {
+                setShowBypassDialog(false);
+                handleCreate(true);
+              }}
+            >
+              {(createPending || bypassPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Create &amp; Bypass
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -672,16 +832,16 @@ export default function CreateShipmentPage() {
 // ─── Address Form Subcomponent ─────────────────────────────────────
 
 interface AddressFormProps {
-  value: typeof emptyAddress;
-  onChange: (value: typeof emptyAddress) => void;
+  value: AddressForm;
+  onChange: (value: AddressForm) => void;
   prefix: string;
 }
 
 /**
  * Reusable address form for pickup and dropoff sections.
  */
-function AddressForm({ value, onChange, prefix }: AddressFormProps) {
-  const update = (field: keyof typeof emptyAddress, val: string) => {
+function AddressFields({ value, onChange, prefix }: AddressFormProps) {
+  const update = (field: keyof AddressForm, val: string | boolean) => {
     onChange({ ...value, [field]: val });
   };
 
@@ -740,6 +900,26 @@ function AddressForm({ value, onChange, prefix }: AddressFormProps) {
           placeholder="PL"
           maxLength={2}
         />
+      </div>
+      <div className="col-span-2 flex items-start gap-3 rounded-lg border p-3">
+        <Checkbox
+          id={`${prefix}-residential`}
+          checked={value.residential}
+          onChange={(e) => update("residential", e.target.checked)}
+          className="mt-0.5"
+        />
+        <div className="space-y-0.5">
+          <Label
+            htmlFor={`${prefix}-residential`}
+            className="cursor-pointer text-sm font-medium"
+          >
+            Residential address
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Carriers price residential delivery differently — getting this
+            wrong changes the quote.
+          </p>
+        </div>
       </div>
     </div>
   );

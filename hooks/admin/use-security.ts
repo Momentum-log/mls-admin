@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
-import { rotateSuperAdminPassword } from "@/api/admin/security";
+import { rotateSuperAdminPassword } from "@/lib/api/admin/security";
 import toast from "react-hot-toast";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 /**
  * Hook to manage the Super Admin password rotation mutation.
@@ -17,12 +18,13 @@ export const useRotatePassword = () => {
         },
       );
     },
-    onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.title ||
-        "Failed to rotate password. Please check your reset key.";
-      toast.error(errorMessage);
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Failed to rotate password. Please check your reset key.",
+        ),
+      );
     },
   });
 };

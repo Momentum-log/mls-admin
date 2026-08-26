@@ -11,6 +11,7 @@ import {
   useRoles,
 } from "@/hooks/staff/use-staff";
 import { Staff } from "@/types/staff";
+import { SUPER_ADMIN_ROLE_NAME } from "@/lib/rbac";
 import { formatDate } from "@/utils/format-date";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -149,8 +150,9 @@ export default function StaffTable() {
     );
   };
 
-  // Prevent actions on yourself or Super Admin
-  const isProtected = (s: Staff) => s.role.name === "Super Admin";
+  // The Super Admin role record is protected server-side too, so matching on
+  // its name here keeps the two consistent.
+  const isProtected = (s: Staff) => s.role.name === SUPER_ADMIN_ROLE_NAME;
 
   return (
     <div className="space-y-4">

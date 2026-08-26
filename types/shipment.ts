@@ -1,3 +1,12 @@
+import type {
+  CarrierAddress,
+  EstimatePackage,
+} from "@/types/shipping-estimate";
+
+/**
+ * Flat address shape used by the Create Shipment wizard's form inputs.
+ * Map it to `CarrierAddress` before sending — the API never accepts this shape.
+ */
 export interface Address {
   street1: string;
   street2?: string;
@@ -58,13 +67,36 @@ export interface ShipmentListResponse {
   };
 }
 
+/**
+ * Payload for `POST /admin/shipments/proxy` — creating a shipment on behalf
+ * of a user.
+ *
+ * Mirrors the server schema exactly. Three fields are easy to get wrong:
+ * - `carrierSlug`, not a display name. The server resolves the adapter from it.
+ * - `packages` is an array, even for a single parcel.
+ * - `rate.currency` feeds the commission calculation and defaults to PLN
+ *   server-side, so omitting it on a EUR rate books the shipment at roughly a
+ *   quarter of its price.
+ *
+ * `rate.actualPrice` is required by the schema but recomputed server-side from
+ * `carrierPrice` and the route's commission tier, so it is advisory.
+ */
 export interface CreateProxyShipmentPayload {
   targetUserId: string;
-  carrierName: string;
-  pickupAddress: Address;
-  dropoffAddress: Address;
-  package: Package;
-  rate: Rate;
+  carrierSlug: string;
+  pickupAddress: CarrierAddress;
+  dropoffAddress: CarrierAddress;
+  packages: EstimatePackage[];
+  customs?: unknown;
+  rate: {
+    serviceType: string;
+    serviceName: string;
+    carrierPrice: number;
+    actualPrice: number;
+    currency: string;
+  };
+  /** Links the shipment back to the quote it came from. */
+  estimateId?: string;
 }
 
 export interface BypassPaymentPayload {

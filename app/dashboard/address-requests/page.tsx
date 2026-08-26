@@ -11,7 +11,7 @@ import {
   RefreshCw,
   XCircle,
 } from "lucide-react";
-import { getAddressRequestProofFile } from "@/api/admin/address-requests";
+import { getAddressRequestProofFile } from "@/lib/api/admin/address-requests";
 import {
   useAddressRequestDetails,
   useAddressRequests,

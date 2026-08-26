@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getDashboardStats } from "@/api/dashboard";
+import { getDashboardStats } from "@/lib/api/dashboard";
 
 /**
  * React Query hook that fetches and caches dashboard statistics.

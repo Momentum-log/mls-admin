@@ -96,6 +96,23 @@ export const PERMISSIONS = [
     ],
   },
   {
+    group: "Inquiries",
+    permissions: [
+      {
+        id: "inquiries:read",
+        name: "View Inquiries",
+        description:
+          "Allows the user to view contact-form inquiries and their details.",
+      },
+      {
+        id: "inquiries:write",
+        name: "Manage Inquiries",
+        description:
+          "Allows the user to triage inquiries between pending, contacted, and resolved.",
+      },
+    ],
+  },
+  {
     group: "Emails & Settings",
     permissions: [
       {

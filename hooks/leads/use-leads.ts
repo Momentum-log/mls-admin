@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getLeads, getUserLeads, deleteLead } from "@/api/leads";
+import { getLeads, getUserLeads, deleteLead } from "@/lib/api/leads";
 import { LeadFilter, UserLeadFilter } from "@/types/leads";
 import { toast } from "react-hot-toast";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export const useLeads = (filters: LeadFilter) => {
   return useQuery({
@@ -39,8 +40,8 @@ export const useDeleteLead = () => {
       queryClient.invalidateQueries({ queryKey: ["user-leads"] });
       toast.success("Lead deleted successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to delete lead");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete lead"));
     },
   });
 };

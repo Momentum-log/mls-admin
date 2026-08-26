@@ -32,6 +32,12 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useDeleteShipment } from "@/hooks/shipments/use-shipments";
+import {
+  getPaymentStatusVariant,
+  getShipmentStatusMeta,
+  isMultiLegStatus,
+} from "@/lib/shipment-status";
+import { Can } from "@/components/auth/can";
 
 /**
  * Props for ShipmentDetailSheet.
@@ -45,24 +51,6 @@ interface ShipmentDetailSheetProps {
   onOpenChange: (open: boolean) => void;
   /** The correlated source estimate (if found). */
   linkedEstimate?: AdminLead | null;
-}
-
-/**
- * Returns the badge variant for a payment status string.
- */
-function getPaymentVariant(
-  status: string,
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "PAID":
-      return "default";
-    case "PENDING":
-      return "secondary";
-    case "FAILED":
-      return "destructive";
-    default:
-      return "outline";
-  }
 }
 
 /**
@@ -115,8 +103,17 @@ export default function ShipmentDetailSheet({
         <div className="space-y-6 px-4 pb-6">
           {/* Status Row */}
           <div className="flex items-center gap-3 flex-wrap">
-            <Badge variant="outline">{shipment.shipmentStatus}</Badge>
-            <Badge variant={getPaymentVariant(shipment.paymentStatus) as any}>
+            <Badge
+              variant={getShipmentStatusMeta(shipment.shipmentStatus).variant}
+            >
+              {getShipmentStatusMeta(shipment.shipmentStatus).label}
+            </Badge>
+            {isMultiLegStatus(shipment.shipmentStatus) && (
+              <Badge variant="outline" className="border-brand-blue/40">
+                Hub-routed
+              </Badge>
+            )}
+            <Badge variant={getPaymentStatusVariant(shipment.paymentStatus)}>
               {shipment.paymentStatus}
             </Badge>
             {shipment.manualOverride && (
@@ -378,32 +375,38 @@ export default function ShipmentDetailSheet({
               Admin Actions
             </h4>
             <div className="flex flex-col gap-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => setOverrideModalOpen(true)}
-              >
-                <Shield className="mr-2 h-4 w-4" />
-                Update Status
-              </Button>
-              {shipment.paymentStatus !== "PAID" && (
+              <Can do="shipment:write" fallback="disable">
                 <Button
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={() => setBypassModalOpen(true)}
+                  onClick={() => setOverrideModalOpen(true)}
                 >
-                  <Banknote className="mr-2 h-4 w-4" />
-                  Mark as Paid (Bypass)
+                  <Shield className="mr-2 h-4 w-4" />
+                  Update Status
                 </Button>
+              </Can>
+              {shipment.paymentStatus !== "PAID" && (
+                <Can do="shipment:write" fallback="disable">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setBypassModalOpen(true)}
+                  >
+                    <Banknote className="mr-2 h-4 w-4" />
+                    Mark as Paid (Bypass)
+                  </Button>
+                </Can>
               )}
-              <Button
-                variant="destructive"
-                className="w-full justify-start mt-2"
-                onClick={() => setDeleteConfirmOpen(true)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Shipment
-              </Button>
+              <Can do="shipment:write" fallback="disable">
+                <Button
+                  variant="destructive"
+                  className="w-full justify-start mt-2"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Shipment
+                </Button>
+              </Can>
             </div>
           </section>
         </div>
@@ -428,6 +431,7 @@ export default function ShipmentDetailSheet({
         currentSync={shipment.trackingSyncEnabled}
         isOpen={overrideModalOpen}
         onClose={() => setOverrideModalOpen(false)}
+        isMultiLeg={isMultiLegStatus(shipment.shipmentStatus)}
       />
       <BypassPaymentModal
         shipmentId={shipment.id}

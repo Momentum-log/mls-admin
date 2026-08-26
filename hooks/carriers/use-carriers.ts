@@ -5,8 +5,9 @@ import {
   updateCarrier,
   deleteCarrier,
   updateCommissions,
-} from "@/api/carriers";
+} from "@/lib/api/carriers";
 import { toast } from "react-hot-toast";
+import { getApiErrorMessage } from "@/lib/api-error";
 import {
   CreateCarrierPayload,
   UpdateCarrierPayload,
@@ -31,8 +32,8 @@ export const useCreateCarrier = () => {
       queryClient.invalidateQueries({ queryKey: ["carriers"] });
       toast.success("Carrier profile created successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to create carrier");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to create carrier"));
     },
   });
 };
@@ -46,8 +47,8 @@ export const useUpdateCarrier = () => {
       queryClient.invalidateQueries({ queryKey: ["carriers"] });
       toast.success("Carrier updated successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to update carrier");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update carrier"));
     },
   });
 };
@@ -60,8 +61,8 @@ export const useDeleteCarrier = () => {
       queryClient.invalidateQueries({ queryKey: ["carriers"] });
       toast.success("Carrier deleted successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to delete carrier");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete carrier"));
     },
   });
 };
@@ -80,10 +81,8 @@ export const useUpdateCommissions = () => {
       queryClient.invalidateQueries({ queryKey: ["carriers"] });
       toast.success("Commission rules updated successfully");
     },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || "Failed to update commissions",
-      );
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update commissions"));
     },
   });
 };

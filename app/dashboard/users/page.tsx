@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   useUsers,
-  useBanUser,
+  useUpdateUserStatus,
   useVerifyUser,
   useDeleteUser,
 } from "@/hooks/users/use-users";
@@ -40,7 +40,9 @@ import {
   BadgeX,
   Trash2,
   Copy,
+  ShieldCheck,
 } from "lucide-react";
+import { Can } from "@/components/auth/can";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +51,38 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+/** Confirmation copy per moderation action. */
+const CONFIRM_COPY = {
+  ban: {
+    title: "Ban User",
+    description: (name: string) =>
+      `Ban ${name}? They lose access immediately. This is reversible — a banned user can be restored from the same menu.`,
+    confirmLabel: "Ban",
+    destructive: true,
+  },
+  unban: {
+    title: "Restore Access",
+    description: (name: string) =>
+      `Restore ${name} to active? Their account and ban type are cleared and they can sign in again.`,
+    confirmLabel: "Restore",
+    destructive: false,
+  },
+  verify: {
+    title: "Manually Verify User",
+    description: (name: string) =>
+      `Manually verify ${name}'s email? This cannot be undone.`,
+    confirmLabel: "Verify",
+    destructive: false,
+  },
+  delete: {
+    title: "Delete User",
+    description: (name: string) =>
+      `Permanently delete ${name}? All their shipments, estimates, and data are lost forever.`,
+    confirmLabel: "Delete",
+    destructive: true,
+  },
+} as const;
 
 /**
  * Users management page with search, filtering, pagination,
@@ -71,27 +105,35 @@ export default function UsersPage() {
     status: status === "ALL" ? undefined : status,
   });
 
-  const { mutate: banUser } = useBanUser();
+  const { mutate: updateStatus } = useUpdateUserStatus();
   const { mutate: verifyUser } = useVerifyUser();
   const { mutate: deleteUser } = useDeleteUser();
 
   // Dialog state
   const [confirmAction, setConfirmAction] = useState<{
-    type: "ban" | "verify" | "delete";
+    type: "ban" | "unban" | "verify" | "delete";
     user: User;
   } | null>(null);
 
-  const handleConfirm = (force: boolean) => {
+  const handleConfirm = () => {
     if (!confirmAction) return;
-    if (confirmAction.type === "ban") {
-      banUser({
-        userId: confirmAction.user.id,
-        data: { status: "BANNED", banType: "FULL" },
-      });
-    } else if (confirmAction.type === "verify") {
-      verifyUser(confirmAction.user.id);
-    } else {
-      deleteUser(confirmAction.user.id);
+    const userId = confirmAction.user.id;
+
+    switch (confirmAction.type) {
+      case "ban":
+        updateStatus({ userId, data: { status: "BANNED", banType: "FULL" } });
+        break;
+      case "unban":
+        // Clearing banType alongside the status matters — leaving it set
+        // would restore the account with a ban type still recorded against it.
+        updateStatus({ userId, data: { status: "ACTIVE", banType: "NONE" } });
+        break;
+      case "verify":
+        verifyUser(userId);
+        break;
+      case "delete":
+        deleteUser(userId);
+        break;
     }
     setConfirmAction(null);
   };
@@ -225,33 +267,55 @@ export default function UsersPage() {
                           <Copy className="mr-2 h-4 w-4" />
                           Copy User Code
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() =>
-                            setConfirmAction({ type: "verify", user })
-                          }
-                        >
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Manual Verify
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() =>
-                            setConfirmAction({ type: "ban", user })
-                          }
-                        >
-                          <ShieldAlert className="mr-2 h-4 w-4" />
-                          Ban User
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600 focus:text-red-600"
-                          onClick={() =>
-                            setConfirmAction({ type: "delete", user })
-                          }
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete User
-                        </DropdownMenuItem>
+                        <Can do="user:write">
+                          <DropdownMenuSeparator />
+                        </Can>
+                        <Can do="user:write">
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setConfirmAction({ type: "verify", user })
+                            }
+                          >
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Manual Verify
+                          </DropdownMenuItem>
+                        </Can>
+                        {/* Banning is reversible now — a banned user gets a
+                            restore action instead of a second ban. */}
+                        <Can do="user:write">
+                          {user.status === "BANNED" ? (
+                            <DropdownMenuItem
+                              className="text-green-700 focus:text-green-700"
+                              onClick={() =>
+                                setConfirmAction({ type: "unban", user })
+                              }
+                            >
+                              <ShieldCheck className="mr-2 h-4 w-4" />
+                              Restore Access
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() =>
+                                setConfirmAction({ type: "ban", user })
+                              }
+                            >
+                              <ShieldAlert className="mr-2 h-4 w-4" />
+                              Ban User
+                            </DropdownMenuItem>
+                          )}
+                        </Can>
+                        <Can do="user:write">
+                          <DropdownMenuItem
+                            className="text-red-600 focus:text-red-600"
+                            onClick={() =>
+                              setConfirmAction({ type: "delete", user })
+                            }
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete User
+                          </DropdownMenuItem>
+                        </Can>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -309,37 +373,18 @@ export default function UsersPage() {
           </Button>
         </div>
       </div>
-      {/* Confirm Dialog for ban/verify */}
       {confirmAction && (
         <ConfirmDialog
           open={!!confirmAction}
           onOpenChange={(open) => {
             if (!open) setConfirmAction(null);
           }}
-          title={
-            confirmAction.type === "ban"
-              ? "Ban User"
-              : confirmAction.type === "verify"
-                ? "Manually Verify User"
-                : "Delete User"
-          }
-          description={
-            confirmAction.type === "ban"
-              ? `Are you sure you want to ban ${confirmAction.user.name}? This will restrict their access.`
-              : confirmAction.type === "verify"
-                ? `Manually verify ${confirmAction.user.name}'s email? This action cannot be undone.`
-                : `Are you sure you want to permanently delete ${confirmAction.user.name}? All their shipments, estimates, and data will be lost forever.`
-          }
-          confirmLabel={
-            confirmAction.type === "ban"
-              ? "Ban"
-              : confirmAction.type === "verify"
-                ? "Verify"
-                : "Delete"
-          }
-          destructive={
-            confirmAction.type === "ban" || confirmAction.type === "delete"
-          }
+          title={CONFIRM_COPY[confirmAction.type].title}
+          description={CONFIRM_COPY[confirmAction.type].description(
+            confirmAction.user.name,
+          )}
+          confirmLabel={CONFIRM_COPY[confirmAction.type].confirmLabel}
+          destructive={CONFIRM_COPY[confirmAction.type].destructive}
           onConfirm={handleConfirm}
         />
       )}
