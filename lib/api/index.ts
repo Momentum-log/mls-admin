@@ -1,5 +1,11 @@
 import axios from "axios";
-import Cookies from "js-cookie";
+import {
+  clearSession,
+  getToken,
+  setSignOutReason,
+  touchSession,
+} from "@/lib/auth/session";
+import type { AdminAuthErrorCode } from "@/types/auth";
 
 /**
  * Configured Axios instance for all API requests.
@@ -15,11 +21,32 @@ const apiClient = axios.create({
 });
 
 /**
+ * The sign-in routes, which take credentials rather than a session.
+ *
+ * A 401 from one of these means "wrong code" and belongs to the form that
+ * asked for it — bouncing to /login would wipe the half-finished flow and
+ * replace a precise message with a generic one. Every other 401 means the
+ * session is gone and does warrant a sign-out.
+ */
+const CREDENTIAL_ROUTES = [
+  "/admin/auth/login",
+  "/admin/auth/otp/request",
+  "/admin/auth/otp/verify",
+  "/admin/auth/totp/verify",
+  "/admin/auth/backup-code/verify",
+];
+
+function isCredentialRoute(url?: string): boolean {
+  if (!url) return false;
+  return CREDENTIAL_ROUTES.some((route) => url.startsWith(route));
+}
+
+/**
  * Request interceptor: Attach Authorization header from stored cookie.
  * The backend expects `Authorization: Bearer <token>` on all protected routes.
  */
 apiClient.interceptors.request.use((config) => {
-  const token = Cookies.get("accessToken");
+  const token = getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,12 +54,21 @@ apiClient.interceptors.request.use((config) => {
 });
 
 /**
- * Response interceptor: Handle 401 Unauthorized globally.
- * Clears the accessToken cookie before redirecting to prevent
- * an infinite loop with the Next.js middleware.
+ * Response interceptor.
+ *
+ * On success it slides the token cookie forward, because the request that just
+ * succeeded also pushed the server's idle deadline back an hour.
+ *
+ * On 401 it clears the session and redirects, stashing the server's reason so
+ * the login page can explain itself. `SESSION_SUPERSEDED` in particular is the
+ * difference between "something went wrong" and "you signed in on another
+ * machine", and it is how an admin notices a sign-in they did not make.
  */
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    touchSession();
+    return response;
+  },
   (error) => {
     // Globally rewrite the error.message to use the server's descriptive message
     if (error.response?.data) {
@@ -43,15 +79,25 @@ apiClient.interceptors.response.use(
       }
     }
 
-    if (error.response?.status === 401) {
-      if (
-        typeof window !== "undefined" &&
-        !window.location.pathname.includes("/login")
-      ) {
-        Cookies.remove("accessToken");
-        window.location.href = "/login";
-      }
+    if (
+      error.response?.status === 401 &&
+      !isCredentialRoute(error.config?.url) &&
+      typeof window !== "undefined" &&
+      !window.location.pathname.startsWith("/login")
+    ) {
+      const data = error.response.data ?? {};
+      // `code` and `reason` carry the same value for one release; `reason` is
+      // the field the contract converges on, so prefer it and fall back.
+      const code = (data.reason ?? data.code) as AdminAuthErrorCode | undefined;
+
+      setSignOutReason({
+        code: typeof code === "string" ? code : undefined,
+        message: typeof data.message === "string" ? data.message : undefined,
+      });
+      clearSession();
+      window.location.href = "/login";
     }
+
     return Promise.reject(error);
   },
 );

@@ -28,7 +28,7 @@ interface AdminProfileDrawerProps {
  * Displayed in the drawer footer. Kept in one place so it cannot drift from
  * `package.json` the way a hardcoded string did.
  */
-const APP_VERSION = "1.6.0";
+const APP_VERSION = "1.7.0";
 
 /**
  * AdminProfileDrawer Component
