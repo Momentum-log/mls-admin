@@ -2,109 +2,41 @@
 trigger: always_on
 ---
 
-# Project Instructions for Momentum Logistics Service (MLS)
+# Agent Instructions — MLS Admin (Antigravity rules adapter)
 
-## 1. Project Overview & Context
+This repository uses a centralized, repository-native AI operating system that is agent-agnostic. The **canonical source of truth** for all operating rules, engineering standards, and architecture is:
 
-Momentum Logistics Service is a comprehensive logistics management system designed to streamline operations for logistics companies in **Poland**. The system provides features such as shipment tracking, inventory management, route optimization, and real-time analytics.
+👉 **[docs/ai/AGENT-CORE.md](../../docs/ai/AGENT-CORE.md)**
 
-### Regional Configuration (Poland)
+This file is an adapter. It carries no rules of its own; if anything here disagrees with `docs/ai/AGENT-CORE.md`, the canonical file wins.
 
-- **Primary Region**: Poland
-- **Timezone**: Central European Time (CET) / Central European Summer Time (CEST)
-- **Currency**: Polish Złoty (PLN)
-- **Locale**: `pl-PL` (use for date/number formatting), `en-US` (codebase language)
+---
 
-## 2. Technology Stack
+## Mandatory startup sequence
 
-- **Runtime & Package Manager**: **Bun**
-  - **Strict Rule**: Always use `bun` for package management and scripts (e.g., `bun install`, `bun run dev`).
-- **Backend**: Node.js, Express.js
-- **Frontend**: React.js, Next.js (App Router)
-- **Database**: PostgreSQL
+Before planning, modifying files, running commands, or answering project questions, load context in this exact order:
 
-### Project Structure Overview
+1. **[docs/ai/AGENT-CORE.md](../../docs/ai/AGENT-CORE.md)** — universal rules, hard stops, autonomy boundaries.
+2. **[MEMORY.md](../../MEMORY.md)** — what is true right now (v1.7.0, architecture, features, environment, gotchas).
+3. **[docs/ai/HANDOFF.md](../../docs/ai/HANDOFF.md)** — in-flight work and the next action, or `IDLE`.
+4. **[docs/ai/CONSTITUTION.md](../../docs/ai/CONSTITUTION.md)** — enduring engineering principles.
+5. **[docs/ai/WORKFLOW.md](../../docs/ai/WORKFLOW.md)** — task classification, state machine and gates, output and command protocols, documentation reconciliation.
+6. **[docs/ai/INDEX.md](../../docs/ai/INDEX.md)** — the map to domain docs, ADRs, workflows, plans, and existing repository documentation.
 
-- `app/`: Next.js App Router pages and layouts.
-- `components/`: Reusable UI components.
-  - `components/ui/`: Primitive UI components (buttons, inputs).
-- `api/`: Backend API routes and logic.
-- `types/`: TypeScript definitions.
-- `utils/`: Helper functions.
-- `hooks/`: Custom React hooks.
-- `public/`: Static assets.
+Then load task-specific documents and the actual code, per AGENT-CORE §1.
 
-## 3. Coding Standards & Philosophy
+---
 
-### 3.1 Modular & Reusable Code (Strict)
+## Critical rules digest (canonical text lives in AGENT-CORE)
 
-- **Modularity**: Code **MUST** be modular. Extract distinct logic, constants, and types into separate files.
-  - _Anti-Pattern_: 500+ line components with mixed logic.
-  - _Pattern_: `useShippingCalculator.ts` (hook), `shipping.types.ts` (types), `ShippingForm.tsx` (UI).
-- **Reusability**: **ALWAYS** check `components/` and `utils/` before creating new code. Do not duplicate logic.
-- **Imports**: Use the `@/` alias for all local imports (e.g., `import { Button } from '@/components/ui/button'`).
+- **Zero autonomous Git operations** — never branch, stage, commit, amend, rebase, merge, tag, or push. Report "ready for owner review and commit." (RULE-GIT-001)
+- **Analysis-only by default** — review/audit/investigate requests edit nothing. (RULE-AUTON-001)
+- **Pre-Edit Summary before editing; silence during; final report after.** (RULE-AUTON-002, RULE-WF-008)
+- **Every command is disclosed before it runs.** (RULE-AUTON-004)
+- **Pure client SPA** — no server code here; the backend is `../mls-server` and its contract is the source of truth. Never create a root `api/`. (RULE-ARCH-001, -002, -004)
+- **Bun** for everything local; verify with `bunx tsc --noEmit`, `bun run lint`, and a check in the owner's running app on `:3000`. (RULE-ENG-001, RULE-VERIF-001)
+- **Never touch `.env*` while the owner's dev server is running.** (RULE-VERIF-004)
+- **New product capability ⇒ owner-approved PRD + tasks file first.** (RULE-WF-003)
+- **Documentation is reconciled per layer before a task is complete.** (RULE-DOC-001)
 
-### 3.2 Documentation (Strict)
-
-- **Heady Documentation**: All exported functions, components, interfaces, and complex logic blocks **MUST** be documented using JSDoc/TSDoc.
-- **Requirement**: Comments should explain _what_ the code does, _why_ it does it (if complex), and define parameters/return values.
-  ```typescript
-  /**
-   * Calculates the estimated shipping cost based on volumetric weight.
-   *
-   * @param length - Package length in cm
-   * @param width - Package width in cm
-   * @param height - Package height in cm
-   * @param weight - Actual weight in kg
-   * @returns The calculated shipping cost in PLN
-   */
-  export const calculateShippingCost = (length: number, width: number, height: number, weight: number): number => { ... }
-  ```
-
-### 3.3 Design & Styling (Strict)
-
-- **Style**: Flat, minimalist, modern. **NO GRADIENTS**.
-- **Colors**: Use **ONLY** CSS variables from `global.css`.
-  - usage: `bg-brand-blue`, `text-text-color`.
-  - **Forbidden**: `bg-blue-500`, `text-[#123456]`.
-- **Contrast**: Ensure high contrast for readability (Light text on Dark bg, Dark text on Light bg).
-
-## 4. Development Workflows
-
-### 4.1 Commands
-
-- **Start Dev Server**: `bun run dev`
-- **Build**: `bun run build`
-- **Type Check**: `bunx tsc --noEmit`
-- **Lint**: `bun run lint` (or equivalent configured script)
-
-### 4.2 Version Control & Changelog (Critical)
-
-- **Semantic Versioning (SemVer)**:
-  - **Major (X.0.0)**: Breaking API changes or major architectural shifts.
-  - **Minor (0.X.0)**: New features that are backward compatible.
-  - **Patch (0.0.X)**: Bug fixes and minor adjustments.
-- **Changelog Updates**: You **MUST** update `changelog.md` after every significant task or feature implementation.
-- **Format**:
-
-  ```markdown
-  ### [version code: 1.0.0] - YYYY-MM-DD - Short description
-
-  - Added: Feature X
-  - Changed: Refactored Y
-  - Fixed: Bug Z
-  ```
-
-## 5. Security Standards (High Priority)
-
-- **Input Validation**: ALL API endpoints and Form inputs **MUST** be validated using schemas (e.g., Zod) on both client and server.
-- **Secrets Management**: NEVER commit secrets/keys. Use `.env.local` and access via `process.env`.
-- **Authentication**: Protect all private routes. Ensure proper authorization checks (e.g., User can only view their own shipments).
-- **Dependencies**: Periodically check for vulnerabilities.
-
-## 6. Pre-Commit Checklist
-
-1. **Run Type Check**: `bunx tsc --noEmit` (Must pass)
-2. **Run Linting**: Ensure no lint errors.
-3. **Verify Server**: Ensure `bun run dev` starts without errors.
-4. **Update Changelog**: Document your changes.
+Rule IDs resolve in [docs/ai/RULES.md](../../docs/ai/RULES.md).
