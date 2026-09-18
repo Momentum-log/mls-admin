@@ -5,7 +5,7 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### [1.7.0] - 2026-09-18 - Passwordless Super Admin, Server-Backed Sessions & Email-First Sign-in
+## [1.7.0] - 2026-09-18 - Passwordless Super Admin, Server-Backed Sessions & Email-First Sign-in
 
 **Breaking (deployment):** Requires `mls-server` **v6.0.0 or later**. Everything
 in this release rides on routes that did not exist before it — `/auth/identify`,
