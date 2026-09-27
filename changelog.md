@@ -5,6 +5,99 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-09-18 - Passwordless Super Admin, Server-Backed Sessions & Email-First Sign-in
+
+**Breaking (deployment):** Requires `mls-server` **v6.0.0 or later**. Everything
+in this release rides on routes that did not exist before it — `/auth/identify`,
+`/auth/otp/*`, `/auth/totp/*`, `/auth/backup-code/verify`, `/auth/logout` — and
+on sessions being real rows the server can revoke. Against an older server the
+login page cannot get past its first step.
+
+Two things were replaced wholesale on the server, and the client follows both:
+the Super Administrator's password is gone, and admin sessions are now
+server-backed, idle-based, and limited to one per admin.
+
+- **Changed**: **Sign-in is email-first.** One field. `POST /admin/auth/identify` answers with how that address authenticates: `{ method: "PASSWORD" }` opens a password field; `{ method: "OTP", codeSent: true }` opens a code field, the code already on its way; `404 ACCOUNT_NOT_FOUND` and `403 ACCOUNT_INACTIVE` are refused before any credential is collected, each with its own wording — collapsing them would send a deactivated admin hunting for a typo. The previous Staff / Super Admin tab switch existed only because `/otp/request` deliberately gave no signal about which kind of address it had been handed; the lookup makes that choice for the admin instead.
+- **Note**: The lookup tells an unauthenticated caller whether an address is an admin and which kind, which the identical-202 `/otp/request` was designed to refuse. Accepted: everything past that answer requires the Super Admin's inbox, authenticator, or a backup code, and the `name` it returns is the role label, not a person. What it buys is that codes are never dispatched to addresses that cannot use them.
+- **Added**: **Throttled lookups say so.** A second lookup inside the send window returns `codeAlreadyPending: true` with `retryAfterSeconds` and `expiresInSeconds`. The page reads "a code is already waiting — we didn't send a new one" rather than "we sent a code", the resend gate unlocks when the server says it can rather than after a flat 60s, and the stated validity comes from the server's own figure.
+- **Added**: **Three Super Admin credentials.** Emailed one-time code (6 digits, 10 minutes, 3 attempts, one live at a time); authenticator app (30-second TOTP, one step of clock drift tolerated, a code never accepted twice even inside its own window); single-use backup code (case, spacing and dash ignored, `backupCodesRemaining` surfaced after use). The authenticator link on the email step bypasses the lookup entirely — the lookup sends mail on the Super Admin path, and the authenticator exists precisely for when mail is down, so routing the escape hatch through it would couple the one path that survives an outage to the thing that is broken.
+- **Removed**: **Password rotation, entirely.** The hook, the API module, the "Weekly Reset Key" dialog on the login page and the rotation card on the security page. The scheme emailed a plaintext password on a schedule and accepted a reset key derived from `JWT_SECRET` on a public endpoint — anyone who had ever seen that secret could compute the key indefinitely. There is now no password on the account to rotate, leak or mail.
+- **Changed**: **`/dashboard/security` is authenticator management.** Enrol (QR rendered client-side via `react-qr-code`, plus the base32 key for manual entry), confirm with a live code, and receive ten backup codes shown exactly once — only their hashes are stored. Regenerating the set and removing the authenticator both require a *current* code, so a stolen session alone cannot strip or replace the second factor. The removal dialog says plainly that it makes the emailed code the only way in. A sessions card explains the one-session rule and offers Sign Out Everywhere.
+- **Added**: **A session model** (`lib/auth/session.ts`). Sessions expire after an hour of *inactivity*, not an hour after sign-in, and every authenticated request pushes the deadline back. The cookie now slides with it — re-stamped on each successful response, throttled to once a minute to mirror the server's own write throttle, with a two-minute grace for the server's up-to-1h59s effective window. Without this the fixed one-hour cookie from 1.4.0 would have signed out an admin working continuously, on the hour, mid-task.
+- **Added**: **The 401 contract.** Every authenticated failure carries a `reason` — `SESSION_SUPERSEDED`, `SESSION_REVOKED`, `SESSION_EXPIRED`, `NO_TOKEN`, `INVALID_TOKEN`, `LEGACY_TOKEN`. The API client stashes it across the full-page redirect and `SessionNotice` explains it on the login screen, once. `SESSION_SUPERSEDED` is styled as a warning with the server's own message: it is the difference between "something went wrong" and "this account signed in on another device", and it is how an admin notices a sign-in they did not make. The notice reads through `useSyncExternalStore` so the server and client renders agree without a second pass.
+- **Fixed**: **Sign-in routes are exempt from the global 401 redirect.** A 401 from `/otp/verify` means "wrong code" and belongs to the form. Bouncing to `/login` would have wiped a half-finished flow and replaced a precise message with a generic one.
+- **Changed**: **Logout is a real request.** `POST /admin/auth/logout` revokes the session immediately; `?all=true` ends every session for the account. 1.4.0 removed the logout call because the route did not exist and the token was stateless — both are no longer true. Local teardown still runs on `onSettled`, so a failed call cannot leave the admin holding a token they meant to drop.
+- **Changed**: The profile drawer's Security tab branches on account type. The Super Administrator sees a "Sign-in Method" panel pointing at the authenticator instead of a change-password form aimed at a credential that no longer exists.
+- **Added**: `reason` on `ApiErrorBody`. The v6 contract sends the same value in `code` and `reason` for one release and converges on `reason`; the client branches on it where it matters.
+- **Changed**: Version reconciled again — `package.json` and the drawer footer had stayed at 1.6.0 while this file reached 1.6.2. All three now read 1.7.0.
+- **Note**: The 1.2.2 entry below describes the rotation scheme this release deletes, and 1.4.0's "Removed: the admin logout API call" describes a route that now exists. Both were accurate when written and are left as they stand.
+
+### [1.6.2] - 2026-08-26 - API Client Relocated Out of Vercel's Function Namespace
+
+Deployments had begun failing at the "Deploying outputs..." step with *"No more
+than 12 Serverless Functions can be added to a Deployment on the Hobby plan."*
+The build itself always succeeded — nothing was wrong with the code.
+
+- **Fixed**: **The API client directory was being deployed as backend endpoints.** Vercel's zero-config detection treats any root-level `/api` directory as a source of Serverless Functions, independently of the Next.js framework preset, and turns every non-underscore-prefixed file inside it into one. That counted 16 functions — the 15 client modules plus `api/carriers/constants.ts`, a plain constants file — against a ceiling of 12, before Next.js's own output was considered. None of them are backend code: `api/index.ts` is a browser-side Axios instance that reads a cookie via `js-cookie` and redirects with `window.location`, and the project has no route handlers at all. The directory moved to `lib/api/`, alongside the cross-cutting code it belongs with (`lib/api-error.ts`, `lib/rbac.ts`, `lib/shipment-status.ts`).
+- **Changed**: All 17 consumer imports repointed from `@/api/…` to `@/lib/api/…` across 14 hooks, 2 pages and `carrier-detail-sheet.tsx`. Relative imports inside the tree were untouched — they moved together and stayed correct. No configuration changed: the `@/*` → `./*` alias already resolves the new path, and `vercel.json` carries no `builds` or `functions` block.
+- **Note**: Nothing was consolidated into a single shared function, which was the other obvious route out of the limit. There were no functions to consolidate, and a barrel export over every domain's client would have defeated tree-shaking to solve a problem that did not exist. Purely a relocation — no runtime behaviour changed.
+- **Note**: Earlier entries in this file refer to these modules by their original `api/…` paths. Those readings were accurate when written and are left as they stand.
+
+### [1.6.1] - 2026-08-26 - Next.js 16 Proxy Migration
+
+- **Changed**: Migrated deprecated `middleware.ts` file convention to `proxy.ts` with exported `proxy()` function as required by Next.js 16.
+
+### [1.6.0] - 2026-08-11 - Permission Enforcement & Reversible Moderation
+
+- **Added**: `<Can>` — one wrapper for gating any control on permissions, with hide and disable modes. Disable is the default choice for destructive actions: staff see the capability exists and can ask for access, rather than concluding the feature is missing.
+- **Changed**: `usePermissions` now mirrors the server's `RbacService` exactly — granting on the `*` wildcard, an exact match, or a `<resource>:*` wildcard. Previously only exact matches were understood, so a role holding `shipment:*` would have been shown nothing.
+- **Fixed**: **Super Admin was identified by role name.** Renaming the role would have revoked super-admin access and simultaneously unlocked the staff rows that the same comparison protected. Identity now comes from the `*` wildcard, with the name kept only as a fallback for a session whose permissions failed to load.
+- **Fixed**: **Permissions are parsed defensively.** `Role.permissions` is a `Json` column, so nothing guarantees its shape. A role stored as a stringified array would have made `.includes()` do substring matching and silently grant permissions never assigned.
+- **Fixed**: **Two routes were guarded too permissively.** The server chains two `requirePermission` calls on shipments (`user:read` + `shipment:read`) and leads (`user:read` + `leads:read`); the guard checked only one, letting an admin open a page whose every request then 403s. Guard entries now accept multiple permissions.
+- **Fixed**: Route matching picks the longest match rather than the first, so the new `/dashboard` root guard cannot shadow more specific entries depending on key order.
+- **Fixed**: `/dashboard/settings` is gated on `staff:write` — the server gates even the GET on a write permission — and the dead `email:read` entry pointing at it was removed.
+- **Added**: **Un-ban.** Banning was irreversible from the UI: `BanUserPayload` was typed to the literal `"BANNED"`, so no shape could express restoring an account. The payload now covers the server's full range, and a banned user gets a Restore Access action that clears the ban type alongside the status.
+- **Added**: The `inquiries:read` / `inquiries:write` group, absent from the permission catalog.
+
+### [1.5.0] - 2026-08-10 - Hub Routing & Multi-Leg Operations
+
+Hub routing can now be enabled safely. Before this, turning it on would have
+stranded every hub-routed parcel at the sorting centre, because nothing in the
+dashboard could confirm arrival.
+
+- **Added**: **Hub & Routing page** (`/dashboard/hub`). Master routing switch, compete-best-price switch, and full sorting-centre CRUD. The current mode is rendered from the server's own `routingMode` sentence rather than re-derived, so the two cannot drift.
+- **Added**: **Honest no-op reporting on both toggles.** Enabling hub routing with no centre configured, or flipping compete while routing is off, are accepted by the API but change nothing. Both responses carry `effective` and a `warning`; the UI raises the warning and snaps the switch back instead of showing a success it did not earn.
+- **Added**: **Environment-fallback banner.** When the active hub resolves from deploy-time configuration rather than the database, the page says so — activating any centre replaces it.
+- **Added**: **Multi-Leg Ops queue** (`/dashboard/multi-leg`). Lists hub-routed shipments waiting on a person, oldest first. Confirm hub arrival and create leg 2, both driven by the server's `canConfirmArrival`/`canCreateLegTwo` flags so the state rules live in one place.
+- **Added**: **Leg-2 re-pricing decision.** When leg 2's live rate exceeds the quoted price by more than 10% the server refuses with a 409 carrying both figures. That is a decision, not a failure: the dialog shows what the customer paid, what it costs now, and the shortfall MLS absorbs, and proceeding is explicit.
+- **Added**: **Centre-printed label warning.** Leg 2's label is flagged as never to be sent to the customer — they already hold leg 1's, and a parcel with two barcodes fails physically.
+- **Added**: Central shipment status model (`lib/shipment-status.ts`). The enum grew from 7 to 15 values; the override modal offered only 7, so no fulfillment or multi-leg state could be set by hand. Multi-leg states are hidden for single-leg shipments to avoid stranding them in a state the ops queue filters out.
+- **Added**: Status filter on the shipments list — the API has always supported it and the type declared it, but no control ever set it.
+- **Added**: `api/_shared/envelope.ts` — normalises the API's four response envelopes and two pagination styles behind one shape.
+- **Fixed**: Carrier credentials no longer reach the client. The multi-leg detail endpoint spreads the full carrier row including `apiKey`/`apiSecret`; the API layer strips them before they can land in component state.
+- **Fixed**: Three divergent copies of `getPaymentVariant`, none of which knew about `REFUNDED`, consolidated into one.
+- **Changed**: Sidebar grouped into Operations / Growth / Configuration / System. Ten flat entries had stopped being scannable, and more are coming. Locked entries stay visible with a tooltip naming the permission they need, so staff can ask for access rather than assume a feature is missing.
+- **Fixed**: The Security entry guarded on `system:security`, a permission absent from the server's catalog. It could never be granted, so it always evaluated false — correct behaviour by accident. Now an explicit Super Admin flag.
+
+### [1.4.0] - 2026-08-09 - API Path Realignment & Broken Flow Repairs
+
+**Breaking (deployment):** `NEXT_PUBLIC_API_URL` must now be `https://<host>/api`,
+not `.../api/admin`. Every admin path carries its own `/admin` prefix.
+
+- **Fixed**: **API paths were half-prefixed.** Some calls included `/admin` and most did not, so one set was always wrong. All 40+ paths now resolve consistently against a single base. Bulk delete, force delete and cascade delete were among those returning 404.
+- **Fixed**: **Two pages crashed on load.** `users/[id]/shipments` and `users/[id]/estimates` called `useMemo` after early returns, throwing "Rendered more hooks than during the previous render" the moment the user query resolved. Both hooks hoisted above the guards.
+- **Fixed**: **"Create & Bypass Payment" never bypassed anything.** The handler ignored its own `bypass` argument, so the shipment was created and left unpaid behind a success toast. It now chains the bypass call and collects the required payment reference instead of confirming blindly.
+- **Fixed**: **Create Shipment wizard could not fetch rates.** It posted to `/shipping/estimates`, which does not exist. Repointed at `/shipments/get-shipping-quote`, and the request now sends the canonical address shape (`streetLines[]`, `stateOrProvinceCode`) and a `packages` array rather than a flat address and a singular `package`.
+- **Fixed**: **EUR rates booked as PLN.** The proxy payload omitted `currency`, which the server defaults to PLN while calculating commission — roughly a 4x undercharge on EUR routes. It now sends `currency`, `actualPrice`, `carrierSlug` (not a display name) and `estimateId`.
+- **Fixed**: **Rate list rendered blank prices.** `ShippingRate` declared `price`/`estimatedDays`; the API returns `carrierPrice`/`actualPrice`/`deliveryDescription`. Types corrected and carrier errors are now surfaced.
+- **Fixed**: **Session cookie outlived its token 168x.** Admin tokens expire after one hour; the cookie was set for seven days, so the middleware admitted admins to a dead session that 401'd on every request. Cookie lifetime now matches the token, with `sameSite=strict` and `secure` over HTTPS.
+- **Fixed**: **ESLint could not run at all.** `zod` was pinned at `3.24.1`, below the `^3.25.0 || ^4.0.0` range `eslint-plugin-react-hooks@7` requires via `zod-validation-error`. Bumped to `^3.25.76`, which ships the `zod/v4` subpaths while keeping the v3 classic API `@hookform/resolvers@3` depends on. This is why the hooks-order crashes shipped unnoticed.
+- **Fixed**: Pagination on the user sub-pages advanced past the last page — it inferred "has more" from row count instead of `pagination.totalPages`.
+- **Added**: `lib/api-error.ts` and `types/api.ts` — one place to read the API's `{ error, code, details }` envelope, including structured `details` objects. Replaces 28 hand-rolled `catch (error: any)` chains.
+- **Added**: `residential` toggle on wizard addresses. Carriers price residential delivery differently and the field is required by the schema.
+- **Removed**: The admin logout API call. No `/admin/auth/logout` route exists — the 404 was invisible because the mutation used `onSettled`. Session teardown is client-side, which is all a stateless token allows.
+- **Changed**: Reconciled version drift — `package.json`, the changelog and the profile drawer footer had disagreed since 0.5.1.
+
 ### [1.3.0] - 2026-03-09 - Add Commission Thresholds and Admin Profile
 
 - Added: Global commission safety net thresholds (PLN and EUR with manual override options).

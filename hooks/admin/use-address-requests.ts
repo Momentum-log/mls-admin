@@ -4,13 +4,14 @@ import {
   getAddressRequestById,
   getAddressRequests,
   rejectAddressRequest,
-} from "@/api/admin/address-requests";
+} from "@/lib/api/admin/address-requests";
 import {
   AddressRequestListFilters,
   ApproveAddressRequestPayload,
   RejectAddressRequestPayload,
 } from "@/types/address-request";
 import { toast } from "react-hot-toast";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export const useAddressRequests = (filters: AddressRequestListFilters) => {
   return useQuery({
@@ -49,7 +50,7 @@ export const useApproveAddressRequest = () => {
       });
       toast.success("Address request approved");
     },
-    onError: (error: any, variables) => {
+    onError: (error, variables) => {
       queryClient.invalidateQueries({ queryKey: ["address-requests"] });
       if (variables?.requestId) {
         queryClient.invalidateQueries({
@@ -57,10 +58,7 @@ export const useApproveAddressRequest = () => {
         });
       }
       toast.error(
-        error?.response?.data?.details ||
-          error?.response?.data?.message ||
-          error?.message ||
-          "Failed to approve address request",
+        getApiErrorMessage(error, "Failed to approve address request"),
       );
     },
   });
@@ -84,7 +82,7 @@ export const useRejectAddressRequest = () => {
       });
       toast.success("Address request rejected");
     },
-    onError: (error: any, variables) => {
+    onError: (error, variables) => {
       queryClient.invalidateQueries({ queryKey: ["address-requests"] });
       if (variables?.requestId) {
         queryClient.invalidateQueries({
@@ -92,10 +90,7 @@ export const useRejectAddressRequest = () => {
         });
       }
       toast.error(
-        error?.response?.data?.details ||
-          error?.response?.data?.message ||
-          error?.message ||
-          "Failed to reject address request",
+        getApiErrorMessage(error, "Failed to reject address request"),
       );
     },
   });

@@ -34,6 +34,7 @@ import { PermissionSelector } from "@/components/ui/permission-selector";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Role } from "@/types/staff";
+import { SUPER_ADMIN_ROLE_NAME } from "@/lib/rbac";
 import {
   Dialog,
   DialogContent,
@@ -156,7 +157,7 @@ export default function RolesTable() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    {r.name !== "Super Admin" && (
+                    {r.name !== SUPER_ADMIN_ROLE_NAME && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -202,7 +203,7 @@ export default function RolesTable() {
                   setRoleData({ ...roleData, name: e.target.value })
                 }
                 placeholder="e.g. Support Agent"
-                disabled={editingRole?.name === "Super Admin"}
+                disabled={editingRole?.name === SUPER_ADMIN_ROLE_NAME}
               />
             </div>
             <div className="space-y-2">

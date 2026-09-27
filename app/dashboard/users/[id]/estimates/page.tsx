@@ -75,6 +75,27 @@ export default function UserEstimatesPage() {
     limit: 100,
   });
 
+  /** Resolved leads from the `data` wrapper. */
+  const leads = responseData?.data ?? [];
+  const pagination = responseData?.pagination;
+  const allShipments = shipmentsData?.data ?? [];
+
+  /**
+   * Compute correlation for the selected estimate.
+   *
+   * Must stay above the early returns below — React counts hooks per render,
+   * so a `useMemo` placed after them runs on the loaded render but not the
+   * loading one, and the mismatch throws "Rendered more hooks than during the
+   * previous render" the moment the user query resolves.
+   */
+  const linkedShipment = useMemo(
+    () =>
+      selectedEstimate
+        ? findShipmentForEstimate(selectedEstimate, allShipments)
+        : null,
+    [selectedEstimate, allShipments],
+  );
+
   if (userLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -94,20 +115,6 @@ export default function UserEstimatesPage() {
       </div>
     );
   }
-
-  /** Resolved leads from the `data` wrapper. */
-  const leads = responseData?.data ?? [];
-  const pagination = responseData?.pagination;
-  const allShipments = shipmentsData?.data ?? [];
-
-  /** Compute correlation for the selected estimate. */
-  const linkedShipment = useMemo(
-    () =>
-      selectedEstimate
-        ? findShipmentForEstimate(selectedEstimate, allShipments)
-        : null,
-    [selectedEstimate, allShipments],
-  );
 
   return (
     <div className="space-y-6">
@@ -211,7 +218,7 @@ export default function UserEstimatesPage() {
             variant="outline"
             size="sm"
             onClick={() => setPage((p) => p + 1)}
-            disabled={!leads.length || leads.length < PAGE_SIZE || isLoading}
+            disabled={page >= (pagination?.totalPages ?? 1) || isLoading}
           >
             Next
           </Button>

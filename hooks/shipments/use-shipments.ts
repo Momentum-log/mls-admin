@@ -7,8 +7,9 @@ import {
   getUserShipments,
   deleteShipment,
   bulkDeleteShipments,
-} from "@/api/shipments";
+} from "@/lib/api/shipments";
 import { toast } from "react-hot-toast";
+import { getApiErrorMessage } from "@/lib/api-error";
 import {
   ShipmentFilter,
   CreateProxyShipmentPayload,
@@ -48,10 +49,8 @@ export const useCreateProxyShipment = () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       toast.success("Shipment created successfully!");
     },
-    onError: (error: any) => {
-      toast.error(
-        error?.response?.data?.message || "Failed to create shipment",
-      );
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to create shipment"));
     },
   });
 };
@@ -70,8 +69,8 @@ export const useBypassPayment = () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       toast.success("Payment bypassed successfully!");
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to bypass payment");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to bypass payment"));
     },
   });
 };
@@ -90,8 +89,8 @@ export const useOverrideStatus = () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       toast.success("Shipment status updated!");
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to update status");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update status"));
     },
   });
 };
@@ -113,8 +112,8 @@ export const useDeleteShipment = () => {
       queryClient.invalidateQueries({ queryKey: ["user-shipments"] });
       toast.success("Shipment deleted successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to delete shipment");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete shipment"));
     },
   });
 };
@@ -130,10 +129,8 @@ export const useBulkDeleteShipments = () => {
       queryClient.invalidateQueries({ queryKey: ["user-shipments"] });
       toast.success("Shipments deleted successfully");
     },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || "Failed to delete shipments",
-      );
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete shipments"));
     },
   });
 };

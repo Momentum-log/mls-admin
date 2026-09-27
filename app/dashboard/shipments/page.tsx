@@ -51,15 +51,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-const DEFAULT_PAGE_SIZE = 20;
-
-const PAGE_SIZE = 10;
-
+import {
+  getPaymentStatusVariant,
+  getShipmentStatusMeta,
+  getShipmentStatusOptions,
+} from "@/lib/shipment-status";
 export default function ShipmentsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
   const [limit, setLimit] = useState(20);
+  const [status, setStatus] = useState<string>("ALL");
 
   // Detail Sheet State
   const [selectedShipment, setSelectedShipment] =
@@ -69,6 +71,7 @@ export default function ShipmentsPage() {
     page,
     limit,
     search: debouncedSearch,
+    status: status === "ALL" ? undefined : status,
   });
 
   const shipments = responseData?.data ?? [];
@@ -134,20 +137,6 @@ export default function ShipmentsPage() {
     [selectedShipment, leadsData],
   );
 
-  // Badge variants
-  const getPaymentVariant = (status: string) => {
-    switch (status) {
-      case "PAID":
-        return "default";
-      case "PENDING":
-        return "secondary";
-      case "FAILED":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -180,6 +169,25 @@ export default function ShipmentsPage() {
             className="pl-9"
           />
         </div>
+        <Select
+          value={status}
+          onValueChange={(val) => {
+            setStatus(val);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-56">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All statuses</SelectItem>
+            {getShipmentStatusOptions().map((s) => (
+              <SelectItem key={s.value} value={s.value}>
+                {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
@@ -277,13 +285,18 @@ export default function ShipmentsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-xs font-black">
-                      {shipment.shipmentStatus}
+                    <Badge
+                      variant={
+                        getShipmentStatusMeta(shipment.shipmentStatus).variant
+                      }
+                      className="text-xs font-black"
+                    >
+                      {getShipmentStatusMeta(shipment.shipmentStatus).label}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={getPaymentVariant(shipment.paymentStatus) as any}
+                      variant={getPaymentStatusVariant(shipment.paymentStatus)}
                       className="text-xs font-black"
                     >
                       {shipment.paymentStatus}
