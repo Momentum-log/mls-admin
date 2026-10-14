@@ -5,6 +5,28 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-10-14 - Staff Queues, Finance Screens, Settings & Carrier Save Fixes
+
+**Breaking (deployment):** Requires the `mls-server` release from PR #16 (branch `claude/project-thread-bgjeuk`, commit `b0ffd11` or later). The new pages call routes that do not exist on older servers: the cancellation queue, gateway refunds, `PUT /admin/carriers/update-carrier-settings/:id`, `GET /admin/settings/invoice-expiration`, DHL settings and hub handoff.
+
+**Merge note:** 1.7.1 (Super Admin email code tied to `challengeId`) was still uncommitted when this was written. Land 1.7.1 first; on conflict keep this entry above it and keep the version at 1.8.0.
+
+- **Added**: **Cancellations** (`/dashboard/cancellations`). Customer cancellation requests with approve or reject and a reason. Approving a paid shipment opens its refund request; voiding the carrier label stays a manual step in the carrier portal.
+- **Added**: **Refunds** (`/dashboard/refunds`). Approve sends the money back through Stripe or PayU. A refund the gateway fails returns to the queue with the gateway's reason and a Retry button. "Approve without sending money" (`manual: true`) keeps the old flow for refunds paid out by hand, followed by Mark paid out. The list refreshes every 30 seconds while the gateway settles.
+- **Added**: **Settings** (`/dashboard/settings`). One card per server setting group, each checking its own permission: commission safety net (`staff:read`), DHL eCommerce fee, hub handoff default and VAT (`staff:read`), invoice payment window in hours (`shipment:read`) and payment reminder emails (`email:write`). The page guard drops from `staff:write` to `dashboard:read`; cards the admin cannot read say which permission they need.
+- **Added**: **Collections** (`/dashboard/collections`). DHL parcels MLS collects from customers; once one is at the hub, staff book DHL's courier on an offered date or record a service-point drop-off.
+- **Added**: **Invoices** (`/dashboard/invoices`) with a detail sheet, payments, and CSV export. **Tax Rules** (`/dashboard/tax-rules`) with create, edit (reason kept in the audit log) and deactivate.
+- **Added**: **Partner Enquiries** (`/dashboard/inquiries`), **Emails** (`/dashboard/emails`: database templates plus a one-off sender), **Activity Log** (`/dashboard/activity-logs`) and **Business Upgrades** (`/dashboard/business-upgrades`: NIP check, document viewer, approve or reject with feedback).
+- **Added**: The shipment detail sheet shows the shipment's history and has a Mark Completed action. Two statuses the server already sends, `AWAITING_MLS_COLLECTION` and `AT_HUB`, now have labels.
+- **Fixed**: **Staff "Recent Activity" was a permanent spinner.** It now lists the staff member's last actions from the activity log (N-001).
+- **Fixed**: **The global commission sheet never saved.** It sent `minRateThresholdPln`-style names; the server reads `minRatePln`, `minFlatPln`, `isEurManual`, `minRateEur`, `minFlatEur`. Inputs also sent strings where the server's schema requires numbers.
+- **Fixed**: **International carrier thresholds never saved.** The form used `international*` field names; the server uses `intl*`.
+- **Changed**: **Carrier save is one request.** Profile, commissions and thresholds go to `PUT /admin/carriers/update-carrier-settings/:id` in a single transaction instead of three writes that could half-succeed (N-005). Thresholds are sent only when the admin holds `staff:write`.
+- **Removed**: The unused `zustand` dependency (N-009), unused imports and variables across the dashboard, the ignored `force` parameter on two delete handlers (N-002), and the `any` casts outside the profile and sign-in code.
+- **Changed**: Version reconciled: `package.json`, the drawer footer and this file read 1.8.0.
+- **Note**: Lint still reports 14 problems, all in `components/admin-profile/*`, `lib/api/profile`, `types/profile`, `hooks/admin-profile` and `components/login-background.tsx`. They were left alone so this release does not collide with the uncommitted 1.7.1 sign-in work.
+- **Note**: `POST /admin/developer-mode` was removed from the server, so no toggle was built.
+
 ## [1.7.0] - 2026-09-18 - Passwordless Super Admin, Server-Backed Sessions & Email-First Sign-in
 
 **Breaking (deployment):** Requires `mls-server` **v6.0.0 or later**. Everything

@@ -19,13 +19,17 @@ const routePermissions: Record<string, string | string[]> = {
   // Likewise `user:read` AND `leads:read` on GET /admin/leads.
   "/dashboard/leads": ["user:read", "leads:read"],
   "/dashboard/multi-leg": "shipment:read",
+  "/dashboard/collections": "shipment:read",
+  "/dashboard/cancellations": "shipment:read",
   "/dashboard/users": "user:read",
   "/dashboard/address-requests": "user:read",
+  "/dashboard/business-upgrades": "user:read",
   "/dashboard/staff": "staff:read",
   "/dashboard/carriers": "carrier:read",
   "/dashboard/hub": "staff:read",
-  // Not a typo — the server gates even the GET on `staff:write`.
-  "/dashboard/settings": "staff:write",
+  // Each settings card needs a different permission (staff, shipment or
+  // email), so the page itself is open and every card checks its own.
+  "/dashboard/settings": "dashboard:read",
   "/dashboard/emails": "email:read",
   "/dashboard/inquiries": "inquiries:read",
   "/dashboard/activity-logs": "staff:read",

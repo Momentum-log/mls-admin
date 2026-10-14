@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Staff } from "@/types/staff";
 import { formatDate } from "@/utils/format-date";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { RecentActivity } from "@/components/activity/recent-activity";
 
 interface StaffDetailSheetProps {
   open: boolean;
@@ -122,15 +122,7 @@ export default function StaffDetailSheet({
             </TabsContent>
 
             <TabsContent value="activity" className="pt-6">
-              <div className="rounded-lg border bg-muted/20 p-8 text-center flex flex-col items-center justify-center">
-                <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mb-4" />
-                <h4 className="font-medium">Activity Logs Loading...</h4>
-                <p className="text-sm text-muted-foreground max-w-[280px] mt-2">
-                  We are preparing the audit infrastructure to display all
-                  system interactions logged by {staff.name}. This feature will
-                  be available soon.
-                </p>
-              </div>
+              <RecentActivity adminId={staff.id} />
             </TabsContent>
           </Tabs>
         </div>

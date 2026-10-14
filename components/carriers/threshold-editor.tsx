@@ -20,8 +20,15 @@ export default function ThresholdEditor({
   settings,
   onChange,
 }: ThresholdEditorProps) {
-  const handleUpdate = (field: keyof CarrierCommissionSettings, value: any) => {
-    onChange({ ...settings, [field]: value === "" ? null : value });
+  // Inputs give strings; the server validates numbers, so a typed value was
+  // refused until it is converted here. Empty means "no threshold".
+  const handleUpdate = (
+    field: keyof CarrierCommissionSettings,
+    value: string | boolean,
+  ) => {
+    const next =
+      typeof value === "boolean" ? value : value === "" ? null : Number(value);
+    onChange({ ...settings, [field]: next });
   };
 
   const stages = [
@@ -47,7 +54,7 @@ export default function ThresholdEditor({
       key: "international",
       title: "International",
       icon: Globe,
-      prefix: "international",
+      prefix: "intl",
     },
   ];
 

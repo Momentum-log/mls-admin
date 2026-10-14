@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useOverrideStatus } from "@/hooks/shipments/use-shipments";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,14 +80,21 @@ export function OverrideStatusModal({
     isMultiLeg || isMultiLegStatus(currentStatus),
   );
 
-  /** Reset form state whenever the dialog opens with new values. */
-  useEffect(() => {
+  /**
+   * Reset form state whenever the dialog opens with new values. Done during
+   * render (React's "adjust state when a prop changes" pattern) rather than in
+   * an effect, so the first open frame already shows the right values.
+   */
+  const openedWith = isOpen ? `${shipmentId}|${currentStatus}|${currentSync}` : null;
+  const [lastOpenedWith, setLastOpenedWith] = useState(openedWith);
+  if (openedWith !== lastOpenedWith) {
+    setLastOpenedWith(openedWith);
     if (isOpen) {
       setStatus(currentStatus);
       setTrackingSyncEnabled(currentSync);
       setNotify(true);
     }
-  }, [isOpen, currentStatus, currentSync]);
+  }
 
   // The four failure states carry the destructive badge variant; COMPLETED is
   // terminal too but is not a bad outcome, so it gets no warning.

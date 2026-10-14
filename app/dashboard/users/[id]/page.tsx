@@ -119,15 +119,15 @@ export default function UserDetailPage() {
     limit: 5,
   });
 
-  const handleVerify = (force: boolean) => {
+  const handleVerify = () => {
     if (!user) return;
     verifyUser(user.id);
     setShowVerifyDialog(false);
   };
 
   /** Resolved shipment & lead arrays from the `data` wrapper. */
-  const shipments = shipmentsData?.data ?? [];
-  const leads = leadsData?.data ?? [];
+  const shipments = useMemo(() => shipmentsData?.data ?? [], [shipmentsData]);
+  const leads = useMemo(() => leadsData?.data ?? [], [leadsData]);
 
   /** Compute correlation for the currently selected shipment or estimate. */
   const linkedEstimate = useMemo(

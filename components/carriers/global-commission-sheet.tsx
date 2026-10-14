@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -29,37 +29,6 @@ export default function GlobalCommissionSheet({
 }: GlobalCommissionSheetProps) {
   const { data: serverSettings, isLoading: isFetching } =
     useGlobalCommissionSettings();
-  const { mutateAsync: updateAsync, isPending: isUpdating } =
-    useUpdateGlobalCommissionSettings();
-
-  const [settings, setSettings] = useState<Partial<GlobalCommissionSettings>>({
-    minRateThresholdPln: null,
-    minFlatCommissionPln: null,
-    isEurManual: false,
-    minRateThresholdEur: null,
-    minFlatCommissionEur: null,
-  });
-
-  useEffect(() => {
-    if (serverSettings) {
-      setSettings(serverSettings as Partial<GlobalCommissionSettings>);
-    }
-  }, [serverSettings, open]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await updateAsync(settings);
-      onOpenChange(false);
-    } catch (error) {
-      // toast native to hook
-    }
-  };
-
-  const handleUpdate = (field: keyof GlobalCommissionSettings, value: any) => {
-    setSettings((prev) => ({ ...prev, [field]: value === "" ? null : value }));
-  };
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-md w-full overflow-y-auto flex flex-col">
@@ -79,121 +48,170 @@ export default function GlobalCommissionSheet({
             <Loader2 className="h-6 w-6 animate-spin text-brand-blue" />
           </div>
         ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="px-6 pb-6 pt-6 flex-1 flex flex-col space-y-6"
-          >
-            <Card className="border-none shadow-none">
-              <CardContent className="space-y-4 p-0">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">
-                      Min Rate Threshold (PLN)
-                    </Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="any"
-                      className="h-9"
-                      value={settings.minRateThresholdPln ?? ""}
-                      onChange={(e) =>
-                        handleUpdate("minRateThresholdPln", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">
-                      Flat Commission (PLN)
-                    </Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="any"
-                      className="h-9"
-                      value={settings.minFlatCommissionPln ?? ""}
-                      onChange={(e) =>
-                        handleUpdate("minFlatCommissionPln", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between rounded-lg border p-4 mt-4 bg-muted/10">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">
-                      Manual EUR Override
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Disable auto-conversion to EUR
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.isEurManual || false}
-                    onCheckedChange={(checked) =>
-                      handleUpdate("isEurManual", checked)
-                    }
-                  />
-                </div>
-
-                {settings.isEurManual && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 animate-in fade-in slide-in-from-top-1">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">
-                        Min Rate Threshold (EUR)
-                      </Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="any"
-                        className="h-9"
-                        value={settings.minRateThresholdEur ?? ""}
-                        onChange={(e) =>
-                          handleUpdate("minRateThresholdEur", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">
-                        Flat Commission (EUR)
-                      </Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="any"
-                        className="h-9"
-                        value={settings.minFlatCommissionEur ?? ""}
-                        onChange={(e) =>
-                          handleUpdate("minFlatCommissionEur", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="pt-6 mt-auto shrink-0 border-t flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isUpdating}
-                className="bg-brand-blue hover:bg-brand-blue/90"
-              >
-                {isUpdating && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Save Global Rules
-              </Button>
-            </div>
-          </form>
+          // Mounted each time the sheet opens, so it starts from the saved values.
+          <GlobalCommissionForm
+            initial={serverSettings}
+            onDone={() => onOpenChange(false)}
+          />
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function GlobalCommissionForm({
+  initial,
+  onDone,
+}: {
+  initial?: Partial<GlobalCommissionSettings>;
+  onDone: () => void;
+}) {
+  const { mutateAsync: updateAsync, isPending: isUpdating } =
+    useUpdateGlobalCommissionSettings();
+
+  const [settings, setSettings] = useState<Partial<GlobalCommissionSettings>>(
+    initial ?? {
+      minRatePln: null,
+      minFlatPln: null,
+      isEurManual: false,
+      minRateEur: null,
+      minFlatEur: null,
+    },
+  );
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateAsync(settings);
+      onDone();
+    } catch {
+      // The mutation hook already shows the error toast.
+    }
+  };
+
+  // Inputs give strings; the server validates numbers. Empty means "none".
+  const handleUpdate = (
+    field: keyof GlobalCommissionSettings,
+    value: string | boolean,
+  ) => {
+    const next =
+      typeof value === "boolean" ? value : value === "" ? null : Number(value);
+    setSettings((prev) => ({ ...prev, [field]: next }));
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="px-6 pb-6 pt-6 flex-1 flex flex-col space-y-6"
+    >
+      <Card className="border-none shadow-none">
+        <CardContent className="space-y-4 p-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Min Rate Threshold (PLN)
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                className="h-9"
+                value={settings.minRatePln ?? ""}
+                onChange={(e) =>
+                  handleUpdate("minRatePln", e.target.value)
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Flat Commission (PLN)
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                className="h-9"
+                value={settings.minFlatPln ?? ""}
+                onChange={(e) =>
+                  handleUpdate("minFlatPln", e.target.value)
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-4 mt-4 bg-muted/10">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">
+                Manual EUR Override
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Disable auto-conversion to EUR
+              </p>
+            </div>
+            <Switch
+              checked={settings.isEurManual || false}
+              onCheckedChange={(checked) =>
+                handleUpdate("isEurManual", checked)
+              }
+            />
+          </div>
+
+          {settings.isEurManual && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 animate-in fade-in slide-in-from-top-1">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  Min Rate Threshold (EUR)
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="any"
+                  className="h-9"
+                  value={settings.minRateEur ?? ""}
+                  onChange={(e) =>
+                    handleUpdate("minRateEur", e.target.value)
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  Flat Commission (EUR)
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="any"
+                  className="h-9"
+                  value={settings.minFlatEur ?? ""}
+                  onChange={(e) =>
+                    handleUpdate("minFlatEur", e.target.value)
+                  }
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="pt-6 mt-auto shrink-0 border-t flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onDone}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isUpdating}
+          className="bg-brand-blue hover:bg-brand-blue/90"
+        >
+          {isUpdating && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          Save Global Rules
+        </Button>
+      </div>
+    </form>
   );
 }

@@ -14,18 +14,14 @@ import {
   TrendingUp,
   Loader2,
   ArrowRight,
-  TrendingDown,
   Mail,
   UserPlus,
-  Truck,
-  Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import CopyButton from "@/components/ui/copy-button";
 import { formatDateTime } from "@/utils/format-date";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { format } from "date-fns";
 
 /**
  * Formats a single currency amount with its proper locale and symbol.
@@ -142,14 +138,14 @@ export default function DashboardPage() {
             Dashboard Overview
           </h2>
           <p className="text-muted-foreground mt-1">
-            Welcome back! Here's what's happening today in MLS.
+            Welcome back! Here&apos;s what&apos;s happening today in MLS.
           </p>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        {statCards.map((card, idx) => (
+        {statCards.map((card) => (
           <motion.div key={card.title} variants={item}>
             <Card
               className={cn(

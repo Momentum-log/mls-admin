@@ -7,6 +7,8 @@ import {
   getUserShipments,
   deleteShipment,
   bulkDeleteShipments,
+  getShipmentHistory,
+  completeShipment,
 } from "@/lib/api/shipments";
 import { toast } from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -131,6 +133,38 @@ export const useBulkDeleteShipments = () => {
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Failed to delete shipments"));
+    },
+  });
+};
+
+/**
+ * The audit trail for one shipment, loaded when its detail sheet opens.
+ */
+export const useShipmentHistory = (id: string | null) => {
+  return useQuery({
+    queryKey: ["shipment-history", id],
+    queryFn: () => getShipmentHistory(id as string),
+    enabled: !!id,
+    retry: false,
+  });
+};
+
+/**
+ * One-click "mark completed": sets COMPLETED and emails the customer.
+ */
+export const useCompleteShipment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => completeShipment(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["user-shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["shipment-history", id] });
+      toast.success("Shipment completed. The customer has been emailed.");
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to complete shipment"));
     },
   });
 };

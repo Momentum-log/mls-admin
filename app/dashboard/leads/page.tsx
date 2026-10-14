@@ -49,8 +49,6 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency } from "@/utils/format-currency";
 
-const DEFAULT_PAGE_SIZE = 20;
-
 /**
  * Main Shipping Estimates (Marketing Leads) page.
  * Lists all generated estimates across the system with correlation indicators.

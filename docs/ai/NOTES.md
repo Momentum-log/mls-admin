@@ -4,7 +4,7 @@ purpose: "Observations that are not yet durable architecture or current-state fa
 authority: canonical
 hosts_rules: []
 mirrors_rules: []
-last_reviewed: "2026-09-18"
+last_reviewed: "2026-10-14"
 ---
 
 # Notes — MLS Admin
@@ -16,11 +16,11 @@ last_reviewed: "2026-09-18"
 ## Open defects and risks (from the 2026-08-09 audit, re-verified 2026-09-18)
 
 ### N-001
-**2026-08-09 · open · Medium** — Staff detail "Recent Activity" is a permanent spinner.
+**2026-08-09 · resolved 2026-10-14 (1.8.0) · Medium** — Staff detail "Recent Activity" is a permanent spinner. Now lists the staff member's activity-log entries.
 `components/staff/staff-detail-sheet.tsx` (~line 129) renders an infinite `animate-spin` with "We are preparing the audit infrastructure…". Nothing is fetched; it never resolves. `[verified 2026-09-18: string still present]`. Fix: honest empty state until an activity-log endpoint is consumed (see plan item 4). Audit ref: D-09.
 
 ### N-002
-**2026-08-09 · open · Medium** — `force` flag accepted then discarded in two delete handlers.
+**2026-08-09 · resolved 2026-10-14 (1.8.0) · Medium** — `force` flag accepted then discarded in two delete handlers. The parameter was dropped from both (and from `users/[id]` `handleVerify`).
 `app/dashboard/staff/roles-table.tsx` `handleDelete(force)` and `components/carriers/carrier-detail-sheet.tsx` `handleDelete(force)` both ignore `force`. Neither dialog sets `enableForce`, so behaviour is currently correct — but the signatures invite a future caller to enable the toggle and assume it works. `[verified 2026-09-18: both signatures unchanged]`. Fix when either file is touched: drop the parameter or honour it. Audit ref: D-10.
 
 ### N-003
@@ -32,7 +32,7 @@ last_reviewed: "2026-09-18"
 No `error.tsx` / `global-error.tsx` anywhere under `app/`. A render-time throw below `PermissionGuard` white-screens the dashboard. `[verified 2026-09-18]`. Fix: per-segment `error.tsx` starting with `app/dashboard/`. Audit ref: R-05.
 
 ### N-005
-**2026-08-09 · open · Medium** — Carrier save is three sequential non-atomic writes.
+**2026-08-09 · resolved 2026-10-14 (1.8.0) · Medium** — Carrier save is three sequential non-atomic writes. Now one call to `PUT /admin/carriers/update-carrier-settings/:id`.
 Profile → commissions → thresholds with no rollback; a mid-sequence failure leaves a mixed state and the toast names only the failing step. Proper fix is a single server endpoint (server task) or a client-side compensating rollback. Audit ref: R-02.
 
 ### N-006
@@ -48,7 +48,7 @@ No runner, no test files, no `.github/`. Verification is manual ([VERIFICATION.m
 Where a shipment has no `estimateId`, `utils/estimate-shipment-correlation.ts` falls back to the address/service/time heuristic, and the leads/shipments pages pull large pages to feed it. Since 1.4.0 the wizard sends `estimateId`, so the heuristic only serves older rows. Revisit trigger: when old rows are no longer relevant, remove the fallback and the wide fetches. Audit ref: R-01.
 
 ### N-009
-**2026-08-09 · open · Low** — Unused-code drift.
+**2026-08-09 · resolved 2026-10-14 (1.8.0) · Low** — Unused-code drift. `zustand` removed; unused imports cleaned outside the profile drawer and sign-in code, which wait for 1.7.1.
 `zustand` is a dependency with zero imports `[verified 2026-09-18]`. The audit also listed dead constants and unused icon imports in `app/dashboard/shipments/page.tsx` and the dashboard page; some were cleaned in later releases — re-check with `bun run lint` before acting. Removing `zustand` is a dependency change (owner approval). Audit ref: D-11.
 
 ### N-010

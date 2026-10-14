@@ -2,16 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getCarriers,
   createCarrier,
-  updateCarrier,
   deleteCarrier,
-  updateCommissions,
+  saveCarrierSettings,
 } from "@/lib/api/carriers";
 import { toast } from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {
   CreateCarrierPayload,
-  UpdateCarrierPayload,
-  UpdateCommissionsPayload,
+  SaveCarrierSettingsPayload,
 } from "@/types/carriers";
 
 // ─── HOOKS ───────────────────────────────────────────────────────────────────
@@ -38,21 +36,6 @@ export const useCreateCarrier = () => {
   });
 };
 
-export const useUpdateCarrier = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateCarrierPayload }) =>
-      updateCarrier(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["carriers"] });
-      toast.success("Carrier updated successfully");
-    },
-    onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Failed to update carrier"));
-    },
-  });
-};
-
 export const useDeleteCarrier = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -67,22 +50,22 @@ export const useDeleteCarrier = () => {
   });
 };
 
-export const useUpdateCommissions = () => {
+/**
+ * Saves the carrier sheet in one request, so profile, commissions and
+ * thresholds land together or not at all.
+ */
+export const useSaveCarrierSettings = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: UpdateCommissionsPayload;
-    }) => updateCommissions(id, data),
-    onSuccess: () => {
+    mutationFn: ({ id, body }: { id: string; body: SaveCarrierSettingsPayload }) =>
+      saveCarrierSettings(id, body),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["carriers"] });
-      toast.success("Commission rules updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["carrier-commission-settings", id] });
+      toast.success("Carrier saved");
     },
     onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Failed to update commissions"));
+      toast.error(getApiErrorMessage(error, "Failed to save carrier"));
     },
   });
 };

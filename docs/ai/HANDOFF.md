@@ -4,18 +4,16 @@ purpose: "The baton: what is in flight right now and what the next agent must do
 authority: canonical
 hosts_rules: []
 mirrors_rules: [RULE-DOC-005, RULE-GIT-001]
-last_reviewed: "2026-09-18"
+last_reviewed: "2026-10-14"
 ---
 
 # Handoff — MLS Admin
 
 **Status:** `IDLE` — no application work is in flight.
 
-**Last session:** 2026-09-18 — adoption of the AI operating system (documentation only; no application code changed). See `docs/ai/SYSTEM.md` for what was created and the open confirmation queue.
+**Last session:** 2026-10-14 — release 1.8.0 (staff queues, finance screens, settings, carrier save fixes), pushed to `origin/claude/project-thread-u9oh01` as a draft PR into `main`. See `changelog.md` 1.8.0.
 
-**Current branch (read-only):** `dev`, tracking `mls/dev` and `origin/dev`. Working tree was clean before adoption; after adoption it contains only the new/modified documentation files listed in `SYSTEM.md → Adoption summary`. The owner has not committed them.
-
-**Next action for any agent:** none pending. Start from [AGENT-CORE.md §1](AGENT-CORE.md#1-universal-startup-protocol). If the owner wants to act on the adoption report, the open items are in `SYSTEM.md → open_confirmations` and `NOTES.md` N-016…N-019.
+**Next action for any agent:** none pending. The owner lands the uncommitted 1.7.1 first, then merges 1.8.0. After that, the 14 lint problems left in `components/admin-profile/*`, `lib/api/profile`, `types/profile`, `hooks/admin-profile` and `components/login-background.tsx` can be cleaned.
 
 ---
 

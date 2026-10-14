@@ -4,7 +4,7 @@ purpose: "The structure that actually exists: shape, boundaries, request pipelin
 authority: canonical
 hosts_rules: [RULE-ARCH-001, RULE-ARCH-002, RULE-ARCH-004]
 mirrors_rules: [RULE-ARCH-003, RULE-ARCH-005, RULE-SEC-002]
-last_reviewed: "2026-09-18"
+last_reviewed: "2026-10-14"
 ---
 
 # Architecture — MLS Admin
@@ -92,6 +92,16 @@ Detail: [domains/rbac-permissions.md](domains/rbac-permissions.md).
 | `/dashboard/address-requests` | Address verification requests | `user:read` |
 | `/dashboard/shipments`, `/shipments/new` | Shipment lifecycle, status override, bypass payment, proxy creation wizard | `user:read` + `shipment:read` |
 | `/dashboard/multi-leg` | Hub-routed shipments queue; confirm arrival; create leg 2 (409 re-pricing decision) | `shipment:read` |
+| `/dashboard/collections` | DHL first-mile collections; hub handoff (courier booking or service point) | `shipment:read` |
+| `/dashboard/cancellations` | Customer cancellation requests: approve or reject | `shipment:read` |
+| `/dashboard/business-upgrades` | Business account requests: NIP check, approve or reject | `user:read` |
+| `/dashboard/invoices` | Invoices, detail sheet with payments, CSV export | `shipment:read` |
+| `/dashboard/refunds` | Refund queue: gateway refund, retry on failure, manual payout | `shipment:read` |
+| `/dashboard/tax-rules` | VAT rules per route and customer type | `shipment:read` |
+| `/dashboard/inquiries` | Partner enquiries and their status | `inquiries:read` |
+| `/dashboard/settings` | Commission safety net, DHL, invoice window, payment reminders (per-card permissions) | `dashboard:read` |
+| `/dashboard/emails` | Database email templates and a one-off sender | `email:read` |
+| `/dashboard/activity-logs` | Audit log for staff and customers | `staff:read` |
 | `/dashboard/leads` | Marketing leads / shipping estimates | `user:read` + `leads:read` |
 | `/dashboard/carriers` | Carrier CRUD, per-carrier commissions, thresholds, global commission sheet | `carrier:read` |
 | `/dashboard/hub` | Hub routing master switch, compete-best-price, sorting-centre CRUD | `staff:read` |
@@ -100,9 +110,9 @@ Detail: [domains/rbac-permissions.md](domains/rbac-permissions.md).
 | `/dashboard/denied` | Access denied | none |
 | Admin profile drawer (any route) | Profile, password change (staff only), activity logs, docs viewer, version footer | authenticated |
 
-Seven routes are declared in `permission-guard.tsx` with **no page yet**: `settings`, `emails`, `inquiries`, `activity-logs`, `invoices`, `refunds`, `tax-rules`. They are forward declarations for modules the server exposes and the dashboard has not built ([plans/active/PLAN-forward-declared-dashboard-routes.md](plans/active/PLAN-forward-declared-dashboard-routes.md)).
+Every route in `permission-guard.tsx` has a page (since 1.8.0).
 
-Sidebar grouping: Operations / Growth / Configuration / System.
+Sidebar grouping: Operations / Finance / Growth / Configuration / System.
 
 ## 7. Cross-cutting modules
 
@@ -140,6 +150,5 @@ Sidebar grouping: Operations / Growth / Configuration / System.
 From the 2026-08-09 capability audit, still open on 2026-09-18 — details and status in [NOTES.md](NOTES.md):
 
 - No error boundaries; a render-time throw below `PermissionGuard` white-screens the dashboard (N-004).
-- Carrier save is three sequential non-atomic writes (N-005).
 - No tests, no CI (N-006).
 - List views over-fetch for correlation where `estimateId` is absent (N-008).

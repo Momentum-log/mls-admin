@@ -28,7 +28,7 @@ export default function CommissionEditor({
   const handleUpdate = (
     stage: keyof UpdateCommissionsPayload,
     field: keyof Commission,
-    value: any,
+    value: string,
   ) => {
     const stageConfig = { ...commissions[stage] };
 

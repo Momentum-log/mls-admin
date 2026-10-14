@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Trash2, Globe } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Select,
@@ -31,14 +31,11 @@ import {
 } from "@/types/carriers";
 import {
   useCreateCarrier,
-  useUpdateCarrier,
   useDeleteCarrier,
-  useUpdateCommissions,
+  useSaveCarrierSettings,
 } from "@/hooks/carriers/use-carriers";
-import {
-  useCarrierCommissionSettings,
-  useUpdateCarrierCommissionSettings,
-} from "@/hooks/settings/use-settings";
+import { useCarrierCommissionSettings } from "@/hooks/settings/use-settings";
+import { useCan } from "@/components/auth/can";
 import { CarrierCommissionSettings } from "@/types/settings";
 
 interface CarrierDetailSheetProps {
@@ -75,11 +72,11 @@ const defaultSettings: Partial<CarrierCommissionSettings> = {
   isImportEurManual: false,
   importMinRateEur: null,
   importMinFlatEur: null,
-  internationalMinRatePln: null,
-  internationalMinFlatPln: null,
-  isInternationalEurManual: false,
-  internationalMinRateEur: null,
-  internationalMinFlatEur: null,
+  intlMinRatePln: null,
+  intlMinFlatPln: null,
+  isIntlEurManual: false,
+  intlMinRateEur: null,
+  intlMinFlatEur: null,
 };
 
 export default function CarrierDetailSheet({
@@ -91,15 +88,15 @@ export default function CarrierDetailSheet({
 
   const { mutateAsync: createAsync, isPending: isCreating } =
     useCreateCarrier();
-  const { mutateAsync: updateAsync, isPending: isUpdating } =
-    useUpdateCarrier();
-  const { mutateAsync: updateCommsAsync, isPending: isUpdatingComms } =
-    useUpdateCommissions();
-  const { mutateAsync: updateSettingsAsync, isPending: isUpdatingSettings } =
-    useUpdateCarrierCommissionSettings();
+  const { mutateAsync: saveSettingsAsync, isPending: isSaving } =
+    useSaveCarrierSettings();
+  // Thresholds also need `staff:write` on the server. Sending them without it
+  // would refuse the whole save, so they are left out instead.
+  const { can } = useCan();
+  const canEditThresholds = can("staff:write");
   const { mutate: remove, isPending: isDeleting } = useDeleteCarrier();
 
-  const { data: serverSettings, isLoading: isFetchingSettings } =
+  const { data: serverSettings } =
     useCarrierCommissionSettings(isEditMode ? carrier.id : null);
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -179,9 +176,16 @@ export default function CarrierDetailSheet({
         if (formData.apiKey) payload.apiKey = formData.apiKey;
         if (formData.apiSecret) payload.apiSecret = formData.apiSecret;
 
-        await updateAsync({ id: carrier.id, data: payload });
-        await updateCommsAsync({ id: carrier.id, data: commissions });
-        await updateSettingsAsync({ carrierId: carrier.id, payload: settings });
+        // One write: profile, commissions and thresholds save together or
+        // not at all, so a failure can no longer leave the carrier half-saved.
+        await saveSettingsAsync({
+          id: carrier.id,
+          body: {
+            profile: payload,
+            commissions,
+            ...(canEditThresholds && { thresholds: settings }),
+          },
+        });
       } else {
         const payload: CreateCarrierPayload = {
           name: formData.name as string,
@@ -194,22 +198,24 @@ export default function CarrierDetailSheet({
 
         const newCarrier = await createAsync(payload);
         if (newCarrier?.id) {
-          await updateCommsAsync({ id: newCarrier.id, data: commissions });
-          await updateSettingsAsync({
-            carrierId: newCarrier.id,
-            payload: settings,
+          await saveSettingsAsync({
+            id: newCarrier.id,
+            body: {
+              commissions,
+              ...(canEditThresholds && { thresholds: settings }),
+            },
           });
         }
       }
       onOpenChange(false);
-    } catch (error) {
+    } catch {
       // Errors are handled by the hooks toasts natively
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDelete = (force: boolean) => {
+  const handleDelete = () => {
     if (carrier) {
       remove(carrier.id);
       setDeleteConfirmOpen(false);
@@ -218,12 +224,7 @@ export default function CarrierDetailSheet({
   };
 
   const isLoading =
-    isCreating ||
-    isUpdating ||
-    isDeleting ||
-    isUpdatingComms ||
-    isUpdatingSettings ||
-    isSubmitting;
+    isCreating || isDeleting || isSaving || isSubmitting;
 
   return (
     <>
