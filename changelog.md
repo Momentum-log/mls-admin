@@ -5,6 +5,17 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-10-12 - Super Admin OTP Verification Bound to `challengeId`
+
+**Breaking (deployment):** Requires `mls-server` **v7.0.0 or later** for the
+Super Admin's emailed-code sign-in. Staff password sign-in, the authenticator and
+backup codes are unaffected.
+
+- **Fixed**: **The Super Administrator could not sign in with an emailed code.** Entering a correct code on the verify step failed with `400 Validation Error — challengeId: Invalid input: expected string, received undefined`. Staff were unaffected, which is why production staff sign-in kept working. Cause: mls-server v7.0.0 closed the attempt-burning hole by making every emailed code its own challenge, named by a `challengeId` returned with it, and made that id mandatory on `/auth/otp/verify`; this client still sent only `{ email, otp }`. Nothing caught it because the client typed the request from its own `OtpVerifyPayload`, which predated the field, and the change only surfaces against a v7 server. Fix: the id returned by `identify` (and by every resend) is held in page state and sent on verify. Verified against staging: the old payload reproduces the 400; the new payload passes validation and reaches the credential check.
+- **Changed**: **Resend replaces the challenge.** `/auth/otp/request` now returns a fresh `challengeId`, and only that id verifies the new code, so the page swaps to it on every successful resend. Throttled resends are refused with `429 OTP_THROTTLED`; the server's wait is shown as-is.
+- **Changed**: **A throttled lookup never clears a held challenge.** On the throttled path `identify` returns `method: "OTP"` with no `challengeId`, deliberately — handing out the live id would give it to whoever is hammering the endpoint. The page falls back to the challenge it stored for that address and never overwrites a held id with `undefined`.
+- **Added**: The challenge is kept in `sessionStorage` (`mls.admin.otpChallenge`, tagged with the address, dropped once `expiresAt` passes), so reloading the page inside the send window does not cost the throttle wait. It is cleared on any successful sign-in, which consumes every live challenge server-side. With no usable challenge — a reload in another tab, cleared storage — the page says a code was requested moments ago, disables Verify, and unlocks Resend when `retryAfterSeconds` runs out.
+
 ## [1.7.0] - 2026-09-18 - Passwordless Super Admin, Server-Backed Sessions & Email-First Sign-in
 
 **Breaking (deployment):** Requires `mls-server` **v6.0.0 or later**. Everything

@@ -65,6 +65,25 @@ export interface AdminIdentity {
   expiresInSeconds?: number;
   /** The account's display name, when the server sends one. */
   name?: string;
+  /**
+   * Names the code this lookup sent. Required to verify it.
+   *
+   * Absent on the throttled path: handing out the live id would give it to
+   * whoever is hammering the endpoint, so a client that lost its own id waits
+   * out `retryAfterSeconds` and requests a fresh code instead.
+   */
+  challengeId?: string;
+  /** When the code named by `challengeId` stops being valid (ISO 8601). */
+  expiresAt?: string;
+}
+
+/**
+ * One emailed code, as the server names it. Every code is its own challenge,
+ * and verification is bound to the id handed to whoever requested it.
+ */
+export interface OtpChallenge {
+  challengeId: string;
+  expiresAt?: string;
 }
 
 /** Staff sign-in. The Super Administrator has no password and always 401s here. */
@@ -79,6 +98,7 @@ export interface OtpRequestPayload {
 
 export interface OtpVerifyPayload {
   email: string;
+  challengeId: string;
   otp: string;
 }
 
