@@ -13,7 +13,7 @@ last_reviewed: "2026-10-14"
 
 **Last session:** 2026-10-14 — release 1.8.0 (staff queues, finance screens, settings, carrier save fixes), pushed to `origin/claude/project-thread-u9oh01` as a draft PR into `main`. See `changelog.md` 1.8.0.
 
-**Next action for any agent:** none pending. The owner lands the uncommitted 1.7.1 first, then merges 1.8.0. After that, the 14 lint problems left in `components/admin-profile/*`, `lib/api/profile`, `types/profile`, `hooks/admin-profile` and `components/login-background.tsx` can be cleaned.
+**Next action for any agent:** none pending. 1.7.1 is merged into `main` and into the 1.8.0 branch; the owner merges the 1.8.0 PR. `bun run lint` passes with no problems.
 
 ---
 

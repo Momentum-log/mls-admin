@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMyActivityLogs } from "@/hooks/admin-profile/use-admin-profile";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ActivityLog } from "@/types/profile";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-function ActivityLogItem({ log }: { log: ActivityLog }) {
+/** Older log rows carry `createdAt`/`path` instead of `timestamp`/`resource`. */
+type LegacyActivityLog = ActivityLog & { createdAt?: string; path?: string };
+
+function ActivityLogItem({ log }: { log: LegacyActivityLog }) {
   const [showDetails, setShowDetails] = useState(false);
 
   // Safely parse details if it's a string, otherwise use directly if it's an object
@@ -21,12 +24,12 @@ function ActivityLogItem({ log }: { log: ActivityLog }) {
   }
 
   const hasDetails =
-    parsedDetails &&
+    !!parsedDetails &&
     (typeof parsedDetails === "object"
       ? Object.keys(parsedDetails).length > 0
       : true);
 
-  const timestampStr = log.timestamp || (log as any).createdAt;
+  const timestampStr = log.timestamp || log.createdAt;
   const isValidDate = timestampStr && !isNaN(new Date(timestampStr).getTime());
 
   return (
@@ -34,7 +37,7 @@ function ActivityLogItem({ log }: { log: ActivityLog }) {
       <div className="absolute w-3 h-3 bg-brand-blue rounded-full -left-[29px] top-1.5 shadow-[0_0_0_4px_var(--background)] transition-transform group-hover:scale-110" />
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium text-foreground">
-          {log.action || `Accessed ${log.resource || (log as any).path}`}
+          {log.action || `Accessed ${log.resource || log.path}`}
         </span>
         <span className="text-xs text-brand-blue/80 font-medium">
           {isValidDate
@@ -86,15 +89,16 @@ export function ActivityLogs() {
     limit: 10,
   });
 
-  useEffect(() => {
+  // Append each newly loaded page. Adjusted during render rather than in an
+  // effect, so the list never paints a frame without the page it just got.
+  const [appendedData, setAppendedData] = useState(data);
+  if (data !== appendedData) {
+    setAppendedData(data);
     if (data?.logs) {
-      if (page === 1) {
-        setAccumulatedLogs(data.logs);
-      } else {
-        setAccumulatedLogs((prev) => [...prev, ...data.logs]);
-      }
+      const logs = data.logs;
+      setAccumulatedLogs((prev) => (page === 1 ? logs : [...prev, ...logs]));
     }
-  }, [data, page]);
+  }
 
   if (isLoading && page === 1) {
     return (

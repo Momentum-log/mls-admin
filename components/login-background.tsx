@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 
 /**
@@ -8,11 +8,13 @@ import { motion } from "framer-motion";
  * features a subtle grid and slow, faint light pulses to avoid distraction.
  */
 export const LoginBackground: React.FC = () => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // False during server render and hydration, true on the client after it,
+  // without a setState-in-effect pass.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   if (!mounted) return <div className="absolute inset-0 bg-white" />;
 

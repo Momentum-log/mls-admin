@@ -7,7 +7,10 @@ export const getMyProfile = async (): Promise<User> => {
   return data;
 };
 
-export const updateMyPassword = async (payload: any): Promise<void> => {
+export const updateMyPassword = async (payload: {
+  oldPassword: string;
+  newPassword: string;
+}): Promise<void> => {
   await apiClient.put("/admin/staff/me/password", payload);
 };
 

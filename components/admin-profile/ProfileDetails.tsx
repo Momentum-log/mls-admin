@@ -1,7 +1,7 @@
 "use client";
 
 import { useMe } from "@/hooks/auth/use-auth";
-import { User, Mail, Shield, Key } from "lucide-react";
+import { User, Mail, Shield } from "lucide-react";
 
 export function ProfileDetails() {
   const { data: user } = useMe();

@@ -22,9 +22,9 @@ Builds on 1.7.1 below.
 - **Fixed**: **The global commission sheet never saved.** It sent `minRateThresholdPln`-style names; the server reads `minRatePln`, `minFlatPln`, `isEurManual`, `minRateEur`, `minFlatEur`. Inputs also sent strings where the server's schema requires numbers.
 - **Fixed**: **International carrier thresholds never saved.** The form used `international*` field names; the server uses `intl*`.
 - **Changed**: **Carrier save is one request.** Profile, commissions and thresholds go to `PUT /admin/carriers/update-carrier-settings/:id` in a single transaction instead of three writes that could half-succeed (N-005). Thresholds are sent only when the admin holds `staff:write`.
-- **Removed**: The unused `zustand` dependency (N-009), unused imports and variables across the dashboard, the ignored `force` parameter on two delete handlers (N-002), and the `any` casts outside the profile and sign-in code.
+- **Removed**: The unused `zustand` dependency (N-009), unused imports and variables across the dashboard, the ignored `force` parameter on two delete handlers (N-002), and every `any` cast. `bun run lint` passes with no problems.
 - **Changed**: Version reconciled: `package.json`, the drawer footer and this file read 1.8.0.
-- **Note**: Lint still reports 14 problems, all in `components/admin-profile/*`, `lib/api/profile`, `types/profile`, `hooks/admin-profile` and `components/login-background.tsx`. They were left alone so this release does not collide with the uncommitted 1.7.1 sign-in work.
+- **Changed**: Dialog and sheet forms reset by remounting, and the login background and profile activity list no longer set state inside effects, as the React Compiler lint rule requires.
 - **Note**: `POST /admin/developer-mode` was removed from the server, so no toggle was built.
 
 ## [1.7.1] - 2026-10-12 - Super Admin OTP Verification Bound to `challengeId`

@@ -48,7 +48,7 @@ No runner, no test files, no `.github/`. Verification is manual ([VERIFICATION.m
 Where a shipment has no `estimateId`, `utils/estimate-shipment-correlation.ts` falls back to the address/service/time heuristic, and the leads/shipments pages pull large pages to feed it. Since 1.4.0 the wizard sends `estimateId`, so the heuristic only serves older rows. Revisit trigger: when old rows are no longer relevant, remove the fallback and the wide fetches. Audit ref: R-01.
 
 ### N-009
-**2026-08-09 · resolved 2026-10-14 (1.8.0) · Low** — Unused-code drift. `zustand` removed; unused imports cleaned outside the profile drawer and sign-in code, which wait for 1.7.1.
+**2026-08-09 · resolved 2026-10-14 (1.8.0) · Low** — Unused-code drift. `zustand` removed; unused imports cleaned everywhere; `bun run lint` is clean.
 `zustand` is a dependency with zero imports `[verified 2026-09-18]`. The audit also listed dead constants and unused icon imports in `app/dashboard/shipments/page.tsx` and the dashboard page; some were cleaned in later releases — re-check with `bun run lint` before acting. Removing `zustand` is a dependency change (owner approval). Audit ref: D-11.
 
 ### N-010

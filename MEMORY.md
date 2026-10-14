@@ -107,7 +107,6 @@ last_reviewed: "2026-10-14"
 - Error boundaries (N-004). Test suite + CI (N-006).
 - Bun on Vercel / launch config (N-007).
 - Remove heuristic correlation fallback once old rows are irrelevant (N-008).
-- Lint cleanup of the profile drawer, `lib/api/profile`, `types/profile` and `login-background.tsx` after 1.7.1 lands (14 problems left there on purpose).
 - README rewrite (N-016); refresh or retire `docs/admin/admin.openapi.json` snapshot (N-018).
 - Domain docs pruned at adoption (SYSTEM.md → `modules.pruned`).
 
