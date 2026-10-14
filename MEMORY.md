@@ -16,8 +16,8 @@ last_reviewed: "2026-10-14"
 ## 1. Current position
 
 - **Product:** Momentum Logistics Service (MLS) — the admin dashboard for a logistics business operating in Poland. Users are MLS staff and the Super Administrator.
-- **Version:** `1.8.0` ("Staff Queues, Finance Screens, Settings & Carrier Save Fixes", 2026-10-14). `package.json`, the profile-drawer footer and `changelog.md` agree. 1.7.1 (Super Admin email code tied to `challengeId`) exists only uncommitted on the owner's machine and must land before 1.8.0 merges.
-- **Requires:** the `mls-server` release from its PR #16 (`b0ffd11` or later) for every 1.8.0 page; ≥ 6.0.0 for sign-in.
+- **Version:** `1.8.0` ("Staff Queues, Finance Screens, Settings & Carrier Save Fixes", 2026-10-14), on top of 1.7.1 (Super Admin OTP bound to `challengeId`). `package.json`, the profile-drawer footer and `changelog.md` agree.
+- **Requires:** the `mls-server` release from its PR #16 (`b0ffd11` or later) for every 1.8.0 page; ≥ 7.0.0 for sign-in (OTP verify needs `challengeId`).
 - **Branch:** `dev` (tracking `mls/dev`, `origin/dev`); `main` is the release branch. Working tree: clean of application changes; contains the uncommitted AI operating system added 2026-09-18.
 - **Active work:** none (`docs/ai/HANDOFF.md` = `IDLE`).
 - **AI system:** adopted 2026-09-18 (`docs/ai/SYSTEM.md`). Open confirmations are listed there.
@@ -92,6 +92,7 @@ last_reviewed: "2026-10-14"
 - **Credential routes are exempt from the 401 redirect** (`CREDENTIAL_ROUTES` in `lib/api/index.ts`); add new sign-in routes there.
 - **The authenticator link bypasses `identify`** on purpose — do not route it through the email lookup.
 - **Backup codes are shown exactly once**; TOTP removal/regeneration needs a current code.
+- **OTP verify needs `challengeId`** (server v7). `identify` and every resend return one; a throttled `identify` returns none, so never overwrite a held id with `undefined`. Stored in sessionStorage `mls.admin.otpChallenge`.
 - **Four response envelopes, two paginations** — always through `envelope.ts`; new collection keys go in `COLLECTION_KEYS`.
 - **Strip secrets in `lib/api`** — the multi-leg endpoint spreads carrier `apiKey`/`apiSecret`.
 - **Send `currency` with every price** or EUR books as PLN.

@@ -1,9 +1,14 @@
 import Cookies from "js-cookie";
-import type { AdminAuthErrorCode, AdminSessionInfo } from "@/types/auth";
+import type {
+  AdminAuthErrorCode,
+  AdminSessionInfo,
+  OtpChallenge,
+} from "@/types/auth";
 
 const TOKEN_COOKIE = "accessToken";
 const IDLE_TIMEOUT_KEY = "mls.admin.idleTimeoutSeconds";
 const SIGN_OUT_REASON_KEY = "mls.admin.signOutReason";
+const OTP_CHALLENGE_KEY = "mls.admin.otpChallenge";
 
 /** Fallback idle window when a sign-in response omits `session`. */
 const DEFAULT_IDLE_TIMEOUT_SECONDS = 3600;
@@ -68,6 +73,8 @@ export function setSession(token: string, session?: AdminSessionInfo): void {
   if (isBrowser()) {
     window.localStorage.setItem(IDLE_TIMEOUT_KEY, String(idleTimeoutSeconds));
     window.sessionStorage.removeItem(SIGN_OUT_REASON_KEY);
+    // A successful sign-in consumes every live challenge server-side.
+    window.sessionStorage.removeItem(OTP_CHALLENGE_KEY);
     resetReasonCache();
   }
 
@@ -178,5 +185,50 @@ export function clearStoredSignOutReason(): void {
     window.sessionStorage.removeItem(SIGN_OUT_REASON_KEY);
   } catch {
     // Nothing to do — the entry is per-tab and short-lived either way.
+  }
+}
+
+/** A stored challenge, tagged with the address it was issued for. */
+interface StoredChallenge extends OtpChallenge {
+  email: string;
+}
+
+/**
+ * Remembers the challenge for the code just sent.
+ *
+ * Kept in `sessionStorage` because a throttled `identify` returns no
+ * `challengeId`: a reload inside the send window would otherwise leave the
+ * admin holding a valid code they cannot use until the throttle lifts.
+ */
+export function saveOtpChallenge(email: string, challenge: OtpChallenge): void {
+  if (!isBrowser()) return;
+  const stored: StoredChallenge = { email: email.toLowerCase(), ...challenge };
+  try {
+    window.sessionStorage.setItem(OTP_CHALLENGE_KEY, JSON.stringify(stored));
+  } catch {
+    // Without storage a reload costs the throttle wait; sign-in still works.
+  }
+}
+
+/**
+ * Returns the stored challenge for this address, or undefined when there is
+ * none, it belongs to another address, or it has expired.
+ */
+export function loadOtpChallenge(email: string): OtpChallenge | undefined {
+  if (!isBrowser()) return undefined;
+  try {
+    const raw = window.sessionStorage.getItem(OTP_CHALLENGE_KEY);
+    if (!raw) return undefined;
+    const stored = JSON.parse(raw) as StoredChallenge;
+    if (stored.email !== email.toLowerCase() || !stored.challengeId) {
+      return undefined;
+    }
+    if (stored.expiresAt && Date.parse(stored.expiresAt) <= Date.now()) {
+      window.sessionStorage.removeItem(OTP_CHALLENGE_KEY);
+      return undefined;
+    }
+    return { challengeId: stored.challengeId, expiresAt: stored.expiresAt };
+  } catch {
+    return undefined;
   }
 }

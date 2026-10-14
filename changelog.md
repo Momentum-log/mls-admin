@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Breaking (deployment):** Requires the `mls-server` release from PR #16 (branch `claude/project-thread-bgjeuk`, commit `b0ffd11` or later). The new pages call routes that do not exist on older servers: the cancellation queue, gateway refunds, `PUT /admin/carriers/update-carrier-settings/:id`, `GET /admin/settings/invoice-expiration`, DHL settings and hub handoff.
 
-**Merge note:** 1.7.1 (Super Admin email code tied to `challengeId`) was still uncommitted when this was written. Land 1.7.1 first; on conflict keep this entry above it and keep the version at 1.8.0.
+Builds on 1.7.1 below.
 
 - **Added**: **Cancellations** (`/dashboard/cancellations`). Customer cancellation requests with approve or reject and a reason. Approving a paid shipment opens its refund request; voiding the carrier label stays a manual step in the carrier portal.
 - **Added**: **Refunds** (`/dashboard/refunds`). Approve sends the money back through Stripe or PayU. A refund the gateway fails returns to the queue with the gateway's reason and a Retry button. "Approve without sending money" (`manual: true`) keeps the old flow for refunds paid out by hand, followed by Mark paid out. The list refreshes every 30 seconds while the gateway settles.
@@ -26,6 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Changed**: Version reconciled: `package.json`, the drawer footer and this file read 1.8.0.
 - **Note**: Lint still reports 14 problems, all in `components/admin-profile/*`, `lib/api/profile`, `types/profile`, `hooks/admin-profile` and `components/login-background.tsx`. They were left alone so this release does not collide with the uncommitted 1.7.1 sign-in work.
 - **Note**: `POST /admin/developer-mode` was removed from the server, so no toggle was built.
+
+## [1.7.1] - 2026-10-12 - Super Admin OTP Verification Bound to `challengeId`
+
+**Breaking (deployment):** Requires `mls-server` **v7.0.0 or later** for the
+Super Admin's emailed-code sign-in. Staff password sign-in, the authenticator and
+backup codes are unaffected.
+
+- **Fixed**: **The Super Administrator could not sign in with an emailed code.** Entering a correct code on the verify step failed with `400 Validation Error — challengeId: Invalid input: expected string, received undefined`. Staff were unaffected, which is why production staff sign-in kept working. Cause: mls-server v7.0.0 closed the attempt-burning hole by making every emailed code its own challenge, named by a `challengeId` returned with it, and made that id mandatory on `/auth/otp/verify`; this client still sent only `{ email, otp }`. Nothing caught it because the client typed the request from its own `OtpVerifyPayload`, which predated the field, and the change only surfaces against a v7 server. Fix: the id returned by `identify` (and by every resend) is held in page state and sent on verify. Verified against staging: the old payload reproduces the 400; the new payload passes validation and reaches the credential check.
+- **Changed**: **Resend replaces the challenge.** `/auth/otp/request` now returns a fresh `challengeId`, and only that id verifies the new code, so the page swaps to it on every successful resend. Throttled resends are refused with `429 OTP_THROTTLED`; the server's wait is shown as-is.
+- **Changed**: **A throttled lookup never clears a held challenge.** On the throttled path `identify` returns `method: "OTP"` with no `challengeId`, deliberately — handing out the live id would give it to whoever is hammering the endpoint. The page falls back to the challenge it stored for that address and never overwrites a held id with `undefined`.
+- **Added**: The challenge is kept in `sessionStorage` (`mls.admin.otpChallenge`, tagged with the address, dropped once `expiresAt` passes), so reloading the page inside the send window does not cost the throttle wait. It is cleared on any successful sign-in, which consumes every live challenge server-side. With no usable challenge — a reload in another tab, cleared storage — the page says a code was requested moments ago, disables Verify, and unlocks Resend when `retryAfterSeconds` runs out.
 
 ## [1.7.0] - 2026-09-18 - Passwordless Super Admin, Server-Backed Sessions & Email-First Sign-in
 
