@@ -5,7 +5,8 @@ export interface ActivityLog {
   actorType: "ADMIN" | "USER";
   action: string;
   resource: string;
-  details?: any;
+  /** Free-form JSON the server stores with the action; sometimes a JSON string. */
+  details?: unknown;
   ipAddress?: string;
   timestamp: string;
 }

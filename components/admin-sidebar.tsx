@@ -16,6 +16,16 @@ import {
   Route,
   Warehouse,
   UsersRound,
+  PackageOpen,
+  Ban,
+  FileText,
+  ReceiptText,
+  Percent,
+  Handshake,
+  Settings,
+  MailOpen,
+  History,
+  Building2,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -64,9 +74,21 @@ const navGroups: NavGroup[] = [
         permission: "shipment:read",
       },
       {
+        label: "Collections",
+        icon: PackageOpen,
+        href: "/dashboard/collections",
+        permission: "shipment:read",
+      },
+      {
         label: "Multi-Leg Ops",
         icon: Warehouse,
         href: "/dashboard/multi-leg",
+        permission: "shipment:read",
+      },
+      {
+        label: "Cancellations",
+        icon: Ban,
+        href: "/dashboard/cancellations",
         permission: "shipment:read",
       },
       {
@@ -74,6 +96,35 @@ const navGroups: NavGroup[] = [
         icon: MapPin,
         href: "/dashboard/address-requests",
         permission: "user:read",
+      },
+      {
+        label: "Business Upgrades",
+        icon: Building2,
+        href: "/dashboard/business-upgrades",
+        permission: "user:read",
+      },
+    ],
+  },
+  {
+    heading: "Finance",
+    routes: [
+      {
+        label: "Invoices",
+        icon: FileText,
+        href: "/dashboard/invoices",
+        permission: "shipment:read",
+      },
+      {
+        label: "Refunds",
+        icon: ReceiptText,
+        href: "/dashboard/refunds",
+        permission: "shipment:read",
+      },
+      {
+        label: "Tax Rules",
+        icon: Percent,
+        href: "/dashboard/tax-rules",
+        permission: "shipment:read",
       },
     ],
   },
@@ -92,6 +143,12 @@ const navGroups: NavGroup[] = [
         href: "/dashboard/leads",
         permission: "leads:read",
       },
+      {
+        label: "Partner Enquiries",
+        icon: Handshake,
+        href: "/dashboard/inquiries",
+        permission: "inquiries:read",
+      },
     ],
   },
   {
@@ -109,6 +166,18 @@ const navGroups: NavGroup[] = [
         href: "/dashboard/hub",
         permission: "staff:read",
       },
+      {
+        label: "Settings",
+        icon: Settings,
+        href: "/dashboard/settings",
+        permission: "dashboard:read",
+      },
+      {
+        label: "Emails",
+        icon: MailOpen,
+        href: "/dashboard/emails",
+        permission: "email:read",
+      },
     ],
   },
   {
@@ -118,6 +187,12 @@ const navGroups: NavGroup[] = [
         label: "Staff & Roles",
         icon: UsersRound,
         href: "/dashboard/staff",
+        permission: "staff:read",
+      },
+      {
+        label: "Activity Log",
+        icon: History,
+        href: "/dashboard/activity-logs",
         permission: "staff:read",
       },
       {

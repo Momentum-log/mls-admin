@@ -4,13 +4,15 @@ purpose: "Backlog of dashboard modules the guard already declares and the server
 authority: reference
 hosts_rules: []
 mirrors_rules: []
-last_reviewed: "2026-09-18"
-status: proposed
+last_reviewed: "2026-10-14"
+status: completed
 ---
 
 # Plan: Forward-declared dashboard routes
 
-**Status:** PROPOSED — not started; not owner-prioritised. This is a backlog reconstructed from the code and the 2026-08-09 audit, `[inferred]` as intended work. It becomes active only when the owner picks an item; each item is a **new product capability** and goes through [workflows/PRD-WORKFLOW.md](../../workflows/PRD-WORKFLOW.md) before any implementation.
+**Status:** COMPLETED in 1.8.0 (2026-10-14). The owner asked for every remaining staff screen to be built; all seven routes have pages, plus the shipment history and Mark Completed adoptions. Not adopted: `POST /developer-mode` (removed from the server), `GET /users/{identifier}`, and the bulk-delete wiring. Kept below as the record of the original backlog.
+
+**Original status:** PROPOSED — not started; not owner-prioritised. This is a backlog reconstructed from the code and the 2026-08-09 audit, `[inferred]` as intended work. It becomes active only when the owner picks an item; each item is a **new product capability** and goes through [workflows/PRD-WORKFLOW.md](../../workflows/PRD-WORKFLOW.md) before any implementation.
 
 ## Objective
 

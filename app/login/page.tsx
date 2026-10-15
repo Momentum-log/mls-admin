@@ -384,8 +384,12 @@ export default function LoginPage() {
             <p className="text-gray-500">{headings[step].blurb}</p>
           </div>
 
+          {/* Each step keys its own form. Without the keys React reuses the
+              previous step's input (same position, same name "code"), which
+              stays bound to the old form: switching from the emailed code to
+              the authenticator left a field that would not take typing. */}
           {step === "email" ? (
-            <Form {...emailForm}>
+            <Form key="email" {...emailForm}>
               <form
                 onSubmit={emailForm.handleSubmit(onIdentify)}
                 className="space-y-6"
@@ -444,7 +448,7 @@ export default function LoginPage() {
               </form>
             </Form>
           ) : step === "password" ? (
-            <Form {...passwordForm}>
+            <Form key="password" {...passwordForm}>
               <form
                 onSubmit={passwordForm.handleSubmit((values) =>
                   staffLogin({ email, password: values.password }),
@@ -518,7 +522,7 @@ export default function LoginPage() {
               </form>
             </Form>
           ) : step === "otp" ? (
-            <Form {...otpForm}>
+            <Form key="otp" {...otpForm}>
               <form
                 onSubmit={otpForm.handleSubmit((values) =>
                   challengeId &&
@@ -625,7 +629,7 @@ export default function LoginPage() {
               </form>
             </Form>
           ) : step === "totp" ? (
-            <Form {...totpForm}>
+            <Form key="totp" {...totpForm}>
               <form
                 onSubmit={totpForm.handleSubmit((values) =>
                   verifyTotp({ email, code: values.code }),
@@ -705,7 +709,7 @@ export default function LoginPage() {
               </form>
             </Form>
           ) : (
-            <Form {...backupForm}>
+            <Form key="backup" {...backupForm}>
               <form
                 onSubmit={backupForm.handleSubmit((values) =>
                   verifyBackup({ email, code: values.code }),

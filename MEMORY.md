@@ -4,7 +4,7 @@ purpose: "What is true about mls-admin right now. Rewritten when reality changes
 authority: canonical
 hosts_rules: []
 mirrors_rules: [RULE-DOC-004, RULE-ARCH-001, RULE-ARCH-004, RULE-VERIF-004]
-last_reviewed: "2026-09-18"
+last_reviewed: "2026-10-14"
 ---
 
 # Project Memory — MLS Admin
@@ -16,8 +16,8 @@ last_reviewed: "2026-09-18"
 ## 1. Current position
 
 - **Product:** Momentum Logistics Service (MLS) — the admin dashboard for a logistics business operating in Poland. Users are MLS staff and the Super Administrator.
-- **Version:** `1.7.1` ("Super Admin OTP Verification Bound to `challengeId`", 2026-10-12). `package.json`, the profile-drawer footer and `changelog.md` agree.
-- **Requires:** `mls-server` ≥ 7.0.0 (identify / OTP / TOTP / backup-code / logout routes; OTP verify needs `challengeId` from 7.0.0).
+- **Version:** `1.8.0` ("Staff Queues, Finance Screens, Settings & Carrier Save Fixes", 2026-10-14), on top of 1.7.1 (Super Admin OTP bound to `challengeId`). `package.json`, the profile-drawer footer and `changelog.md` agree.
+- **Requires:** the `mls-server` release from its PR #16 (`b0ffd11` or later) for every 1.8.0 page; ≥ 7.0.0 for sign-in (OTP verify needs `challengeId`).
 - **Branch:** `dev` (tracking `mls/dev`, `origin/dev`); `main` is the release branch. Working tree: clean of application changes; contains the uncommitted AI operating system added 2026-09-18.
 - **Active work:** none (`docs/ai/HANDOFF.md` = `IDLE`).
 - **AI system:** adopted 2026-09-18 (`docs/ai/SYSTEM.md`). Open confirmations are listed there.
@@ -39,7 +39,7 @@ last_reviewed: "2026-09-18"
 
 ## 3. Architecture (summary — detail in [ARCHITECTURE.md](docs/ai/ARCHITECTURE.md))
 
-- **Stack:** Next.js 16.1.6 App Router · React 19.2.3 · TypeScript 5 strict · Tailwind 4 + shadcn/ui (new-york, `radix-ui`, `lucide-react`) · TanStack Query 5 · Axios · react-hook-form + Zod · react-hot-toast · date-fns · framer-motion · js-cookie · react-qr-code. `zustand` is installed and unused.
+- **Stack:** Next.js 16.1.6 App Router · React 19.2.3 · TypeScript 5 strict · Tailwind 4 + shadcn/ui (new-york, `radix-ui`, `lucide-react`) · TanStack Query 5 · Axios · react-hook-form + Zod · react-hot-toast · date-fns · framer-motion · js-cookie · react-qr-code.
 - **Layering:** `types → lib/api → hooks → components/app`. Components never touch Axios. Hooks own toasts and cache invalidation.
 - **Backend:** `../mls-server` (Express + Prisma + PostgreSQL). Dev: `http://localhost:8000/api`. Contract: `../mls-server/docs/admin.openapi.json` + `docs/admin/authentication-guide.md`. Every admin path carries its own `/admin`.
 - **Auth:** email-first `identify`; staff = password; Super Admin = emailed OTP / TOTP / backup code (no password). One session per admin, one-hour sliding idle; cookie `accessToken` re-stamped per response (`lib/auth/session.ts`). 401 `reason` contract → `SessionNotice` on `/login`. Logout is a real revoking request.
@@ -56,14 +56,19 @@ last_reviewed: "2026-09-18"
 | Dashboard overview stats | Complete |
 | Users: list/filter, detail, per-user shipments & estimates, moderation incl. un-ban / restore, verify | Complete (un-ban 1.6.0) |
 | Address verification requests | Complete |
-| Shipments: list with status filter, detail sheet, 15-status override model, bypass payment, proxy creation wizard (sends `currency`/`actualPrice`/`carrierSlug`/`estimateId`), bulk delete | Complete |
+| Shipments: list with status filter, detail sheet with history and Mark Completed, 17-status override model, bypass payment, proxy creation wizard (sends `currency`/`actualPrice`/`carrierSlug`/`estimateId`), bulk delete | Complete |
 | Hub & Routing (`/dashboard/hub`): master switch, compete-best-price, sorting-centre CRUD, honest no-op warnings, env-fallback banner | Complete (1.5.0) |
 | Multi-Leg Ops (`/dashboard/multi-leg`): queue, confirm arrival, create leg 2 with 409 re-pricing decision, centre-printed-label warning | Complete (1.5.0) |
 | Marketing leads / estimates | Complete |
-| Carriers: CRUD, per-carrier commissions & thresholds, global commission sheet, health monitoring | Complete; save is 3 non-atomic writes (N-005) |
-| Staff & roles (RBAC admin), permission selector | Complete; "Recent Activity" is a fake spinner (N-001) |
+| Carriers: CRUD, per-carrier commissions & thresholds (one atomic save), global commission sheet, health monitoring | Complete (save fixed 1.8.0) |
+| Staff & roles (RBAC admin), permission selector, per-staff recent activity | Complete |
+| Cancellations queue (approve/reject; approval of a paid shipment opens a refund) | Complete (1.8.0) |
+| Refunds: gateway refund via Stripe/PayU, failed-refund retry, manual approve + mark paid out | Complete (1.8.0) |
+| Settings: commission safety net, DHL fee/handoff/VAT, invoice payment window, payment reminders | Complete (1.8.0) |
+| Collections (DHL first mile) with hub handoff: courier booking or service point | Complete (1.8.0) |
+| Invoices (list, detail, CSV), Tax Rules, Partner Enquiries, Emails (templates + one-off), Activity Log, Business Upgrades | Complete (1.8.0) |
 | Admin profile drawer: details, password change (staff), activity logs, docs viewer, version footer | Complete |
-| **Not built** — `/dashboard/settings`, `emails`, `inquiries`, `activity-logs`, `invoices`, `refunds`, `tax-rules` (guard entries exist, no page) | Backlog: [PLAN-forward-declared-dashboard-routes](docs/ai/plans/active/PLAN-forward-declared-dashboard-routes.md) |
+| **Not built** — developer-mode toggle (server route removed); `GET /users/{identifier}` adoption; bulk user/lead delete wiring | Not planned |
 | **Removed** — password rotation (1.7.0) | Do not reintroduce |
 
 ## 5. Environment
@@ -79,7 +84,10 @@ last_reviewed: "2026-09-18"
 - **Never edit `.env*` under the running dev server.** Inlined `NEXT_PUBLIC_*` survives in `.next/dev/` chunks after the file is gone; recovery is `rm -rf .next && bun run dev`. ([VERIFICATION.md §4](docs/ai/VERIFICATION.md#4-environment-rules))
 - **`mls-server` is often down** in dev (dead DB has happened). Check before diagnosing the client.
 - **Hooks after early returns crash pages** ("Rendered more hooks than during the previous render") — hoist them.
-- **`/dashboard/settings` is gated on `staff:write`** — the server gates even the GET on write.
+- **`/dashboard/settings` is guarded on `dashboard:read`; each card checks its own permission** (`staff:read`, `shipment:read`, `email:write` — the reminder GET needs write).
+- **Dialog forms reset by remounting, never by `useEffect` + `setState`** (the React Compiler lint rule `set-state-in-effect` fails the build's lint). Put the form in a child inside `DialogContent`, or key it on the loaded data.
+- **Commission thresholds are PLN prices, not percentages**; field names are `minRatePln`/`minFlatPln`/`intl*` and the server wants numbers, never input strings.
+- **DB email templates are used only when the server has no built-in `.hbs` of that name, and are cached until it restarts.**
 - **Multi-permission routes:** `/dashboard/shipments` = `user:read` + `shipment:read`; `/dashboard/leads` = `user:read` + `leads:read`.
 - **Credential routes are exempt from the 401 redirect** (`CREDENTIAL_ROUTES` in `lib/api/index.ts`); add new sign-in routes there.
 - **The authenticator link bypasses `identify`** on purpose — do not route it through the email lookup.
@@ -96,10 +104,9 @@ last_reviewed: "2026-09-18"
 ## 7. Deferred work
 
 - Server-set `httpOnly` cookie (N-003) — needs `mls-server`.
-- Error boundaries (N-004). Atomic carrier save (N-005). Test suite + CI (N-006).
+- Error boundaries (N-004). Test suite + CI (N-006).
 - Bun on Vercel / launch config (N-007).
-- Remove heuristic correlation fallback once old rows are irrelevant (N-008). Remove `zustand` (N-009).
-- Seven forward-declared routes + audit's endpoint adoptions ([plan](docs/ai/plans/active/PLAN-forward-declared-dashboard-routes.md)).
+- Remove heuristic correlation fallback once old rows are irrelevant (N-008).
 - README rewrite (N-016); refresh or retire `docs/admin/admin.openapi.json` snapshot (N-018).
 - Domain docs pruned at adoption (SYSTEM.md → `modules.pruned`).
 
@@ -114,5 +121,5 @@ Mirrored from `docs/ai/SYSTEM.md → open_confirmations`:
 
 1. Q-01 — Refresh `docs/admin/admin.openapi.json` from the server, or replace it with a pointer?
 2. Q-02 — Should `README.md` be rewritten now (documentation-only task) or left until a release?
-3. Q-03 — Does `/dashboard/settings` still have a purpose post-1.7.0?
+3. Q-03 — answered in 1.8.0: Settings hosts commission, DHL, invoice window and reminders.
 4. Q-04 — Should this adoption get a `changelog.md` entry (e.g. as part of the next release) — the convention excludes pure doc changes, but the operating rules for contributors changed.

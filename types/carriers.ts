@@ -1,3 +1,5 @@
+import type { CarrierCommissionSettings } from "@/types/settings";
+
 export type CommissionType = "PERCENT" | "FIXED";
 export type CommissionCurrency = "PLN" | "EUR";
 
@@ -65,4 +67,14 @@ export interface UpdateCommissionsPayload {
   export: Commission;
   import: Commission;
   international: Commission;
+}
+
+/**
+ * One-step carrier save (`PUT /admin/carriers/update-carrier-settings/:id`).
+ * Send at least one part.
+ */
+export interface SaveCarrierSettingsPayload {
+  profile?: UpdateCarrierPayload;
+  commissions?: UpdateCommissionsPayload;
+  thresholds?: Partial<CarrierCommissionSettings>;
 }

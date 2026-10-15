@@ -17,7 +17,7 @@ export function formatCurrency(currency: string, amount: number): string {
       style: "currency",
       currency: currency,
     }).format(amount);
-  } catch (error) {
+  } catch {
     // Fallback if currency code is invalid or unsupported
     return `${amount} ${currency}`;
   }

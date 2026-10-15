@@ -1,5 +1,5 @@
 import apiClient from "../index";
-import { LeadListResponse, LeadFilter, UserLeadFilter } from "@/types/leads";
+import { LeadFilter, UserLeadFilter } from "@/types/leads";
 import { AdminLeadListResponse } from "@/types/admin-user-resources";
 
 export const getLeads = async (

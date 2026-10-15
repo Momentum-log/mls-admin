@@ -11,6 +11,7 @@ import {
   RefreshCw,
   XCircle,
 } from "lucide-react";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { getAddressRequestProofFile } from "@/lib/api/admin/address-requests";
 import {
   useAddressRequestDetails,
@@ -226,11 +227,9 @@ export default function AddressRequestsPage() {
       }
 
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
-    } catch (error: any) {
+    } catch (error) {
       toast.error(
-        error?.response?.data?.details ||
-          error?.response?.data?.message ||
-          "Proof file is unavailable or has already been removed.",
+        getApiErrorMessage(error, "Proof file is unavailable or has already been removed."),
       );
     } finally {
       setProofLoadingId(null);

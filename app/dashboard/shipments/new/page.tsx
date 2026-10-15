@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUsers } from "@/hooks/users/use-users";
 import { useShippingQuote } from "@/hooks/shipping/use-shipping";
@@ -185,13 +185,12 @@ export default function CreateShipmentPage() {
   const { mutate: bypassPayment, isPending: bypassPending } =
     useBypassPayment();
 
-  // Auto-select user from URL param
-  useEffect(() => {
-    if (preselectedUser && !selectedUser) {
-      setSelectedUser(preselectedUser);
-      setStep(2);
-    }
-  }, [preselectedUser, selectedUser]);
+  // Auto-select user from URL param. Adjusted during render rather than in
+  // an effect, so the page never paints step 1 first.
+  if (preselectedUser && !selectedUser) {
+    setSelectedUser(preselectedUser);
+    setStep(2);
+  }
 
   /** Fetch live carrier rates for the entered route. */
   const handleGetRates = () => {

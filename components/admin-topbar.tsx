@@ -17,7 +17,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AdminSidebar } from "./admin-sidebar";
 
 import { AdminProfileDrawer } from "./admin-profile/AdminProfileDrawer";
-import { HelpCircle, User } from "lucide-react";
+import { User } from "lucide-react";
 
 /**
  * Admin topbar with mobile sidebar toggle and user profile dropdown.

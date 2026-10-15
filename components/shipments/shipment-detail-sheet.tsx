@@ -16,6 +16,7 @@ import { OverrideStatusModal } from "@/components/shipments/override-status-moda
 import { BypassPaymentModal } from "@/components/shipments/bypass-payment-modal";
 import { formatDate, formatDateTime } from "@/utils/format-date";
 import { formatPhoneNumber } from "@/utils/format-phone";
+import { getLabelLinkProps } from "@/utils/label-link";
 import type { AdminShipment, AdminLead } from "@/types/admin-user-resources";
 import {
   Truck,
@@ -29,9 +30,20 @@ import {
   Shield,
   Banknote,
   Trash2,
+  CheckCircle2,
+  History,
+  Loader2,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useDeleteShipment } from "@/hooks/shipments/use-shipments";
+import {
+  useCompleteShipment,
+  useDeleteShipment,
+  useShipmentHistory,
+} from "@/hooks/shipments/use-shipments";
+import {
+  ActivityDetails,
+  formatAction,
+} from "@/components/activity/activity-details";
 import {
   getPaymentStatusVariant,
   getShipmentStatusMeta,
@@ -75,7 +87,15 @@ export default function ShipmentDetailSheet({
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
   const [bypassModalOpen, setBypassModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [completeConfirmOpen, setCompleteConfirmOpen] = useState(false);
   const { mutate: deleteShipment, isPending: isDeleting } = useDeleteShipment();
+  const { mutate: completeShipment, isPending: isCompleting } =
+    useCompleteShipment();
+  const {
+    data: history,
+    isLoading: isHistoryLoading,
+    isError: isHistoryError,
+  } = useShipmentHistory(open && shipment ? shipment.id : null);
 
   const handleDelete = (force: boolean) => {
     if (shipment) {
@@ -358,15 +378,50 @@ export default function ShipmentDetailSheet({
           {shipment.labelUrl && (
             <Button variant="outline" className="w-full" asChild>
               <a
-                href={shipment.labelUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                {...getLabelLinkProps(
+                  shipment.labelUrl,
+                  `label-${shipment.customTrackingNumber}`,
+                )}
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
                 View Shipping Label
               </a>
             </Button>
           )}
+
+          {/* History */}
+          <section className="space-y-2 pt-2 border-t">
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+              <History className="h-3.5 w-3.5" />
+              History
+            </h4>
+            {isHistoryLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-brand-blue" />
+            ) : isHistoryError ? (
+              <p className="text-sm text-muted-foreground">
+                History is unavailable on this server version.
+              </p>
+            ) : !history?.length ? (
+              <p className="text-sm text-muted-foreground">
+                No staff changes recorded.
+              </p>
+            ) : (
+              <ol className="space-y-2">
+                {history.map((entry) => (
+                  <li key={entry.id} className="text-sm">
+                    <span className="font-medium">
+                      {formatAction(entry.action)}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {formatDateTime(entry.timestamp)}
+                      {entry.admin ? ` · ${entry.admin.name}` : ""}
+                    </span>
+                    <ActivityDetails details={entry.details} />
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
 
           {/* Admin Actions */}
           <section className="space-y-2 pt-2 border-t">
@@ -385,6 +440,19 @@ export default function ShipmentDetailSheet({
                   Update Status
                 </Button>
               </Can>
+              {shipment.shipmentStatus !== "COMPLETED" &&
+                shipment.shipmentStatus !== "CANCELLED" && (
+                  <Can do="shipment:write" fallback="disable">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => setCompleteConfirmOpen(true)}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Mark Completed
+                    </Button>
+                  </Can>
+                )}
               {shipment.paymentStatus !== "PAID" && (
                 <Can do="shipment:write" fallback="disable">
                   <Button
@@ -422,6 +490,23 @@ export default function ShipmentDetailSheet({
         enableForce
         onConfirm={handleDelete}
         isLoading={isDeleting}
+      />
+
+      <ConfirmDialog
+        open={completeConfirmOpen}
+        onOpenChange={setCompleteConfirmOpen}
+        title="Mark this shipment completed?"
+        description="The shipment is closed as COMPLETED and the customer is emailed that it is done."
+        confirmLabel="Mark Completed"
+        isLoading={isCompleting}
+        onConfirm={() =>
+          completeShipment(shipment.id, {
+            onSettled: () => setCompleteConfirmOpen(false),
+            // The row behind this sheet is a snapshot; close so the
+            // refreshed list shows the new status.
+            onSuccess: () => onOpenChange(false),
+          })
+        }
       />
 
       {/* Modals */}

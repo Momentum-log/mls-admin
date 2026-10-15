@@ -96,7 +96,7 @@ export default function StaffTable() {
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const handleRowClick = (staff: Staff, e?: React.MouseEvent) => {
+  const handleRowClick = (staff: Staff) => {
     setSelectedStaff(staff);
     setIsSheetOpen(true);
   };
@@ -194,7 +194,7 @@ export default function StaffTable() {
                 <TableRow
                   key={s.id}
                   className="group cursor-pointer hover:bg-muted/50"
-                  onClick={(e) => handleRowClick(s, e)}
+                  onClick={() => handleRowClick(s)}
                 >
                   <TableCell className="font-mono text-sm">
                     {s.adminCode}

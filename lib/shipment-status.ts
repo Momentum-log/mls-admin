@@ -1,8 +1,8 @@
 /**
  * Single source of truth for shipment lifecycle and payment states.
  *
- * The server's `ShipmentStatus` enum grew from 7 to 15 values when hub routing
- * and post-payment fulfillment shipped. Anything that switches on status —
+ * The server's `ShipmentStatus` enum grew from 7 to 17 values as hub routing,
+ * post-payment fulfillment and DHL collection shipped. Anything that switches on status —
  * the override modal, list filters, badges — reads from here so a future
  * addition is a one-file change rather than a hunt.
  */
@@ -22,6 +22,8 @@ export const SHIPMENT_STATUSES = [
   "AWAITING_HUB_CONFIRMATION",
   "LEG2_PENDING",
   "LEG2_CREATED",
+  "AWAITING_MLS_COLLECTION",
+  "AT_HUB",
   "IN_TRANSIT",
   "DELIVERED",
   "COMPLETED",
@@ -104,6 +106,22 @@ const META: Record<ShipmentStatus, Omit<ShipmentStatusMeta, "value">> = {
     description: "Second leg dispatched from the sorting centre",
     variant: "default",
     multiLegOnly: true,
+    terminal: false,
+  },
+  AWAITING_MLS_COLLECTION: {
+    label: "Awaiting MLS Collection",
+    description:
+      "DHL export: paid; MLS must collect the parcel from the customer and bring it to the hub",
+    variant: "secondary",
+    multiLegOnly: false,
+    terminal: false,
+  },
+  AT_HUB: {
+    label: "At Hub",
+    description:
+      "DHL export: the parcel is at the hub; the handoff to DHL is not arranged yet",
+    variant: "secondary",
+    multiLegOnly: false,
     terminal: false,
   },
   IN_TRANSIT: {

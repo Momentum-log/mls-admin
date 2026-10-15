@@ -67,7 +67,6 @@ export default function UserShipmentsPage() {
   /** Resolved shipments from the `data` wrapper. */
   const shipments = responseData?.data ?? [];
   const pagination = responseData?.pagination;
-  const allEstimates = estimatesData?.data ?? [];
 
   /**
    * Compute correlation for the selected shipment.
@@ -80,9 +79,9 @@ export default function UserShipmentsPage() {
   const linkedEstimate = useMemo(
     () =>
       selectedShipment
-        ? findEstimateForShipment(selectedShipment, allEstimates)
+        ? findEstimateForShipment(selectedShipment, estimatesData?.data ?? [])
         : null,
-    [selectedShipment, allEstimates],
+    [selectedShipment, estimatesData],
   );
 
   if (userLoading) {
