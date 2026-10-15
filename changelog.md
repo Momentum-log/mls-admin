@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Breaking (deployment):** Requires the `mls-server` release from PR #16 (branch `claude/project-thread-bgjeuk`, commit `b0ffd11` or later). The new pages call routes that do not exist on older servers: the cancellation queue, gateway refunds, `PUT /admin/carriers/update-carrier-settings/:id`, `GET /admin/settings/invoice-expiration`, DHL settings and hub handoff.
 
-Builds on 1.7.1 below.
+Builds on 1.7.2 and 1.7.1 below.
 
 - **Added**: **Cancellations** (`/dashboard/cancellations`). Customer cancellation requests with approve or reject and a reason. Approving a paid shipment opens its refund request; voiding the carrier label stays a manual step in the carrier portal.
 - **Added**: **Refunds** (`/dashboard/refunds`). Approve sends the money back through Stripe or PayU. A refund the gateway fails returns to the queue with the gateway's reason and a Retry button. "Approve without sending money" (`manual: true`) keeps the old flow for refunds paid out by hand, followed by Mark paid out. The list refreshes every 30 seconds while the gateway settles.
@@ -26,6 +26,10 @@ Builds on 1.7.1 below.
 - **Changed**: Version reconciled: `package.json`, the drawer footer and this file read 1.8.0.
 - **Changed**: Dialog and sheet forms reset by remounting, and the login background and profile activity list no longer set state inside effects, as the React Compiler lint rule requires.
 - **Note**: `POST /admin/developer-mode` was removed from the server, so no toggle was built.
+
+## [1.7.2] - 2026-10-15 - DHL labels download as a PDF
+
+- **Fixed**: **DHL shipping labels would not open.** DHL eCommerce returns the label PDF itself, which the server stores in `labelUrl` as `data:application/pdf;base64,…`, and browsers refuse to open a data URL in a new tab. The shipment and multi-leg detail sheets now download such a label as `label-<tracking number>.pdf`; FedEx's hosted https link still opens in a new tab. The decision lives in `utils/label-link.ts`.
 
 ## [1.7.1] - 2026-10-12 - Super Admin OTP Verification Bound to `challengeId`
 

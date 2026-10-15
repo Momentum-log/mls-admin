@@ -16,6 +16,7 @@ import { OverrideStatusModal } from "@/components/shipments/override-status-moda
 import { BypassPaymentModal } from "@/components/shipments/bypass-payment-modal";
 import { formatDate, formatDateTime } from "@/utils/format-date";
 import { formatPhoneNumber } from "@/utils/format-phone";
+import { getLabelLinkProps } from "@/utils/label-link";
 import type { AdminShipment, AdminLead } from "@/types/admin-user-resources";
 import {
   Truck,
@@ -377,9 +378,10 @@ export default function ShipmentDetailSheet({
           {shipment.labelUrl && (
             <Button variant="outline" className="w-full" asChild>
               <a
-                href={shipment.labelUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                {...getLabelLinkProps(
+                  shipment.labelUrl,
+                  `label-${shipment.customTrackingNumber}`,
+                )}
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
                 View Shipping Label
