@@ -16,6 +16,7 @@ import type { ShipmentLeg } from "@/types/multi-leg";
 import { getShipmentStatusMeta } from "@/lib/shipment-status";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
+import { getLabelLinkProps } from "@/utils/label-link";
 
 interface MultiLegDetailSheetProps {
   shipmentId: string | null;
@@ -101,7 +102,12 @@ function LegCard({ leg }: { leg: ShipmentLeg }) {
             </div>
           )}
           <Button variant="outline" size="sm" className="w-full" asChild>
-            <a href={leg.labelUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              {...getLabelLinkProps(
+                leg.labelUrl,
+                `label-leg-${leg.sequence}-${leg.trackingNumber ?? leg.id}`,
+              )}
+            >
               <ExternalLink className="mr-2 h-4 w-4" />
               View Leg {leg.sequence} Label
             </a>

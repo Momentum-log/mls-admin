@@ -5,6 +5,10 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2026-10-15 - DHL labels download as a PDF
+
+- **Fixed**: **DHL shipping labels would not open.** DHL eCommerce returns the label PDF itself, which the server stores in `labelUrl` as `data:application/pdf;base64,…`, and browsers refuse to open a data URL in a new tab. The shipment and multi-leg detail sheets now download such a label as `label-<tracking number>.pdf`; FedEx's hosted https link still opens in a new tab. The decision lives in `utils/label-link.ts`.
+
 ## [1.7.1] - 2026-10-12 - Super Admin OTP Verification Bound to `challengeId`
 
 **Breaking (deployment):** Requires `mls-server` **v7.0.0 or later** for the
