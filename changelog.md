@@ -5,6 +5,10 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-10-15 - DHL label file named after the tracking number
+
+- **Changed**: Downloaded DHL labels are named `MLS-<TRACKING NUMBER>.pdf`, all uppercase, matching the customer site (`utils/label-link.ts`). A multi-leg label is `MLS-<LEG TRACKING NUMBER>-LEG-<N>.pdf`.
+
 ## [1.8.0] - 2026-10-14 - Staff Queues, Finance Screens, Settings & Carrier Save Fixes
 
 **Breaking (deployment):** Requires the `mls-server` release from PR #16 (branch `claude/project-thread-bgjeuk`, commit `b0ffd11` or later). The new pages call routes that do not exist on older servers: the cancellation queue, gateway refunds, `PUT /admin/carriers/update-carrier-settings/:id`, `GET /admin/settings/invoice-expiration`, DHL settings and hub handoff.
