@@ -25,6 +25,7 @@ Builds on 1.7.2 and 1.7.1 below.
 - **Removed**: The unused `zustand` dependency (N-009), unused imports and variables across the dashboard, the ignored `force` parameter on two delete handlers (N-002), and every `any` cast. `bun run lint` passes with no problems.
 - **Changed**: Version reconciled: `package.json`, the drawer footer and this file read 1.8.0.
 - **Changed**: Dialog and sheet forms reset by remounting, and the login background and profile activity list no longer set state inside effects, as the React Compiler lint rule requires.
+- **Fixed**: **Super Admin could not type an authenticator code after switching from the emailed code.** Both steps render a field named `code` in the same place, so React kept the emailed-code input, still bound to the old form, and keystrokes never reached the authenticator form. Each sign-in step now keys its own form, so switching steps mounts a fresh field.
 - **Note**: `POST /admin/developer-mode` was removed from the server, so no toggle was built.
 
 ## [1.7.2] - 2026-10-15 - DHL labels download as a PDF
