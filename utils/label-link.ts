@@ -6,11 +6,12 @@ import type { AnchorHTMLAttributes } from "react";
  * Carriers hand labels back in two shapes. FedEx returns a hosted https URL,
  * which opens in a new tab. DHL eCommerce returns the PDF itself, which the
  * server stores as `data:application/pdf;base64,…`. Browsers refuse to open a
- * data URL in a new tab, so that one is downloaded as a file instead.
+ * data URL in a new tab, so that one is downloaded as a file instead, named
+ * `MLS-<REFERENCE>.pdf` in uppercase (the reference is the tracking number).
  */
 export function getLabelLinkProps(
   labelUrl: string,
-  fileName = "shipping-label",
+  reference?: string | null,
 ): AnchorHTMLAttributes<HTMLAnchorElement> {
   const trimmed = labelUrl.trim();
 
@@ -22,6 +23,8 @@ export function getLabelLinkProps(
   const href = trimmed.startsWith("data:")
     ? trimmed
     : `data:application/pdf;base64,${trimmed}`;
+
+  const fileName = `MLS-${reference || "LABEL"}`.toUpperCase();
 
   return { href, download: `${fileName}.pdf` };
 }

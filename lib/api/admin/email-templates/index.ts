@@ -19,7 +19,7 @@ export const upsertEmailTemplate = async (
   await apiClient.post("/admin/emails/templates", payload);
 };
 
-/** Sends one email now, outside any template. */
+/** Sends one email now, inside the MLS message layout. */
 export const sendOneOffEmail = async (payload: SendEmailPayload): Promise<void> => {
   await apiClient.post("/admin/emails/send", payload);
 };

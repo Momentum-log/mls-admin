@@ -105,7 +105,7 @@ function LegCard({ leg }: { leg: ShipmentLeg }) {
             <a
               {...getLabelLinkProps(
                 leg.labelUrl,
-                `label-leg-${leg.sequence}-${leg.trackingNumber ?? leg.id}`,
+                `${leg.trackingNumber ?? leg.id}-LEG-${leg.sequence}`,
               )}
             >
               <ExternalLink className="mr-2 h-4 w-4" />

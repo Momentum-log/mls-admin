@@ -5,6 +5,21 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-10-15 - Rich text emails in the MLS design
+
+**Requires:** `mls-server` with PR #17 (generic message layout). Older servers send the message without the MLS header and footer and ignore `preheader`.
+
+- **Added**: **Rich text editor for one-off emails** (`components/emails/rich-text-editor.tsx`, Tiptap 3). Headings, bold, italic, underline, strikethrough, lists, highlighted note, divider, links, link-as-button, clear formatting, undo and redo. It replaces the plain text box; the message is sent as HTML.
+- **Added**: **Live preview** beside the editor (`components/emails/email-preview.tsx`), showing the email inside the MLS header, sign-off and footer exactly as the server renders it (`lib/email/message-layout.ts` mirrors the server's `layouts/message.hbs`).
+- **Added**: **Example messages** (`lib/email/example-messages.ts`): "Generic outreach" loads by default, plus "Service update" and "Blank message", chosen from "Start from".
+- **Added**: Optional **preview line** (`preheader`), shown after the subject in the inbox.
+- **Changed**: After sending, only the recipient is cleared, so the same message can go to the next person.
+- **Changed**: Version reconciled: `package.json`, the drawer footer (it still read 1.8.0) and this file read 1.9.0.
+
+## [1.8.1] - 2026-10-15 - DHL label file named after the tracking number
+
+- **Changed**: Downloaded DHL labels are named `MLS-<TRACKING NUMBER>.pdf`, all uppercase, matching the customer site (`utils/label-link.ts`). A multi-leg label is `MLS-<LEG TRACKING NUMBER>-LEG-<N>.pdf`.
+
 ## [1.8.0] - 2026-10-14 - Staff Queues, Finance Screens, Settings & Carrier Save Fixes
 
 **Breaking (deployment):** Requires the `mls-server` release from PR #16 (branch `claude/project-thread-bgjeuk`, commit `b0ffd11` or later). The new pages call routes that do not exist on older servers: the cancellation queue, gateway refunds, `PUT /admin/carriers/update-carrier-settings/:id`, `GET /admin/settings/invoice-expiration`, DHL settings and hub handoff.
