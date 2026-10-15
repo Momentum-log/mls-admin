@@ -100,7 +100,7 @@ Detail: [domains/rbac-permissions.md](domains/rbac-permissions.md).
 | `/dashboard/tax-rules` | VAT rules per route and customer type | `shipment:read` |
 | `/dashboard/inquiries` | Partner enquiries and their status | `inquiries:read` |
 | `/dashboard/settings` | Commission safety net, DHL, invoice window, payment reminders (per-card permissions) | `dashboard:read` |
-| `/dashboard/emails` | Database email templates and a one-off sender | `email:read` |
+| `/dashboard/emails` | Database email templates and a one-off sender (rich text editor, live preview in the MLS design via `lib/email/message-layout.ts`, a mirror of the server's `layouts/message.hbs`) | `email:read` |
 | `/dashboard/activity-logs` | Audit log for staff and customers | `staff:read` |
 | `/dashboard/leads` | Marketing leads / shipping estimates | `user:read` + `leads:read` |
 | `/dashboard/carriers` | Carrier CRUD, per-carrier commissions, thresholds, global commission sheet | `carrier:read` |

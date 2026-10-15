@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import {
   useEmailTemplates,
@@ -9,6 +9,10 @@ import {
 } from "@/hooks/admin/use-email-templates";
 import type { EmailTemplate, EmailTemplateType } from "@/types/email-template";
 import { formatDateTime } from "@/utils/format-date";
+import { EXAMPLE_MESSAGES } from "@/lib/email/example-messages";
+import { toEmailHtml } from "@/lib/email/to-email-html";
+import { EmailPreview } from "@/components/emails/email-preview";
+import { RichTextEditor } from "@/components/emails/rich-text-editor";
 import { Can } from "@/components/auth/can";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,6 +70,7 @@ const templateSchema = z.object({
 const sendSchema = z.object({
   to: z.string().trim().email("Enter a valid email address."),
   subject: z.string().trim().min(1, "Add a subject."),
+  preheader: z.string().trim().max(200).optional(),
   html: z.string().trim().min(1, "Write the message."),
   fromName: z.string().trim().optional(),
 });
@@ -199,112 +204,173 @@ function TemplateForm({
 }
 
 function SendEmailCard() {
+  const [example, setExample] = useState(EXAMPLE_MESSAGES[0]);
+  // Bumped when an example is loaded, so the editor remounts with its body.
+  const [editorKey, setEditorKey] = useState(0);
   const [form, setForm] = useState({
     to: "",
-    subject: "",
-    html: "",
+    subject: example.subject,
+    preheader: example.preheader,
     fromName: "",
   });
+  const [body, setBody] = useState({ html: example.bodyHtml, isEmpty: false });
   const [error, setError] = useState<string | null>(null);
   const { mutate: send, isPending } = useSendOneOffEmail();
+  const emailHtml = useMemo(() => toEmailHtml(body.html), [body.html]);
+
+  const loadExample = (id: string) => {
+    const next = EXAMPLE_MESSAGES.find((m) => m.id === id);
+    if (!next) return;
+    setExample(next);
+    setForm((f) => ({ ...f, subject: next.subject, preheader: next.preheader }));
+    setBody({ html: next.bodyHtml, isEmpty: false });
+    setEditorKey((k) => k + 1);
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Send one email</CardTitle>
-        <CardDescription>
-          Goes out now from the MLS sender, outside any template. Line breaks
-          are kept.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          className="space-y-4 max-w-2xl"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const parsed = sendSchema.safeParse(form);
-            if (!parsed.success) {
-              setError(parsed.error.issues[0]?.message ?? "Check the form.");
-              return;
-            }
-            setError(null);
-            const { html, fromName, ...rest } = parsed.data;
-            send(
-              {
-                ...rest,
-                fromName: fromName || undefined,
-                // Plain text typed here becomes simple HTML paragraphs.
-                html: html
-                  .split(/\n{2,}/)
-                  .map(
-                    (p) =>
-                      `<p>${p.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />")}</p>`,
-                  )
-                  .join(""),
-              },
-              {
-                onSuccess: () =>
-                  setForm({ to: "", subject: "", html: "", fromName: "" }),
-              },
-            );
-          }}
-        >
-          <div className="grid grid-cols-2 gap-3">
+    <div className="grid gap-6 xl:grid-cols-2">
+      <Card className="xl:self-start">
+        <CardHeader>
+          <CardTitle className="text-base">Send one email</CardTitle>
+          <CardDescription>
+            Goes out now from the MLS sender, inside the MLS email design:
+            header, your message, sign-off and footer.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const parsed = sendSchema.safeParse({
+                ...form,
+                html: body.isEmpty ? "" : emailHtml,
+              });
+              if (!parsed.success) {
+                setError(parsed.error.issues[0]?.message ?? "Check the form.");
+                return;
+              }
+              setError(null);
+              const { fromName, preheader, ...rest } = parsed.data;
+              send(
+                {
+                  ...rest,
+                  fromName: fromName || undefined,
+                  preheader: preheader || undefined,
+                },
+                // Keep the message, so it can go to the next person too.
+                { onSuccess: () => setForm((f) => ({ ...f, to: "" })) },
+              );
+            }}
+          >
             <div className="space-y-1.5">
-              <Label htmlFor="send-to">To</Label>
+              <Label>Start from</Label>
+              <Select value={example.id} onValueChange={loadExample}>
+                <SelectTrigger className="w-full sm:w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXAMPLE_MESSAGES.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Loading an example replaces the subject and message. Replace
+                the text in [square brackets] before sending.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="send-to">To</Label>
+                <Input
+                  id="send-to"
+                  type="email"
+                  value={form.to}
+                  onChange={(e) => setForm({ ...form, to: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="send-from">
+                  Sender name{" "}
+                  <span className="text-muted-foreground font-normal">
+                    (optional)
+                  </span>
+                </Label>
+                <Input
+                  id="send-from"
+                  placeholder="Momentum Logistics"
+                  value={form.fromName}
+                  onChange={(e) => setForm({ ...form, fromName: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="send-subject">Subject</Label>
               <Input
-                id="send-to"
-                type="email"
-                value={form.to}
-                onChange={(e) => setForm({ ...form, to: e.target.value })}
+                id="send-subject"
+                value={form.subject}
+                onChange={(e) => setForm({ ...form, subject: e.target.value })}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="send-from">
-                Sender name{" "}
+              <Label htmlFor="send-preheader">
+                Preview line{" "}
                 <span className="text-muted-foreground font-normal">
-                  (optional)
+                  (optional, shown after the subject in the inbox)
                 </span>
               </Label>
               <Input
-                id="send-from"
-                placeholder="Momentum Logistics"
-                value={form.fromName}
-                onChange={(e) => setForm({ ...form, fromName: e.target.value })}
+                id="send-preheader"
+                maxLength={200}
+                value={form.preheader}
+                onChange={(e) => setForm({ ...form, preheader: e.target.value })}
               />
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="send-subject">Subject</Label>
-            <Input
-              id="send-subject"
-              value={form.subject}
-              onChange={(e) => setForm({ ...form, subject: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="send-body">Message</Label>
-            <Textarea
-              id="send-body"
-              className="min-h-40"
-              value={form.html}
-              onChange={(e) => setForm({ ...form, html: e.target.value })}
-            />
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <Can do="email:write" fallback="disable">
-            <Button type="submit" disabled={isPending}>
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="mr-2 h-4 w-4" />
-              )}
-              Send
-            </Button>
-          </Can>
-        </form>
-      </CardContent>
-    </Card>
+            <div className="space-y-1.5">
+              <Label htmlFor="send-body">Message</Label>
+              <RichTextEditor
+                key={editorKey}
+                id="send-body"
+                initialContent={example.bodyHtml}
+                onChange={(html, isEmpty) => setBody({ html, isEmpty })}
+              />
+              <p className="text-xs text-muted-foreground">
+                To add a button, make a link, then press the button icon while
+                the cursor is on it.
+              </p>
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Can do="email:write" fallback="disable">
+              <Button type="submit" disabled={isPending}>
+                {isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                Send
+              </Button>
+            </Can>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="xl:self-start">
+        <CardHeader>
+          <CardTitle className="text-base">Preview</CardTitle>
+          <CardDescription>What the recipient will see.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmailPreview
+            subject={form.subject}
+            preheader={form.preheader}
+            bodyHtml={body.isEmpty ? "" : emailHtml}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

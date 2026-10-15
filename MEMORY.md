@@ -16,8 +16,8 @@ last_reviewed: "2026-10-14"
 ## 1. Current position
 
 - **Product:** Momentum Logistics Service (MLS) — the admin dashboard for a logistics business operating in Poland. Users are MLS staff and the Super Administrator.
-- **Version:** `1.8.0` ("Staff Queues, Finance Screens, Settings & Carrier Save Fixes", 2026-10-14), on top of 1.7.1 (Super Admin OTP bound to `challengeId`). `package.json`, the profile-drawer footer and `changelog.md` agree.
-- **Requires:** the `mls-server` release from its PR #16 (`b0ffd11` or later) for every 1.8.0 page; ≥ 7.0.0 for sign-in (OTP verify needs `challengeId`).
+- **Version:** `1.9.0` ("Rich text emails in the MLS design", 2026-10-15), on top of 1.8.x (staff queues, finance screens, settings) and 1.7.1 (Super Admin OTP bound to `challengeId`). `package.json`, the profile-drawer footer and `changelog.md` agree.
+- **Requires:** the `mls-server` release from its PR #16 (`b0ffd11` or later) for every 1.8.0 page; its PR #17 (generic message layout) for the 1.9.0 email composer; ≥ 7.0.0 for sign-in (OTP verify needs `challengeId`).
 - **Branch:** `dev` (tracking `mls/dev`, `origin/dev`); `main` is the release branch. Working tree: clean of application changes; contains the uncommitted AI operating system added 2026-09-18.
 - **Active work:** none (`docs/ai/HANDOFF.md` = `IDLE`).
 - **AI system:** adopted 2026-09-18 (`docs/ai/SYSTEM.md`). Open confirmations are listed there.
@@ -66,7 +66,7 @@ last_reviewed: "2026-10-14"
 | Refunds: gateway refund via Stripe/PayU, failed-refund retry, manual approve + mark paid out | Complete (1.8.0) |
 | Settings: commission safety net, DHL fee/handoff/VAT, invoice payment window, payment reminders | Complete (1.8.0) |
 | Collections (DHL first mile) with hub handoff: courier booking or service point | Complete (1.8.0) |
-| Invoices (list, detail, CSV), Tax Rules, Partner Enquiries, Emails (templates + one-off), Activity Log, Business Upgrades | Complete (1.8.0) |
+| Invoices (list, detail, CSV), Tax Rules, Partner Enquiries, Emails (templates + one-off), Activity Log, Business Upgrades | Complete (1.8.0); one-off composer is rich text with live MLS-design preview (1.9.0) |
 | Admin profile drawer: details, password change (staff), activity logs, docs viewer, version footer | Complete |
 | **Not built** — developer-mode toggle (server route removed); `GET /users/{identifier}` adoption; bulk user/lead delete wiring | Not planned |
 | **Removed** — password rotation (1.7.0) | Do not reintroduce |
