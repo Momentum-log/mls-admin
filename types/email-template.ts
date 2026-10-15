@@ -25,9 +25,14 @@ export interface UpsertEmailTemplatePayload {
   type: EmailTemplateType;
 }
 
+/**
+ * `html` is placed in the server's branded message layout (header, sign-off,
+ * footer); `raw: true` would send it as given instead.
+ */
 export interface SendEmailPayload {
   to: string;
   subject: string;
   html: string;
+  preheader?: string;
   fromName?: string;
 }
