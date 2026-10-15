@@ -380,7 +380,7 @@ export default function ShipmentDetailSheet({
               <a
                 {...getLabelLinkProps(
                   shipment.labelUrl,
-                  `label-${shipment.customTrackingNumber}`,
+                  shipment.customTrackingNumber,
                 )}
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
