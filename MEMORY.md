@@ -16,8 +16,8 @@ last_reviewed: "2026-10-14"
 ## 1. Current position
 
 - **Product:** Momentum Logistics Service (MLS) — the admin dashboard for a logistics business operating in Poland. Users are MLS staff and the Super Administrator.
-- **Version:** `1.9.0` ("Rich text emails in the MLS design", 2026-10-15), on top of 1.8.x (staff queues, finance screens, settings) and 1.7.1 (Super Admin OTP bound to `challengeId`). `package.json`, the profile-drawer footer and `changelog.md` agree.
-- **Requires:** the `mls-server` release from its PR #16 (`b0ffd11` or later) for every 1.8.0 page; its PR #17 (generic message layout) for the 1.9.0 email composer; ≥ 7.0.0 for sign-in (OTP verify needs `challengeId`).
+- **Version:** `1.10.0` ("Post-demo fixes", 2026-10-17), on top of 1.9.0 (rich text emails in the MLS design, 2026-10-15), 1.8.x (staff queues, finance screens, settings) and 1.7.1 (Super Admin OTP bound to `challengeId`). `package.json`, the profile-drawer footer and `changelog.md` agree.
+- **Requires:** the `mls-server` release from its PR #16 (`b0ffd11` or later) for every 1.8.0 page; its PR #17 (generic message layout) for the 1.9.0 email composer; its PR #19 for the 1.10.0 `?shipment=` deep link; ≥ 7.0.0 for sign-in (OTP verify needs `challengeId`).
 - **Branch:** `dev` (tracking `mls/dev`, `origin/dev`); `main` is the release branch. Working tree: clean of application changes; contains the uncommitted AI operating system added 2026-09-18.
 - **Active work:** none (`docs/ai/HANDOFF.md` = `IDLE`).
 - **AI system:** adopted 2026-09-18 (`docs/ai/SYSTEM.md`). Open confirmations are listed there.

@@ -88,11 +88,15 @@ export const useOverrideStatus = () => {
       data: OverrideStatusPayload;
     }) => overrideStatus(shipmentId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shipments"] });
       toast.success("Shipment status updated!");
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Failed to update status"));
+    },
+    // A failure can arrive after the status was saved (a timeout, a failed
+    // email); re-read so the table shows what the server actually holds.
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
     },
   });
 };

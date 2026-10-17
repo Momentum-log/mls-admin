@@ -9,6 +9,7 @@ import {
 } from "@/hooks/admin/use-cancellations";
 import type { CancellationRequest, CancellationStatus } from "@/types/cancellation";
 import { getPaymentStatusVariant, getShipmentStatusMeta } from "@/lib/shipment-status";
+import { getApiErrorMessage, hasStatus } from "@/lib/api-error";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
 import { Can } from "@/components/auth/can";
@@ -60,12 +61,19 @@ export default function CancellationsPage() {
   const [page, setPage] = useState(1);
   const limit = 20;
 
-  const { data, isLoading, isFetching, refetch } = useCancellationRequests({
+  const { data, error, isLoading, isFetching, refetch } = useCancellationRequests({
     status,
     page,
     limit,
   });
   const requests = data?.data ?? [];
+  // "Cannot GET" is Express's 404 for a route it does not have: the API this
+  // dashboard points at is running a build from before cancellation requests.
+  const loadError = error
+    ? hasStatus(error, 404)
+      ? "The connected server does not have cancellation requests yet. Deploy the latest server build, then reload this page."
+      : getApiErrorMessage(error, "Could not load cancellation requests.")
+    : null;
 
   const [approveTarget, setApproveTarget] = useState<CancellationRequest | null>(null);
   const [rejectTarget, setRejectTarget] = useState<CancellationRequest | null>(null);
@@ -124,6 +132,15 @@ export default function CancellationsPage() {
               <TableRow>
                 <TableCell colSpan={6} className="h-64 text-center">
                   <Loader2 className="mx-auto h-8 w-8 animate-spin text-brand-blue" />
+                </TableCell>
+              </TableRow>
+            ) : loadError ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-64 text-center">
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Ban className="h-10 w-10 text-destructive opacity-40" />
+                    <p className="font-medium max-w-md mx-auto">{loadError}</p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : requests.length === 0 ? (

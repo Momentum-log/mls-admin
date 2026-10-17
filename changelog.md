@@ -5,6 +5,16 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-10-17 - Post-demo fixes
+
+**Requires:** `mls-server` with PR #19 for the `?shipment=` deep link (the server matches a shipment ID in search) and for the status override answering success once saved.
+
+- **Fixed**: **Status override dialog** (`components/shipments/override-status-modal.tsx`, `components/ui/select.tsx`). The status field grew past the dialog and showed the page through it, because each option's description was inside the text the trigger copies. `SelectItem` takes a `description` shown in the list only; the trigger is full width on a solid background and the list matches its width.
+- **Fixed**: **Status override showed an error after saving.** The table is re-read after any outcome, so it shows what the server holds; the server side of this fix is in mls-server PR #19.
+- **Fixed**: **Cancellations page "Cannot GET"** (`app/dashboard/cancellations/page.tsx`). The route exists on the server; that message is Express's 404 from an API running an older build. The page now says so in the table ("Deploy the latest server build, then reload") instead of failing silently, and shows the server's message for other errors.
+- **Changed**: **One-off emails are sent as "Momentum Logistics Services" by default** (`app/dashboard/emails/page.tsx`). The sender name was empty, so the server's configured name was used, which showed a person's name in the demo. Staff can still change it.
+- **Added**: **`/dashboard/shipments?shipment=<id>` opens that shipment's detail sheet**, the link staff alert emails now use (`ADMIN_BASE_URL` on the server).
+
 ## [1.9.0] - 2026-10-15 - Rich text emails in the MLS design
 
 **Requires:** `mls-server` with PR #17 (generic message layout). Older servers send the message without the MLS header and footer and ignore `preheader`.
