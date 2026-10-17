@@ -5,6 +5,14 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-10-17 - DPD
+
+**Requires:** `mls-server` with PR #20 (DPD carrier, rate card endpoints, `isConfigured`). Against an older server the Rate Card tab reports it could not load the card and nothing else changes.
+
+- **Added**: **DPD rate card** (`components/carriers/rate-card-editor.tsx`, `lib/rate-card-csv.ts`). The DPD carrier sheet has a Rate Card tab: the contract price list per lane, service and weight band. Import replaces the whole card from a CSV (comma or semicolon, decimal comma accepted, as Polish Excel saves it); every bad line is listed and nothing is saved until all lines read. Download gives the current card, or an empty template. Editing needs `carrier:write`.
+- **Added**: **"Not configured" on carriers the server cannot use** (`app/dashboard/carriers/page.tsx`, `components/carriers/carrier-detail-sheet.tsx`). A carrier whose credentials are missing on the server (DPD before its `DPD_*` env is set) shows a badge in the list and a note in its sheet explaining that it is never quoted, even when active.
+- **Fixed**: **Carrier slug list** (`lib/api/carriers/constants.ts`). DHL's slug is `dhl-ecommerce` (was `dhl`, which matches no adapter, so the DHL sheet showed it as a custom slug); `dpd` added.
+
 ## [1.10.0] - 2026-10-17 - Post-demo fixes
 
 **Requires:** `mls-server` with PR #19 for the `?shipment=` deep link (the server matches a shipment ID in search) and for the status override answering success once saved.

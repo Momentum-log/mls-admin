@@ -4,11 +4,14 @@ import {
   createCarrier,
   deleteCarrier,
   saveCarrierSettings,
+  getRateCard,
+  replaceRateCard,
 } from "@/lib/api/carriers";
 import { toast } from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {
   CreateCarrierPayload,
+  RateCardRow,
   SaveCarrierSettingsPayload,
 } from "@/types/carriers";
 
@@ -66,6 +69,29 @@ export const useSaveCarrierSettings = () => {
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Failed to save carrier"));
+    },
+  });
+};
+
+export const useRateCard = (slug: string | null) => {
+  return useQuery({
+    queryKey: ["carrier-rate-card", slug],
+    queryFn: () => getRateCard(slug!),
+    enabled: Boolean(slug),
+  });
+};
+
+/** Replaces a carrier's whole rate card. */
+export const useReplaceRateCard = (slug: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: RateCardRow[]) => replaceRateCard(slug, rows),
+    onSuccess: (rows) => {
+      queryClient.setQueryData(["carrier-rate-card", slug], rows);
+      toast.success(`Rate card saved (${rows.length} rows)`);
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to save rate card"));
     },
   });
 };
