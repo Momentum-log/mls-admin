@@ -52,6 +52,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Info, Loader2, Mail, Plus, Send } from "lucide-react";
 
+const DEFAULT_SENDER_NAME = "Momentum Logistics Services";
+
 const TYPES: EmailTemplateType[] = ["SERVICE", "MARKETING", "AUTHENTICATION"];
 
 const templateSchema = z.object({
@@ -211,7 +213,9 @@ function SendEmailCard() {
     to: "",
     subject: example.subject,
     preheader: example.preheader,
-    fromName: "",
+    // Sent on purpose: left empty, the server falls back to its configured
+    // sender name, which showed a person's name in the demo.
+    fromName: DEFAULT_SENDER_NAME,
   });
   const [body, setBody] = useState({ html: example.bodyHtml, isEmpty: false });
   const [error, setError] = useState<string | null>(null);
@@ -301,7 +305,7 @@ function SendEmailCard() {
                 </Label>
                 <Input
                   id="send-from"
-                  placeholder="Momentum Logistics"
+                  placeholder={DEFAULT_SENDER_NAME}
                   value={form.fromName}
                   onChange={(e) => setForm({ ...form, fromName: e.target.value })}
                 />
