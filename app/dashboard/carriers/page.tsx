@@ -193,6 +193,15 @@ export default function CarriersPage() {
                     >
                       {carrier.isActive ? "Active" : "Inactive"}
                     </Badge>
+                    {carrier.isConfigured === false && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-1 bg-amber-100 text-amber-800 hover:bg-amber-100"
+                        title="The server has no credentials for this carrier, so it is never quoted."
+                      >
+                        Not configured
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {carrier.baseUrl || "—"}
