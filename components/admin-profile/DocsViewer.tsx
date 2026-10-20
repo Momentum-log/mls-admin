@@ -17,7 +17,6 @@ import {
   Settings,
   BookOpen,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 /**
  * DocsViewer Component
@@ -148,7 +147,7 @@ export function DocsViewer() {
             </li>
             <li>
               <strong>Conversion:</strong> Once a shipment is eventually created
-              for that lead, they are marked as 'converted'.
+              for that lead, they are marked as &apos;converted&apos;.
             </li>
           </ul>
         </div>
@@ -239,7 +238,7 @@ export function DocsViewer() {
     return (
       <div className="py-10 text-center">
         <p className="text-muted-foreground">
-          You don't have permission to view any guides.
+          You don&apos;t have permission to view any guides.
         </p>
       </div>
     );

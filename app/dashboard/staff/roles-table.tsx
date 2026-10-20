@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import {
   Loader2,
   Plus,
-  Info,
   Edit,
   Trash2,
   MoreHorizontal,
@@ -96,7 +95,7 @@ export default function RolesTable() {
     }
   };
 
-  const handleDelete = (force: boolean) => {
+  const handleDelete = () => {
     if (!deleteConfirm) return;
     deleteRole(deleteConfirm.id, {
       onSuccess: () => setDeleteConfirm(null),

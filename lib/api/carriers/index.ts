@@ -2,8 +2,8 @@ import apiClient from "../index";
 import {
   Carrier,
   CreateCarrierPayload,
-  UpdateCarrierPayload,
-  UpdateCommissionsPayload,
+  RateCardRow,
+  SaveCarrierSettingsPayload,
 } from "@/types/carriers";
 
 // ─── CARRIER PROFILE CRUD ────────────────────────────────────────────────────
@@ -48,24 +48,6 @@ export const createCarrier = async (
 };
 
 /**
- * Updates an existing carrier profile.
- * Can be used to rotate keys, change active status, or rename.
- *
- * @param id - Carrier ID (UUID).
- * @param payload - Partial update fields.
- */
-export const updateCarrier = async (
-  id: string,
-  payload: UpdateCarrierPayload,
-): Promise<Carrier> => {
-  const { data } = await apiClient.put<Carrier>(
-    `/admin/carriers/update-carrier/${id}`,
-    payload,
-  );
-  return data;
-};
-
-/**
  * Deletes a carrier profile.
  * BLOCKED if the carrier has *any* active shipments associated with it.
  *
@@ -75,22 +57,45 @@ export const deleteCarrier = async (id: string): Promise<void> => {
   await apiClient.delete(`/admin/carriers/delete-carrier/${id}`);
 };
 
-// ─── COMMISSION MANAGEMENT (CL02 RULES) ──────────────────────────────────────
+// ─── ONE-STEP SAVE (PROFILE, COMMISSIONS CL02, THRESHOLDS) ───────────────────
 
 /**
- * Updates the commission structure for a specific carrier.
- * Covers all 4 stages: Local (PL-PL), Export (PL-World), Import (World-PL), International (World-World).
+ * Saves the carrier sheet in one write: any of profile, commissions and
+ * thresholds. Thresholds need `staff:write` as well as `carrier:write`.
  *
- * @param id - Carrier ID (UUID).
- * @param payload - Full 4-stage commission config.
+ * @param id - Carrier id.
+ * @param body - The parts to save; at least one.
+ * @returns The updated carrier, secrets masked.
  */
-export const updateCommissions = async (
+export const saveCarrierSettings = async (
   id: string,
-  payload: UpdateCommissionsPayload,
+  body: SaveCarrierSettingsPayload,
 ): Promise<Carrier> => {
   const { data } = await apiClient.put<Carrier>(
-    `/admin/carriers/update-carrier-commissions/${id}`,
-    payload,
+    `/admin/carriers/update-carrier-settings/${id}`,
+    body,
   );
   return data;
+};
+
+// ─── RATE CARD (carriers with no rates API, e.g. DPD) ────────────────────────
+
+/** A carrier's whole rate card, sorted by lane, service and weight. */
+export const getRateCard = async (slug: string): Promise<RateCardRow[]> => {
+  const { data } = await apiClient.get<{ rows: RateCardRow[] }>(
+    `/admin/carriers/rate-card/${slug}`,
+  );
+  return data.rows;
+};
+
+/** Replaces the whole rate card in one save; returns it as saved. */
+export const replaceRateCard = async (
+  slug: string,
+  rows: RateCardRow[],
+): Promise<RateCardRow[]> => {
+  const { data } = await apiClient.put<{ rows: RateCardRow[] }>(
+    `/admin/carriers/rate-card/${slug}`,
+    { rows },
+  );
+  return data.rows;
 };

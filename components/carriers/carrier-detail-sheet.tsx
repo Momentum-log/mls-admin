@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Trash2, Globe } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Select,
@@ -20,8 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CARRIER_SLUGS } from "@/lib/api/carriers/constants";
+import {
+  CARRIER_SLUGS,
+  RATE_CARD_CARRIER_SLUGS,
+} from "@/lib/api/carriers/constants";
 import CommissionEditor from "./commission-editor";
+import RateCardEditor from "./rate-card-editor";
 import ThresholdEditor from "./threshold-editor";
 import {
   Carrier,
@@ -31,14 +35,11 @@ import {
 } from "@/types/carriers";
 import {
   useCreateCarrier,
-  useUpdateCarrier,
   useDeleteCarrier,
-  useUpdateCommissions,
+  useSaveCarrierSettings,
 } from "@/hooks/carriers/use-carriers";
-import {
-  useCarrierCommissionSettings,
-  useUpdateCarrierCommissionSettings,
-} from "@/hooks/settings/use-settings";
+import { useCarrierCommissionSettings } from "@/hooks/settings/use-settings";
+import { useCan } from "@/components/auth/can";
 import { CarrierCommissionSettings } from "@/types/settings";
 
 interface CarrierDetailSheetProps {
@@ -75,11 +76,11 @@ const defaultSettings: Partial<CarrierCommissionSettings> = {
   isImportEurManual: false,
   importMinRateEur: null,
   importMinFlatEur: null,
-  internationalMinRatePln: null,
-  internationalMinFlatPln: null,
-  isInternationalEurManual: false,
-  internationalMinRateEur: null,
-  internationalMinFlatEur: null,
+  intlMinRatePln: null,
+  intlMinFlatPln: null,
+  isIntlEurManual: false,
+  intlMinRateEur: null,
+  intlMinFlatEur: null,
 };
 
 export default function CarrierDetailSheet({
@@ -88,18 +89,20 @@ export default function CarrierDetailSheet({
   carrier,
 }: CarrierDetailSheetProps) {
   const isEditMode = !!carrier;
+  const hasRateCard =
+    isEditMode && RATE_CARD_CARRIER_SLUGS.includes(carrier.slug);
 
   const { mutateAsync: createAsync, isPending: isCreating } =
     useCreateCarrier();
-  const { mutateAsync: updateAsync, isPending: isUpdating } =
-    useUpdateCarrier();
-  const { mutateAsync: updateCommsAsync, isPending: isUpdatingComms } =
-    useUpdateCommissions();
-  const { mutateAsync: updateSettingsAsync, isPending: isUpdatingSettings } =
-    useUpdateCarrierCommissionSettings();
+  const { mutateAsync: saveSettingsAsync, isPending: isSaving } =
+    useSaveCarrierSettings();
+  // Thresholds also need `staff:write` on the server. Sending them without it
+  // would refuse the whole save, so they are left out instead.
+  const { can } = useCan();
+  const canEditThresholds = can("staff:write");
   const { mutate: remove, isPending: isDeleting } = useDeleteCarrier();
 
-  const { data: serverSettings, isLoading: isFetchingSettings } =
+  const { data: serverSettings } =
     useCarrierCommissionSettings(isEditMode ? carrier.id : null);
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -179,9 +182,16 @@ export default function CarrierDetailSheet({
         if (formData.apiKey) payload.apiKey = formData.apiKey;
         if (formData.apiSecret) payload.apiSecret = formData.apiSecret;
 
-        await updateAsync({ id: carrier.id, data: payload });
-        await updateCommsAsync({ id: carrier.id, data: commissions });
-        await updateSettingsAsync({ carrierId: carrier.id, payload: settings });
+        // One write: profile, commissions and thresholds save together or
+        // not at all, so a failure can no longer leave the carrier half-saved.
+        await saveSettingsAsync({
+          id: carrier.id,
+          body: {
+            profile: payload,
+            commissions,
+            ...(canEditThresholds && { thresholds: settings }),
+          },
+        });
       } else {
         const payload: CreateCarrierPayload = {
           name: formData.name as string,
@@ -194,22 +204,24 @@ export default function CarrierDetailSheet({
 
         const newCarrier = await createAsync(payload);
         if (newCarrier?.id) {
-          await updateCommsAsync({ id: newCarrier.id, data: commissions });
-          await updateSettingsAsync({
-            carrierId: newCarrier.id,
-            payload: settings,
+          await saveSettingsAsync({
+            id: newCarrier.id,
+            body: {
+              commissions,
+              ...(canEditThresholds && { thresholds: settings }),
+            },
           });
         }
       }
       onOpenChange(false);
-    } catch (error) {
+    } catch {
       // Errors are handled by the hooks toasts natively
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDelete = (force: boolean) => {
+  const handleDelete = () => {
     if (carrier) {
       remove(carrier.id);
       setDeleteConfirmOpen(false);
@@ -218,12 +230,7 @@ export default function CarrierDetailSheet({
   };
 
   const isLoading =
-    isCreating ||
-    isUpdating ||
-    isDeleting ||
-    isUpdatingComms ||
-    isUpdatingSettings ||
-    isSubmitting;
+    isCreating || isDeleting || isSaving || isSubmitting;
 
   return (
     <>
@@ -245,12 +252,28 @@ export default function CarrierDetailSheet({
             className="px-6 pb-6 pt-4 flex-1 flex flex-col"
           >
             <Tabs defaultValue="details" className="flex-1">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList
+                className={`grid w-full ${hasRateCard ? "grid-cols-3" : "grid-cols-2"}`}
+              >
                 <TabsTrigger value="details">Integration Details</TabsTrigger>
                 <TabsTrigger value="commissions">Commissions</TabsTrigger>
+                {hasRateCard && (
+                  <TabsTrigger value="rate-card">Rate Card</TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="details" className="space-y-4 pt-4">
+                {isEditMode && carrier.isConfigured === false && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                    <p className="font-semibold">Not configured on the server</p>
+                    <p>
+                      The server has no credentials for {carrier.name}, so it is
+                      never quoted, even when active.
+                      {carrier.slug === "dpd" &&
+                        " Set DPD_LOGIN, DPD_PASSWORD and DPD_MASTER_FID in the server environment and restart it."}
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="name">Carrier Name *</Label>
                   <Input
@@ -410,6 +433,12 @@ export default function CarrierDetailSheet({
 
                 <ThresholdEditor settings={settings} onChange={setSettings} />
               </TabsContent>
+
+              {hasRateCard && (
+                <TabsContent value="rate-card" className="pt-4 pb-12">
+                  <RateCardEditor slug={carrier.slug} carrierName={carrier.name} />
+                </TabsContent>
+              )}
             </Tabs>
 
             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 pt-6 mt-auto shrink-0 border-t">

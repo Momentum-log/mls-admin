@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import {
   useShipments,
@@ -76,6 +76,24 @@ export default function ShipmentsPage() {
 
   const shipments = responseData?.data ?? [];
   const pagination = responseData?.pagination;
+
+  // Staff alert emails link to `?shipment=<id>`. The id is searched for (the
+  // server matches it exactly) and its detail sheet opens once it loads.
+  const [deepLinkId, setDeepLinkId] = useState<string | null>(null);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("shipment");
+    if (!id) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the URL once on mount
+    setDeepLinkId(id);
+    setSearch(id);
+  }, []);
+  const deepLinked = deepLinkId
+    ? shipments.find((s) => s.id === deepLinkId)
+    : undefined;
+  if (deepLinked) {
+    setDeepLinkId(null);
+    setSelectedShipment(deepLinked);
+  }
 
   const { mutate: deleteShipment, isPending: isDeleting } = useDeleteShipment();
   const { mutate: bulkDelete, isPending: isBulkDeleting } =

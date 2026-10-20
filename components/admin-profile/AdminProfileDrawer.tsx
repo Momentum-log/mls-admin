@@ -10,9 +10,8 @@ import {
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Shield, Mail, User, HelpCircle } from "lucide-react";
+import { Shield, Mail, HelpCircle } from "lucide-react";
 import { DocsViewer } from "./DocsViewer";
 import { ReactNode } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,7 +27,7 @@ interface AdminProfileDrawerProps {
  * Displayed in the drawer footer. Kept in one place so it cannot drift from
  * `package.json` the way a hardcoded string did.
  */
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.11.0";
 
 /**
  * AdminProfileDrawer Component

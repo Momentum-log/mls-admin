@@ -6,6 +6,7 @@ import type {
   BackupCodesResponse,
   CodeLoginPayload,
   IdentifyPayload,
+  OtpChallenge,
   OtpRequestPayload,
   OtpVerifyPayload,
   StaffLoginPayload,
@@ -33,6 +34,8 @@ export const identifyAdmin = async (
     codeAlreadyPending?: boolean;
     retryAfterSeconds?: number;
     expiresInSeconds?: number;
+    challengeId?: string;
+    expiresAt?: string;
     email?: string;
     name?: string;
   }>("/admin/auth/identify", data);
@@ -45,6 +48,8 @@ export const identifyAdmin = async (
     retryAfterSeconds: body.retryAfterSeconds,
     expiresInSeconds: body.expiresInSeconds,
     name: body.name,
+    challengeId: body.challengeId,
+    expiresAt: body.expiresAt,
   };
 };
 
@@ -66,19 +71,26 @@ export const loginStaff = async (
 };
 
 /**
- * Asks for a one-time sign-in code to be emailed.
+ * Re-sends the emailed code. `identify` already sends the first one.
  *
- * Always resolves — the endpoint answers 202 with an identical body whether
- * the address belongs to the Super Administrator, belongs to nobody, or was
- * throttled, so that callers cannot probe for valid admin addresses. Nothing
- * in the response says whether an email was actually sent; the email is the
- * only feedback.
+ * Each call issues a new challenge and returns its id; only that id verifies
+ * the new code. Throttled calls are refused with `429 OTP_THROTTLED`, the
+ * wait in `details`.
  */
-export const requestOtp = async (data: OtpRequestPayload): Promise<void> => {
-  await apiClient.post("/admin/auth/otp/request", data);
+export const requestOtp = async (
+  data: OtpRequestPayload,
+): Promise<OtpChallenge> => {
+  const { data: body } = await apiClient.post<OtpChallenge>(
+    "/admin/auth/otp/request",
+    data,
+  );
+  return { challengeId: body.challengeId, expiresAt: body.expiresAt };
 };
 
-/** Exchanges an emailed code for a session. 6 digits, 10 minutes, 3 attempts. */
+/**
+ * Exchanges an emailed code for a session. 6 digits, 10 minutes, 3 attempts.
+ * Must carry the `challengeId` returned with that code (v7.0.0).
+ */
 export const verifyOtp = async (
   data: OtpVerifyPayload,
 ): Promise<AuthResponse> => {

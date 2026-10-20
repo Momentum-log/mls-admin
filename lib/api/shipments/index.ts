@@ -8,6 +8,7 @@ import {
   UserShipmentFilter,
 } from "@/types/shipment";
 import { AdminShipmentListResponse } from "@/types/admin-user-resources";
+import type { ActivityLogEntry } from "@/types/activity-log";
 
 /**
  * Fetches a paginated list of shipments.
@@ -112,4 +113,27 @@ export const bulkDeleteShipments = async (
   force = false,
 ): Promise<void> => {
   await apiClient.post("/admin/shipments/bulk-delete", { ids, force });
+};
+
+/**
+ * The audit trail for one shipment: who changed what, newest first.
+ *
+ * @param id - The UUID of the shipment.
+ */
+export const getShipmentHistory = async (
+  id: string,
+): Promise<ActivityLogEntry[]> => {
+  const { data } = await apiClient.get<{ auditLogs?: ActivityLogEntry[] }>(
+    `/admin/shipments/${id}`,
+  );
+  return data.auditLogs ?? [];
+};
+
+/**
+ * Marks a shipment completed and emails the customer.
+ *
+ * @param id - The UUID of the shipment.
+ */
+export const completeShipment = async (id: string): Promise<void> => {
+  await apiClient.post(`/admin/shipments/${id}/complete`);
 };

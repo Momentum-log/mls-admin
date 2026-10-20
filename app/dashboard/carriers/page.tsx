@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { useCarriers } from "@/hooks/carriers/use-carriers";
 import {
   Table,
@@ -18,7 +19,6 @@ import {
   Truck,
   MoreHorizontal,
   Settings2,
-  Trash2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -62,9 +62,7 @@ export default function CarriersPage() {
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-6 text-center text-destructive">
           <p className="font-medium">Failed to load carriers.</p>
           <p className="text-sm opacity-80 mt-1">
-            {(error as any)?.response?.data?.message ||
-              (error as Error)?.message ||
-              "Unknown error occurred."}
+            {getApiErrorMessage(error, "Unknown error occurred.")}
           </p>
           <Button
             variant="outline"
@@ -106,7 +104,7 @@ export default function CarriersPage() {
         </div>
       </div>
 
-      {!isLoading && !hasActiveCarriers && carriers?.length! > 0 && (
+      {!isLoading && !hasActiveCarriers && (carriers?.length ?? 0) > 0 && (
         <div className="rounded-md border border-amber-500/50 bg-amber-50 p-4 text-amber-800 flex items-center gap-3">
           <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
           <p className="text-sm font-medium">
@@ -195,6 +193,15 @@ export default function CarriersPage() {
                     >
                       {carrier.isActive ? "Active" : "Inactive"}
                     </Badge>
+                    {carrier.isConfigured === false && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-1 bg-amber-100 text-amber-800 hover:bg-amber-100"
+                        title="The server has no credentials for this carrier, so it is never quoted."
+                      >
+                        Not configured
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {carrier.baseUrl || "—"}

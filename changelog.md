@@ -5,6 +5,77 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-10-17 - DPD
+
+**Requires:** `mls-server` with PR #20 (DPD carrier, rate card endpoints, `isConfigured`). Against an older server the Rate Card tab reports it could not load the card and nothing else changes.
+
+- **Added**: **DPD rate card** (`components/carriers/rate-card-editor.tsx`, `lib/rate-card-csv.ts`). The DPD carrier sheet has a Rate Card tab: the contract price list per lane, service and weight band. Import replaces the whole card from a CSV (comma or semicolon, decimal comma accepted, as Polish Excel saves it); every bad line is listed and nothing is saved until all lines read. Download gives the current card, or an empty template. Editing needs `carrier:write`.
+- **Added**: **"Not configured" on carriers the server cannot use** (`app/dashboard/carriers/page.tsx`, `components/carriers/carrier-detail-sheet.tsx`). A carrier whose credentials are missing on the server (DPD before its `DPD_*` env is set) shows a badge in the list and a note in its sheet explaining that it is never quoted, even when active.
+- **Fixed**: **Carrier slug list** (`lib/api/carriers/constants.ts`). DHL's slug is `dhl-ecommerce` (was `dhl`, which matches no adapter, so the DHL sheet showed it as a custom slug); `dpd` added.
+
+## [1.10.0] - 2026-10-17 - Post-demo fixes
+
+**Requires:** `mls-server` with PR #19 for the `?shipment=` deep link (the server matches a shipment ID in search) and for the status override answering success once saved.
+
+- **Fixed**: **Status override dialog** (`components/shipments/override-status-modal.tsx`, `components/ui/select.tsx`). The status field grew past the dialog and showed the page through it, because each option's description was inside the text the trigger copies. `SelectItem` takes a `description` shown in the list only; the trigger is full width on a solid background and the list matches its width.
+- **Fixed**: **Status override showed an error after saving.** The table is re-read after any outcome, so it shows what the server holds; the server side of this fix is in mls-server PR #19.
+- **Fixed**: **Cancellations page "Cannot GET"** (`app/dashboard/cancellations/page.tsx`). The route exists on the server; that message is Express's 404 from an API running an older build. The page now says so in the table ("Deploy the latest server build, then reload") instead of failing silently, and shows the server's message for other errors.
+- **Changed**: **One-off emails are sent as "Momentum Logistics Services" by default** (`app/dashboard/emails/page.tsx`). The sender name was empty, so the server's configured name was used, which showed a person's name in the demo. Staff can still change it.
+- **Added**: **`/dashboard/shipments?shipment=<id>` opens that shipment's detail sheet**, the link staff alert emails now use (`ADMIN_BASE_URL` on the server).
+
+## [1.9.0] - 2026-10-15 - Rich text emails in the MLS design
+
+**Requires:** `mls-server` with PR #17 (generic message layout). Older servers send the message without the MLS header and footer and ignore `preheader`.
+
+- **Added**: **Rich text editor for one-off emails** (`components/emails/rich-text-editor.tsx`, Tiptap 3). Headings, bold, italic, underline, strikethrough, lists, highlighted note, divider, links, link-as-button, clear formatting, undo and redo. It replaces the plain text box; the message is sent as HTML.
+- **Added**: **Live preview** beside the editor (`components/emails/email-preview.tsx`), showing the email inside the MLS header, sign-off and footer exactly as the server renders it (`lib/email/message-layout.ts` mirrors the server's `layouts/message.hbs`).
+- **Added**: **Example messages** (`lib/email/example-messages.ts`): "Generic outreach" loads by default, plus "Service update" and "Blank message", chosen from "Start from".
+- **Added**: Optional **preview line** (`preheader`), shown after the subject in the inbox.
+- **Changed**: After sending, only the recipient is cleared, so the same message can go to the next person.
+- **Changed**: Version reconciled: `package.json`, the drawer footer (it still read 1.8.0) and this file read 1.9.0.
+
+## [1.8.1] - 2026-10-15 - DHL label file named after the tracking number
+
+- **Changed**: Downloaded DHL labels are named `MLS-<TRACKING NUMBER>.pdf`, all uppercase, matching the customer site (`utils/label-link.ts`). A multi-leg label is `MLS-<LEG TRACKING NUMBER>-LEG-<N>.pdf`.
+
+## [1.8.0] - 2026-10-14 - Staff Queues, Finance Screens, Settings & Carrier Save Fixes
+
+**Breaking (deployment):** Requires the `mls-server` release from PR #16 (branch `claude/project-thread-bgjeuk`, commit `b0ffd11` or later). The new pages call routes that do not exist on older servers: the cancellation queue, gateway refunds, `PUT /admin/carriers/update-carrier-settings/:id`, `GET /admin/settings/invoice-expiration`, DHL settings and hub handoff.
+
+Builds on 1.7.2 and 1.7.1 below.
+
+- **Added**: **Cancellations** (`/dashboard/cancellations`). Customer cancellation requests with approve or reject and a reason. Approving a paid shipment opens its refund request; voiding the carrier label stays a manual step in the carrier portal.
+- **Added**: **Refunds** (`/dashboard/refunds`). Approve sends the money back through Stripe or PayU. A refund the gateway fails returns to the queue with the gateway's reason and a Retry button. "Approve without sending money" (`manual: true`) keeps the old flow for refunds paid out by hand, followed by Mark paid out. The list refreshes every 30 seconds while the gateway settles.
+- **Added**: **Settings** (`/dashboard/settings`). One card per server setting group, each checking its own permission: commission safety net (`staff:read`), DHL eCommerce fee, hub handoff default and VAT (`staff:read`), invoice payment window in hours (`shipment:read`) and payment reminder emails (`email:write`). The page guard drops from `staff:write` to `dashboard:read`; cards the admin cannot read say which permission they need.
+- **Added**: **Collections** (`/dashboard/collections`). DHL parcels MLS collects from customers; once one is at the hub, staff book DHL's courier on an offered date or record a service-point drop-off.
+- **Added**: **Invoices** (`/dashboard/invoices`) with a detail sheet, payments, and CSV export. **Tax Rules** (`/dashboard/tax-rules`) with create, edit (reason kept in the audit log) and deactivate.
+- **Added**: **Partner Enquiries** (`/dashboard/inquiries`), **Emails** (`/dashboard/emails`: database templates plus a one-off sender), **Activity Log** (`/dashboard/activity-logs`) and **Business Upgrades** (`/dashboard/business-upgrades`: NIP check, document viewer, approve or reject with feedback).
+- **Added**: The shipment detail sheet shows the shipment's history and has a Mark Completed action. Two statuses the server already sends, `AWAITING_MLS_COLLECTION` and `AT_HUB`, now have labels.
+- **Fixed**: **Staff "Recent Activity" was a permanent spinner.** It now lists the staff member's last actions from the activity log (N-001).
+- **Fixed**: **The global commission sheet never saved.** It sent `minRateThresholdPln`-style names; the server reads `minRatePln`, `minFlatPln`, `isEurManual`, `minRateEur`, `minFlatEur`. Inputs also sent strings where the server's schema requires numbers.
+- **Fixed**: **International carrier thresholds never saved.** The form used `international*` field names; the server uses `intl*`.
+- **Changed**: **Carrier save is one request.** Profile, commissions and thresholds go to `PUT /admin/carriers/update-carrier-settings/:id` in a single transaction instead of three writes that could half-succeed (N-005). Thresholds are sent only when the admin holds `staff:write`.
+- **Removed**: The unused `zustand` dependency (N-009), unused imports and variables across the dashboard, the ignored `force` parameter on two delete handlers (N-002), and every `any` cast. `bun run lint` passes with no problems.
+- **Changed**: Version reconciled: `package.json`, the drawer footer and this file read 1.8.0.
+- **Changed**: Dialog and sheet forms reset by remounting, and the login background and profile activity list no longer set state inside effects, as the React Compiler lint rule requires.
+- **Fixed**: **Super Admin could not type an authenticator code after switching from the emailed code.** Both steps render a field named `code` in the same place, so React kept the emailed-code input, still bound to the old form, and keystrokes never reached the authenticator form. Each sign-in step now keys its own form, so switching steps mounts a fresh field.
+- **Note**: `POST /admin/developer-mode` was removed from the server, so no toggle was built.
+
+## [1.7.2] - 2026-10-15 - DHL labels download as a PDF
+
+- **Fixed**: **DHL shipping labels would not open.** DHL eCommerce returns the label PDF itself, which the server stores in `labelUrl` as `data:application/pdf;base64,…`, and browsers refuse to open a data URL in a new tab. The shipment and multi-leg detail sheets now download such a label as `label-<tracking number>.pdf`; FedEx's hosted https link still opens in a new tab. The decision lives in `utils/label-link.ts`.
+
+## [1.7.1] - 2026-10-12 - Super Admin OTP Verification Bound to `challengeId`
+
+**Breaking (deployment):** Requires `mls-server` **v7.0.0 or later** for the
+Super Admin's emailed-code sign-in. Staff password sign-in, the authenticator and
+backup codes are unaffected.
+
+- **Fixed**: **The Super Administrator could not sign in with an emailed code.** Entering a correct code on the verify step failed with `400 Validation Error — challengeId: Invalid input: expected string, received undefined`. Staff were unaffected, which is why production staff sign-in kept working. Cause: mls-server v7.0.0 closed the attempt-burning hole by making every emailed code its own challenge, named by a `challengeId` returned with it, and made that id mandatory on `/auth/otp/verify`; this client still sent only `{ email, otp }`. Nothing caught it because the client typed the request from its own `OtpVerifyPayload`, which predated the field, and the change only surfaces against a v7 server. Fix: the id returned by `identify` (and by every resend) is held in page state and sent on verify. Verified against staging: the old payload reproduces the 400; the new payload passes validation and reaches the credential check.
+- **Changed**: **Resend replaces the challenge.** `/auth/otp/request` now returns a fresh `challengeId`, and only that id verifies the new code, so the page swaps to it on every successful resend. Throttled resends are refused with `429 OTP_THROTTLED`; the server's wait is shown as-is.
+- **Changed**: **A throttled lookup never clears a held challenge.** On the throttled path `identify` returns `method: "OTP"` with no `challengeId`, deliberately — handing out the live id would give it to whoever is hammering the endpoint. The page falls back to the challenge it stored for that address and never overwrites a held id with `undefined`.
+- **Added**: The challenge is kept in `sessionStorage` (`mls.admin.otpChallenge`, tagged with the address, dropped once `expiresAt` passes), so reloading the page inside the send window does not cost the throttle wait. It is cleared on any successful sign-in, which consumes every live challenge server-side. With no usable challenge — a reload in another tab, cleared storage — the page says a code was requested moments ago, disables Verify, and unlocks Resend when `retryAfterSeconds` runs out.
+
 ## [1.7.0] - 2026-09-18 - Passwordless Super Admin, Server-Backed Sessions & Email-First Sign-in
 
 **Breaking (deployment):** Requires `mls-server` **v6.0.0 or later**. Everything

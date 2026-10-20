@@ -38,6 +38,7 @@ import { LoginBackground } from "@/components/login-background";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import type { AdminIdentity } from "@/types/auth";
+import { loadOtpChallenge, saveOtpChallenge } from "@/lib/auth/session";
 
 /**
  * Seconds before an emailed code can be requested again.
@@ -118,6 +119,11 @@ export default function LoginPage() {
   const [identity, setIdentity] = useState<AdminIdentity>();
   const [showPassword, setShowPassword] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  /**
+   * Names the code this page will verify. Verification is bound to it, so it
+   * is replaced by every resend and never cleared by a throttled lookup.
+   */
+  const [challengeId, setChallengeId] = useState<string>();
 
   const { mutate: identify, isPending: isIdentifying } = useIdentifyAdmin();
   const { mutate: staffLogin, isPending: isStaffPending } = useStaffLogin();
@@ -160,9 +166,7 @@ export default function LoginPage() {
 
   const email = identity?.email ?? "";
   /** Whether a usable code is sitting in the inbox for this address. */
-  const hasLiveCode = Boolean(
-    identity?.codeSent || identity?.codeAlreadyPending,
-  );
+  const hasLiveCode = Boolean(challengeId);
   /** "10 minutes", from the server's own figure when it sends one. */
   const codeValidityLabel = (() => {
     const seconds = identity?.expiresInSeconds ?? 600;
@@ -178,11 +182,22 @@ export default function LoginPage() {
       onSuccess: (result) => {
         setIdentity(result);
         setStep(result.method === "OTP" ? "otp" : "password");
+        if (result.method === "OTP") {
+          // A throttled lookup carries no id. Fall back to the one stored for
+          // this address; never overwrite a held id with undefined.
+          const challenge = result.challengeId
+            ? { challengeId: result.challengeId, expiresAt: result.expiresAt }
+            : loadOtpChallenge(result.email);
+          if (challenge && result.challengeId) {
+            saveOtpChallenge(result.email, challenge);
+          }
+          setChallengeId(challenge?.challengeId);
+        }
         // The lookup sends the code itself, so the resend gate starts counting
         // from here rather than from a request this page made. On the
         // throttled path the server says how much of its window is left, so
         // the button unlocks when it can actually do something.
-        if (result.codeSent || result.codeAlreadyPending) {
+        if (result.method === "OTP") {
           setCooldown(
             result.retryAfterSeconds && result.retryAfterSeconds > 0
               ? Math.ceil(result.retryAfterSeconds)
@@ -202,6 +217,7 @@ export default function LoginPage() {
   function restart() {
     setStep("email");
     setIdentity(undefined);
+    setChallengeId(undefined);
     setCooldown(0);
     setShowPassword(false);
     passwordForm.reset();
@@ -246,9 +262,11 @@ export default function LoginPage() {
     },
     otp: {
       title: "Check your email",
-      blurb: identity?.codeAlreadyPending
-        ? "A code is already waiting in your inbox and is still valid — we didn't send a new one."
-        : `We sent a 6-digit code. It is valid for ${codeValidityLabel}.`,
+      blurb: !hasLiveCode
+        ? "A code was requested for this account moments ago. Request a new one when the timer ends."
+        : identity?.codeSent
+          ? `We sent a 6-digit code. It is valid for ${codeValidityLabel}.`
+          : "A code is already waiting in your inbox and is still valid — we didn't send a new one.",
     },
     totp: {
       title: "Authenticator code",
@@ -366,8 +384,12 @@ export default function LoginPage() {
             <p className="text-gray-500">{headings[step].blurb}</p>
           </div>
 
+          {/* Each step keys its own form. Without the keys React reuses the
+              previous step's input (same position, same name "code"), which
+              stays bound to the old form: switching from the emailed code to
+              the authenticator left a field that would not take typing. */}
           {step === "email" ? (
-            <Form {...emailForm}>
+            <Form key="email" {...emailForm}>
               <form
                 onSubmit={emailForm.handleSubmit(onIdentify)}
                 className="space-y-6"
@@ -426,7 +448,7 @@ export default function LoginPage() {
               </form>
             </Form>
           ) : step === "password" ? (
-            <Form {...passwordForm}>
+            <Form key="password" {...passwordForm}>
               <form
                 onSubmit={passwordForm.handleSubmit((values) =>
                   staffLogin({ email, password: values.password }),
@@ -500,10 +522,11 @@ export default function LoginPage() {
               </form>
             </Form>
           ) : step === "otp" ? (
-            <Form {...otpForm}>
+            <Form key="otp" {...otpForm}>
               <form
                 onSubmit={otpForm.handleSubmit((values) =>
-                  verifyOtp({ email, otp: values.code }),
+                  challengeId &&
+                  verifyOtp({ email, challengeId, otp: values.code }),
                 )}
                 className="space-y-6"
               >
@@ -545,7 +568,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   className="w-full h-12 bg-brand-blue hover:bg-[#004d94] text-white font-bold rounded-xl transition-all shadow-lg shadow-brand-blue/20 group"
-                  disabled={isVerifyingOtp}
+                  disabled={isVerifyingOtp || !challengeId}
                 >
                   {isVerifyingOtp ? (
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -564,7 +587,13 @@ export default function LoginPage() {
                     onClick={() => {
                       requestOtp(
                         { email },
-                        { onSuccess: () => setCooldown(RESEND_COOLDOWN_SECONDS) },
+                        {
+                          onSuccess: (challenge) => {
+                            saveOtpChallenge(email, challenge);
+                            setChallengeId(challenge.challengeId);
+                            setCooldown(RESEND_COOLDOWN_SECONDS);
+                          },
+                        },
                       );
                     }}
                     className="text-sm font-semibold text-brand-blue transition-colors hover:text-blue-700 disabled:cursor-not-allowed disabled:text-gray-400"
@@ -574,8 +603,8 @@ export default function LoginPage() {
                       : "Resend code"}
                   </button>
                   <p className="text-center text-xs text-gray-400">
-                    A new code retires the previous one. Codes allow three
-                    attempts.
+                    Requesting a new code replaces the one this page accepts.
+                    Codes allow three attempts.
                   </p>
                 </div>
 
@@ -600,7 +629,7 @@ export default function LoginPage() {
               </form>
             </Form>
           ) : step === "totp" ? (
-            <Form {...totpForm}>
+            <Form key="totp" {...totpForm}>
               <form
                 onSubmit={totpForm.handleSubmit((values) =>
                   verifyTotp({ email, code: values.code }),
@@ -680,7 +709,7 @@ export default function LoginPage() {
               </form>
             </Form>
           ) : (
-            <Form {...backupForm}>
+            <Form key="backup" {...backupForm}>
               <form
                 onSubmit={backupForm.handleSubmit((values) =>
                   verifyBackup({ email, code: values.code }),
