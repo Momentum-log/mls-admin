@@ -30,6 +30,11 @@ export interface Carrier {
   /** Masked API secret */
   apiSecret?: string;
   isActive: boolean;
+  /**
+   * False when the server lacks this carrier's credentials (DPD without its
+   * DPD_* env). Such a carrier never quotes, even when active.
+   */
+  isConfigured?: boolean;
 
   // Commission configuration per stage
   localCommission: Commission;
@@ -77,4 +82,21 @@ export interface SaveCarrierSettingsPayload {
   profile?: UpdateCarrierPayload;
   commissions?: UpdateCommissionsPayload;
   thresholds?: Partial<CarrierCommissionSettings>;
+}
+
+/**
+ * One weight band of one service on one lane of a carrier's rate card
+ * (`/admin/carriers/rate-card/:slug`). Prices a parcel above the previous
+ * band's `maxWeightKg` and up to this one, net of VAT.
+ */
+export interface RateCardRow {
+  originCountry: string;
+  destCountry: string;
+  serviceCode: string;
+  serviceName: string;
+  maxWeightKg: number;
+  priceNet: number;
+  currency: CommissionCurrency;
+  transitDaysMin?: number;
+  transitDaysMax?: number;
 }

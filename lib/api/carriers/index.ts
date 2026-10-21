@@ -2,6 +2,7 @@ import apiClient from "../index";
 import {
   Carrier,
   CreateCarrierPayload,
+  RateCardRow,
   SaveCarrierSettingsPayload,
 } from "@/types/carriers";
 
@@ -75,4 +76,26 @@ export const saveCarrierSettings = async (
     body,
   );
   return data;
+};
+
+// ─── RATE CARD (carriers with no rates API, e.g. DPD) ────────────────────────
+
+/** A carrier's whole rate card, sorted by lane, service and weight. */
+export const getRateCard = async (slug: string): Promise<RateCardRow[]> => {
+  const { data } = await apiClient.get<{ rows: RateCardRow[] }>(
+    `/admin/carriers/rate-card/${slug}`,
+  );
+  return data.rows;
+};
+
+/** Replaces the whole rate card in one save; returns it as saved. */
+export const replaceRateCard = async (
+  slug: string,
+  rows: RateCardRow[],
+): Promise<RateCardRow[]> => {
+  const { data } = await apiClient.put<{ rows: RateCardRow[] }>(
+    `/admin/carriers/rate-card/${slug}`,
+    { rows },
+  );
+  return data.rows;
 };

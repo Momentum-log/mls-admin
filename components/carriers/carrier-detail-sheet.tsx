@@ -20,8 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CARRIER_SLUGS } from "@/lib/api/carriers/constants";
+import {
+  CARRIER_SLUGS,
+  RATE_CARD_CARRIER_SLUGS,
+} from "@/lib/api/carriers/constants";
 import CommissionEditor from "./commission-editor";
+import RateCardEditor from "./rate-card-editor";
 import ThresholdEditor from "./threshold-editor";
 import {
   Carrier,
@@ -85,6 +89,8 @@ export default function CarrierDetailSheet({
   carrier,
 }: CarrierDetailSheetProps) {
   const isEditMode = !!carrier;
+  const hasRateCard =
+    isEditMode && RATE_CARD_CARRIER_SLUGS.includes(carrier.slug);
 
   const { mutateAsync: createAsync, isPending: isCreating } =
     useCreateCarrier();
@@ -246,12 +252,28 @@ export default function CarrierDetailSheet({
             className="px-6 pb-6 pt-4 flex-1 flex flex-col"
           >
             <Tabs defaultValue="details" className="flex-1">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList
+                className={`grid w-full ${hasRateCard ? "grid-cols-3" : "grid-cols-2"}`}
+              >
                 <TabsTrigger value="details">Integration Details</TabsTrigger>
                 <TabsTrigger value="commissions">Commissions</TabsTrigger>
+                {hasRateCard && (
+                  <TabsTrigger value="rate-card">Rate Card</TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="details" className="space-y-4 pt-4">
+                {isEditMode && carrier.isConfigured === false && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                    <p className="font-semibold">Not configured on the server</p>
+                    <p>
+                      The server has no credentials for {carrier.name}, so it is
+                      never quoted, even when active.
+                      {carrier.slug === "dpd" &&
+                        " Set DPD_LOGIN, DPD_PASSWORD and DPD_MASTER_FID in the server environment and restart it."}
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="name">Carrier Name *</Label>
                   <Input
@@ -411,6 +433,12 @@ export default function CarrierDetailSheet({
 
                 <ThresholdEditor settings={settings} onChange={setSettings} />
               </TabsContent>
+
+              {hasRateCard && (
+                <TabsContent value="rate-card" className="pt-4 pb-12">
+                  <RateCardEditor slug={carrier.slug} carrierName={carrier.name} />
+                </TabsContent>
+              )}
             </Tabs>
 
             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 pt-6 mt-auto shrink-0 border-t">
