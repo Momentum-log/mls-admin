@@ -131,6 +131,12 @@ function GlobalCommissionSection() {
         >
           Per-carrier commissions
         </Link>
+        <Link
+          href="/dashboard/commissions"
+          className="text-sm text-brand-blue hover:underline"
+        >
+          Commission mode and calculator
+        </Link>
       </div>
       <GlobalCommissionSheet open={open} onOpenChange={setOpen} />
     </div>

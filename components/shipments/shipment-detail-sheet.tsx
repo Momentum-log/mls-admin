@@ -33,11 +33,13 @@ import {
   CheckCircle2,
   History,
   Loader2,
+  RotateCw,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   useCompleteShipment,
   useDeleteShipment,
+  useRetryLabel,
   useShipmentHistory,
 } from "@/hooks/shipments/use-shipments";
 import {
@@ -74,6 +76,13 @@ function formatAddress(addr: AdminShipment["pickupAddress"]): string {
 }
 
 /**
+ * Paid shipments in these states have no label yet and can ask the carrier
+ * again: CREATION_FAILED after a refusal, CREATED/PAID when the old bypass
+ * marked them paid without creating one. The server checks the same list.
+ */
+const RETRYABLE_LABEL_STATUSES = new Set(["CREATION_FAILED", "CREATED", "PAID"]);
+
+/**
  * A slide-out sheet displaying full details for a single shipment.
  * Includes addresses, package info, pricing, carrier, user info,
  * and a "Source Estimate" section when correlation data is available.
@@ -86,6 +95,7 @@ export default function ShipmentDetailSheet({
 }: ShipmentDetailSheetProps) {
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
   const [bypassModalOpen, setBypassModalOpen] = useState(false);
+  const { mutate: retryLabel, isPending: isRetrying } = useRetryLabel();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [completeConfirmOpen, setCompleteConfirmOpen] = useState(false);
   const { mutate: deleteShipment, isPending: isDeleting } = useDeleteShipment();
@@ -453,6 +463,23 @@ export default function ShipmentDetailSheet({
                     </Button>
                   </Can>
                 )}
+              {shipment.paymentStatus === "PAID" &&
+                !shipment.labelUrl &&
+                RETRYABLE_LABEL_STATUSES.has(shipment.shipmentStatus) && (
+                  <Can do="shipment:write" fallback="disable">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      disabled={isRetrying}
+                      onClick={() => retryLabel(shipment.id)}
+                    >
+                      <RotateCw
+                        className={`mr-2 h-4 w-4 ${isRetrying ? "animate-spin" : ""}`}
+                      />
+                      {isRetrying ? "Asking the carrier…" : "Retry label"}
+                    </Button>
+                  </Can>
+                )}
               {shipment.paymentStatus !== "PAID" && (
                 <Can do="shipment:write" fallback="disable">
                   <Button
@@ -461,7 +488,7 @@ export default function ShipmentDetailSheet({
                     onClick={() => setBypassModalOpen(true)}
                   >
                     <Banknote className="mr-2 h-4 w-4" />
-                    Mark as Paid (Bypass)
+                    Record a payment
                   </Button>
                 </Can>
               )}

@@ -21,11 +21,13 @@ import {
   FileText,
   ReceiptText,
   Percent,
+  Coins,
   Handshake,
   Settings,
   MailOpen,
   History,
   Building2,
+  Globe,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -125,6 +127,18 @@ const navGroups: NavGroup[] = [
         icon: Percent,
         href: "/dashboard/tax-rules",
         permission: "shipment:read",
+      },
+      {
+        label: "Commissions",
+        icon: Coins,
+        href: "/dashboard/commissions",
+        permission: "staff:read",
+      },
+      {
+        label: "Momentum Rates",
+        icon: Globe,
+        href: "/dashboard/momentum",
+        permission: "staff:read",
       },
     ],
   },
