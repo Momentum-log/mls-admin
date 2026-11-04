@@ -7,7 +7,11 @@ import {
   useMomentumSettings,
   useUpdateMomentumSettings,
 } from "@/hooks/settings/use-settings";
-import type { MomentumLane, MomentumSettings } from "@/types/settings";
+import type {
+  MomentumChargeCurrency,
+  MomentumLane,
+  MomentumSettings,
+} from "@/types/settings";
 import { Can } from "@/components/auth/can";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +24,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
@@ -45,6 +56,7 @@ const LANES: { key: LaneKey; title: string; currency: "NGN" | "EUR"; symbol: str
 const str = (value: number | null) => (value === null ? "" : String(value));
 
 const laneToForm = (lane: MomentumLane): LaneForm => ({
+  chargeCurrency: lane.chargeCurrency ?? "EUR",
   ratePerKg: str(lane.ratePerKg),
   minChargeableKg: str(lane.minChargeableKg),
   belowMinimumFlatFee: str(lane.belowMinimumFlatFee),
@@ -81,6 +93,7 @@ function toSettings(form: FormState): MomentumSettings | string {
   for (const { key, title } of LANES) {
     const f = form[key];
     const lane = {
+      chargeCurrency: f.chargeCurrency as MomentumChargeCurrency,
       ratePerKg: parse(f.ratePerKg, false),
       minChargeableKg: parse(f.minChargeableKg, false),
       belowMinimumFlatFee: parse(f.belowMinimumFlatFee, true),
@@ -210,6 +223,26 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
                 <CardDescription>Prices in {currency}.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor={id("currency")}>Customer pays in</Label>
+                  <Select
+                    value={f.chargeCurrency}
+                    onValueChange={(v) => setLane(key, "chargeCurrency", v)}
+                  >
+                    <SelectTrigger id={id("currency")}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EUR">Euro (€)</SelectItem>
+                      <SelectItem value="PLN">Polish złoty (zł)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Every customer on this route is charged in this currency.
+                    {currency === "NGN" &&
+                      " Naira payment needs a naira gateway (such as Paystack), so it is not offered yet; the naira price is converted with the rate below."}
+                  </p>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field
                     id={id("rate")}
