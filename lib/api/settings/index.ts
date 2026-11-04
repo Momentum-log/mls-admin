@@ -4,6 +4,8 @@ import { hasStatus } from "@/lib/api-error";
 import {
   GlobalCommissionSettings,
   CarrierCommissionSettings,
+  CommissionPreview,
+  CommissionPreviewInput,
   DhlSettings,
   ReminderSettings,
 } from "@/types/settings";
@@ -31,6 +33,28 @@ export const getCarrierCommissionSettings = async (
 ): Promise<CarrierCommissionSettings> => {
   const { data } = await apiClient.get<CarrierCommissionSettings>(
     `/admin/settings/commission/${carrierId}`,
+  );
+  return data;
+};
+
+/**
+ * Saves part of a carrier's commission settings. Fields left out are kept,
+ * so this can change only the W4 override.
+ */
+export const updateCarrierCommissionSettings = async (
+  carrierId: string,
+  payload: Partial<CarrierCommissionSettings>,
+): Promise<void> => {
+  await apiClient.put(`/admin/settings/commission/${carrierId}`, payload);
+};
+
+/** The price a customer would see for one carrier price, VAT included. */
+export const previewCommission = async (
+  input: CommissionPreviewInput,
+): Promise<CommissionPreview> => {
+  const { data } = await apiClient.post<CommissionPreview>(
+    "/admin/settings/commission/preview",
+    input,
   );
   return data;
 };

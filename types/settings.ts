@@ -1,4 +1,14 @@
 /**
+ * How the price a customer pays is built from the carrier price (W4).
+ * - FIXED_MARKUP: the carrier's percent/fixed commission per stage, then the
+ *   minimum threshold safety net. The behaviour before W4.
+ * - TARGET_UPLIFT: the customer pays carrier x (1 + target%) in total, VAT
+ *   included; the handling fee is what is left after VAT.
+ * - NONE: no commission, the customer pays the carrier price plus VAT.
+ */
+export type CommissionMode = "FIXED_MARKUP" | "TARGET_UPLIFT" | "NONE";
+
+/**
  * The global safety net (`GlobalCommission` row). Its field names differ from
  * a carrier's own thresholds (`minRatePln` here, `minRateThresholdPln` there).
  */
@@ -9,6 +19,11 @@ export interface GlobalCommissionSettings {
   isEurManual: boolean;
   minRateEur: number | null;
   minFlatEur: number | null;
+  /** W4. Missing on servers older than mls-server PR #24. */
+  mode?: CommissionMode;
+  targetUpliftPercent?: number;
+  /** Whether the minimum flat commission applies (FIXED_MARKUP only). */
+  minThresholdEnabled?: boolean;
 }
 
 export interface RouteCommissionOverrides {
@@ -47,6 +62,41 @@ export interface CarrierCommissionSettings extends RouteCommissionOverrides {
   isEurManual: boolean;
   minRateThresholdEur: number | null;
   minFlatCommissionEur: number | null;
+  /** W4 override; null = use the global mode. */
+  commissionMode?: CommissionMode | null;
+  /** W4 override; null = use the global target. */
+  targetUpliftPercent?: number | null;
+}
+
+/** `POST /admin/settings/commission/preview` body. */
+export interface CommissionPreviewInput {
+  carrierPrice: number;
+  carrierSlug: string;
+  originCountry: string;
+  destCountry: string;
+  currency: "PLN" | "EUR";
+  /** "S" = business customer. */
+  customsType?: string;
+}
+
+/** What the customer would see, from the same code checkout uses. */
+export interface PriceBreakdown {
+  carrier: number;
+  handlingFee: number;
+  net: number;
+  vatRate: number;
+  vat: number;
+  pickupFee: number;
+  total: number;
+  currency: string;
+}
+
+export interface CommissionPreview {
+  settings: { mode: CommissionMode; targetUpliftPercent: number; minThresholdEnabled: boolean };
+  commission: number;
+  breakdown: PriceBreakdown;
+  /** total / carrier - 1, in percent. */
+  upliftPercent: number;
 }
 
 /** DHL eCommerce settings (`GET/PUT /admin/settings/dhl`). */

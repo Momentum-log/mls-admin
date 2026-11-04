@@ -16,8 +16,8 @@ last_reviewed: "2026-10-14"
 ## 1. Current position
 
 - **Product:** Momentum Logistics Service (MLS) — the admin dashboard for a logistics business operating in Poland. Users are MLS staff and the Super Administrator.
-- **Version:** `1.11.0` ("DPD", 2026-10-17: DPD rate card tab, "Not configured" carriers), on top of 1.10.0 ("Post-demo fixes", 2026-10-17), 1.9.0 (rich text emails in the MLS design, 2026-10-15), 1.8.x (staff queues, finance screens, settings) and 1.7.1 (Super Admin OTP bound to `challengeId`). `package.json`, the profile-drawer footer and `changelog.md` agree.
-- **Requires:** the `mls-server` release from its PR #16 (`b0ffd11` or later) for every 1.8.0 page; its PR #17 (generic message layout) for the 1.9.0 email composer; its PR #19 for the 1.10.0 `?shipment=` deep link; its PR #20 for the 1.11.0 rate card and `isConfigured`; ≥ 7.0.0 for sign-in (OTP verify needs `challengeId`).
+- **Version:** `1.12.0` ("Staff payments and commissions", 2026-11-04: payment method on bypass and mark-paid, Retry label, Commissions page), on top of 1.11.0 ("DPD", 2026-10-17), 1.10.0 ("Post-demo fixes", 2026-10-17), 1.9.0 (rich text emails in the MLS design, 2026-10-15), 1.8.x (staff queues, finance screens, settings) and 1.7.1 (Super Admin OTP bound to `challengeId`). `package.json`, the profile-drawer footer and `changelog.md` agree.
+- **Requires:** the `mls-server` release from its PR #16 (`b0ffd11` or later) for every 1.8.0 page; its PR #17 (generic message layout) for the 1.9.0 email composer; its PR #19 for the 1.10.0 `?shipment=` deep link; its PR #20 for the 1.11.0 rate card and `isConfigured`; its PR #24 for the 1.12.0 settlement pipeline, Retry label and Commissions page; ≥ 7.0.0 for sign-in (OTP verify needs `challengeId`).
 - **Branch:** `dev` (tracking `mls/dev`, `origin/dev`); `main` is the release branch. Working tree: clean of application changes; contains the uncommitted AI operating system added 2026-09-18.
 - **Active work:** none (`docs/ai/HANDOFF.md` = `IDLE`).
 - **AI system:** adopted 2026-09-18 (`docs/ai/SYSTEM.md`). Open confirmations are listed there.
@@ -65,6 +65,8 @@ last_reviewed: "2026-10-14"
 | Cancellations queue (approve/reject; approval of a paid shipment opens a refund) | Complete (1.8.0) |
 | Refunds: gateway refund via Stripe/PayU, failed-refund retry, manual approve + mark paid out | Complete (1.8.0) |
 | Settings: commission safety net, DHL fee/handoff/VAT, invoice payment window, payment reminders | Complete (1.8.0) |
+| Commissions (`/dashboard/commissions`): global mode (TARGET_UPLIFT / FIXED_MARKUP / NONE), target %, safety-net switch, per-carrier overrides, server-priced calculator | Complete (1.12.0); Target uplift waits for the accountant's VAT-base confirmation |
+| Staff payments: bypass and invoice mark-paid send method (bank transfer, cash, on account, waived) + reference + notes and run the full paid pipeline; Retry label for paid shipments without a label | Complete (1.12.0) |
 | Collections (DHL first mile) with hub handoff: courier booking or service point | Complete (1.8.0) |
 | Invoices (list, detail, CSV), Tax Rules, Partner Enquiries, Emails (templates + one-off), Activity Log, Business Upgrades | Complete (1.8.0); one-off composer is rich text with live MLS-design preview (1.9.0) |
 | Admin profile drawer: details, password change (staff), activity logs, docs viewer, version footer | Complete |

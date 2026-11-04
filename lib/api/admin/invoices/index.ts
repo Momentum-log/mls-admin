@@ -1,4 +1,5 @@
 import apiClient from "../../index";
+import type { ManualPaymentMethod } from "@/types/shipment";
 import { unwrapList, unwrapOne } from "@/lib/api/_shared/envelope";
 import type { Paged } from "@/types/api";
 import type { Invoice, InvoiceDetail, InvoiceFilters } from "@/types/invoice";
@@ -23,12 +24,22 @@ export const getInvoice = async (id: string): Promise<InvoiceDetail> => {
   return unwrapOne<InvoiceDetail>(data, "data");
 };
 
-/** Marks a pending invoice paid, e.g. after a bank transfer. */
+/** Body of `POST /admin/invoices/:id/mark-paid`. `reason` is required when waived. */
+export interface MarkInvoicePaidPayload {
+  method?: ManualPaymentMethod;
+  reference?: string;
+  reason?: string;
+}
+
+/**
+ * Marks a pending invoice paid, e.g. after a bank transfer. For a shipment's
+ * invoice the server settles the shipment too (label created).
+ */
 export const markInvoicePaid = async (
   id: string,
-  reason?: string,
+  payload: MarkInvoicePaidPayload,
 ): Promise<void> => {
-  await apiClient.post(`${BASE_ROUTE}/${id}/mark-paid`, reason ? { reason } : {});
+  await apiClient.post(`${BASE_ROUTE}/${id}/mark-paid`, payload);
 };
 
 /**
