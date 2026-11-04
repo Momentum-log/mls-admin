@@ -34,7 +34,10 @@ import {
   History,
   Loader2,
   RotateCw,
+  ClipboardList,
+  Mail,
 } from "lucide-react";
+import Link from "next/link";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   useCompleteShipment,
@@ -241,6 +244,17 @@ export default function ShipmentDetailSheet({
                       text={shipment.carrierTrackingNumber}
                       tooltipText="Copy"
                     />
+                    {shipment.carrierTrackingUrl && (
+                      <a
+                        href={shipment.carrierTrackingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Open the carrier's tracking page"
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
                   </div>
                 </div>
               )}
@@ -480,6 +494,31 @@ export default function ShipmentDetailSheet({
                     </Button>
                   </Can>
                 )}
+              {shipment.shipmentStatus === "LABEL_PENDING" && (
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link href={`/dashboard/fulfilment?shipment=${shipment.id}`}>
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Prepare label (manual)
+                  </Link>
+                </Button>
+              )}
+              <Can do="email:write">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  asChild
+                >
+                  <Link
+                    href={`/dashboard/emails?${new URLSearchParams({
+                      to: shipment.user.email,
+                      subject: `Your shipment ${shipment.customTrackingNumber}`,
+                    })}`}
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email customer
+                  </Link>
+                </Button>
+              </Can>
               {shipment.paymentStatus !== "PAID" && (
                 <Can do="shipment:write" fallback="disable">
                   <Button

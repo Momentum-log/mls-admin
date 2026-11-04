@@ -35,6 +35,11 @@ export interface Carrier {
    * DPD_* env). Such a carrier never quotes, even when active.
    */
   isConfigured?: boolean;
+  /**
+   * MANUAL: paid shipments wait in "Labels to prepare" for staff to book the
+   * label on the carrier's site, instead of calling the carrier API.
+   */
+  fulfilmentMode?: FulfilmentMode;
 
   // Commission configuration per stage
   localCommission: Commission;
@@ -64,7 +69,10 @@ export interface UpdateCarrierPayload {
   apiKey?: string;
   apiSecret?: string;
   isActive?: boolean;
+  fulfilmentMode?: FulfilmentMode;
 }
+
+export type FulfilmentMode = "AUTOMATIC" | "MANUAL";
 
 /** Payload for updating commissions (CL02 logic enforced by backend). */
 export interface UpdateCommissionsPayload {
