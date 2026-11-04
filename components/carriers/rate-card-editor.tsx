@@ -22,8 +22,16 @@ interface RateCardEditorProps {
 /** Rows shown before "Show all", so a long card does not stretch the sheet. */
 const PREVIEW_ROWS = 50;
 
+/** Example bands in the Momentum template: edit the prices, add bands. */
+const MOMENTUM_TEMPLATE: RateCardRow[] = [
+  { originCountry: "NG", destCountry: "EU", serviceCode: "MOMENTUM_STANDARD", serviceName: "Momentum Door to Door", maxWeightKg: 5, priceNet: 0, currency: "EUR" },
+  { originCountry: "NG", destCountry: "EU", serviceCode: "MOMENTUM_STANDARD", serviceName: "Momentum Door to Door", maxWeightKg: 10, priceNet: 0, currency: "EUR" },
+  { originCountry: "EU", destCountry: "NG", serviceCode: "MOMENTUM_STANDARD", serviceName: "Momentum Door to Door", maxWeightKg: 5, priceNet: 0, currency: "EUR" },
+];
+
 /**
- * The contract price list for a carrier with no rates API (DPD).
+ * The contract price list for a carrier with no rates API (DPD), or
+ * Momentum's optional weight bands.
  *
  * Staff import the whole list as CSV and save it in one go; the server
  * replaces the previous card. Each parcel is priced on the smallest band that
@@ -51,7 +59,10 @@ export default function RateCardEditor({ slug, carrierName }: RateCardEditorProp
   };
 
   const handleDownload = () => {
-    const blob = new Blob([rateCardToCsv(saved ?? [])], { type: "text/csv" });
+    const template = slug === "momentum" ? MOMENTUM_TEMPLATE : [];
+    const blob = new Blob([rateCardToCsv(saved?.length ? saved : template)], {
+      type: "text/csv",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -64,11 +75,28 @@ export default function RateCardEditor({ slug, carrierName }: RateCardEditorProp
     <div className="space-y-4">
       <div className="space-y-1">
         <h3 className="text-sm font-semibold">{carrierName} rate card</h3>
-        <p className="text-xs text-muted-foreground">
-          {carrierName} has no rates API, so quotes use this price list (net of VAT).
-          Each row prices parcels up to its weight, above the previous row of the same
-          service and lane. Import replaces the whole card.
-        </p>
+        {slug === "momentum" ? (
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>
+              Optional weight bands, on top of the per-kg prices on the Momentum
+              Rates page. Each row is the price of the <strong>whole shipment</strong>{" "}
+              up to its weight (net of VAT). Above the top band the per-kg price
+              applies. Import replaces the whole card.
+            </p>
+            <p>
+              Routes: <code>NG</code> to <code>EU</code> (every EU country) or one
+              country code, or the reverse. Services: <code>MOMENTUM_STANDARD</code>,{" "}
+              <code>MOMENTUM_EXPRESS</code>. Currency must match what that direction
+              charges on the Momentum Rates page.
+            </p>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            {carrierName} has no rates API, so quotes use this price list (net of VAT).
+            Each row prices parcels up to its weight, above the previous row of the same
+            service and lane. Import replaces the whole card.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">

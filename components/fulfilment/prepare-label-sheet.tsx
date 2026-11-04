@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import CopyButton from "@/components/ui/copy-button";
 import { Can } from "@/components/auth/can";
 import { useUploadManualLabel } from "@/hooks/admin/use-fulfilment";
+import { ALWAYS_MANUAL_SLUGS } from "@/lib/api/carriers/constants";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
 import type { FulfilmentQueueShipment } from "@/types/fulfilment";
@@ -110,10 +111,17 @@ function PrepareLabelBody({
 }) {
   const pref = shipment.handoverPreference;
   const { mutate: upload, isPending } = useUploadManualLabel();
-  const [labelSource, setLabelSource] = useState<"FILE" | "LINK">("FILE");
+  // Momentum has no carrier system: no label to upload, and the MLS number is
+  // the tracking number unless staff type another.
+  const ownNetwork = ALWAYS_MANUAL_SLUGS.includes(shipment.carrier.slug);
+  const [labelSource, setLabelSource] = useState<"FILE" | "LINK" | "NONE">(
+    ownNetwork ? "NONE" : "FILE",
+  );
   const [file, setFile] = useState<File | null>(null);
   const [labelLink, setLabelLink] = useState("");
-  const [tracking, setTracking] = useState("");
+  const [tracking, setTracking] = useState(
+    ownNetwork ? shipment.customTrackingNumber : "",
+  );
   const [trackingUrl, setTrackingUrl] = useState("");
   const [handover, setHandover] = useState<"PICKUP" | "DROPOFF">(
     pref?.method ?? "DROPOFF",
@@ -140,10 +148,13 @@ function PrepareLabelBody({
         return setError("The label must be a PDF.");
       if (file.size > MAX_BYTES)
         return setError("The label must be 5 MB or smaller.");
-    } else if (!isHttpsUrl(labelLink.trim())) {
+    } else if (labelSource === "LINK" && !isHttpsUrl(labelLink.trim())) {
       return setError("Paste the label link (it must start with https://).");
     }
-    if (!/^[A-Za-z0-9-]{3,64}$/.test(tracking.trim())) {
+    if (
+      (!ownNetwork || tracking.trim()) &&
+      !/^[A-Za-z0-9-]{3,64}$/.test(tracking.trim())
+    ) {
       return setError(
         "Enter the carrier's tracking number (letters, digits and dashes).",
       );
@@ -157,13 +168,15 @@ function PrepareLabelBody({
     const label =
       labelSource === "FILE" && file
         ? { labelPdfBase64: await readFileAsBase64(file) }
-        : { labelUrl: labelLink.trim() };
+        : labelSource === "LINK"
+          ? { labelUrl: labelLink.trim() }
+          : {};
     upload(
       {
         shipmentId: shipment.id,
         payload: {
           ...label,
-          carrierTrackingNumber: tracking.trim(),
+          ...(tracking.trim() ? { carrierTrackingNumber: tracking.trim() } : {}),
           ...(trackingUrl.trim()
             ? { carrierTrackingUrl: trackingUrl.trim() }
             : {}),
@@ -300,10 +313,28 @@ function PrepareLabelBody({
                   />
                   Paste a link
                 </label>
+                {ownNetwork && (
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="label-source"
+                      checked={labelSource === "NONE"}
+                      onChange={() => setLabelSource("NONE")}
+                    />
+                    No label
+                  </label>
+                )}
               </div>
+              {ownNetwork && (
+                <p className="text-xs text-muted-foreground">
+                  {shipment.carrier.name} has no carrier system. A label is
+                  optional; you update the status yourself with Override
+                  status on the shipment.
+                </p>
+              )}
             </fieldset>
 
-            {labelSource === "FILE" ? (
+            {labelSource === "NONE" ? null : labelSource === "FILE" ? (
               <div className="space-y-1.5">
                 <Label htmlFor="label-file">
                   Label PDF (one file, every page)
@@ -336,15 +367,26 @@ function PrepareLabelBody({
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="label-tracking">Carrier tracking number</Label>
+              <Label htmlFor="label-tracking">
+                {ownNetwork ? "Tracking number" : "Carrier tracking number"}
+              </Label>
               <Input
                 id="label-tracking"
                 value={tracking}
                 onChange={(e) => setTracking(e.target.value)}
-                placeholder="As printed on the label"
+                placeholder={
+                  ownNetwork ? shipment.customTrackingNumber : "As printed on the label"
+                }
               />
+              {ownNetwork && (
+                <p className="text-xs text-muted-foreground">
+                  The shipment&apos;s own MLS number. Change it only if you use
+                  another reference.
+                </p>
+              )}
             </div>
 
+            {!ownNetwork && (
             <div className="space-y-1.5">
               <Label htmlFor="label-tracking-url">
                 Carrier tracking link (optional)
@@ -361,6 +403,7 @@ function PrepareLabelBody({
                 works without it.
               </p>
             </div>
+            )}
 
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium">
@@ -464,7 +507,9 @@ function PrepareLabelBody({
               ) : (
                 <Upload className="mr-2 h-4 w-4" />
               )}
-              Save label and email the customer
+              {labelSource === "NONE"
+                ? "Mark as booked and email the customer"
+                : "Save label and email the customer"}
             </Button>
           </section>
         </Can>

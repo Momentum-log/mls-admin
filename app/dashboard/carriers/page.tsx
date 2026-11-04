@@ -31,13 +31,19 @@ import { Carrier } from "@/types/carriers";
 import { formatDateTime } from "@/utils/format-date";
 
 import GlobalCommissionSheet from "@/components/carriers/global-commission-sheet";
-import { ShieldAlert } from "lucide-react";
+import { ClipboardList, ShieldAlert } from "lucide-react";
+import {
+  FulfilmentModeDialog,
+  effectiveMode,
+} from "@/components/carriers/fulfilment-mode-dialog";
+import { Can } from "@/components/auth/can";
 
 export default function CarriersPage() {
   const { data: carriers, isLoading, isError, error } = useCarriers();
   const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isGlobalSheetOpen, setIsGlobalSheetOpen] = useState(false);
+  const [isFulfilmentOpen, setIsFulfilmentOpen] = useState(false);
 
   const handleCreate = () => {
     setSelectedCarrier(null);
@@ -85,7 +91,17 @@ export default function CarriersPage() {
             Manage shipping providers and commission rules.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          <Can do="carrier:write">
+            <Button
+              variant="outline"
+              onClick={() => setIsFulfilmentOpen(true)}
+              disabled={!carriers?.length}
+            >
+              <ClipboardList className="mr-2 h-4 w-4 text-brand-blue" />
+              Fulfilment
+            </Button>
+          </Can>
           <Button
             variant="outline"
             onClick={() => setIsGlobalSheetOpen(true)}
@@ -133,6 +149,7 @@ export default function CarriersPage() {
               <TableHead>Carrier Name</TableHead>
               <TableHead>Programmatic Slug</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Fulfilment</TableHead>
               <TableHead>Base URL</TableHead>
               <TableHead>API Key (Masked)</TableHead>
               <TableHead>Created</TableHead>
@@ -142,7 +159,7 @@ export default function CarriersPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={8} className="h-24 text-center">
                   <div className="flex justify-center items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     Loading carriers...
@@ -151,7 +168,7 @@ export default function CarriersPage() {
               </TableRow>
             ) : carriers?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center">
+                <TableCell colSpan={8} className="h-32 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Truck className="h-8 w-8 opacity-20" />
                     <p>No carriers configured yet.</p>
@@ -203,6 +220,18 @@ export default function CarriersPage() {
                       </Badge>
                     )}
                   </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={
+                        effectiveMode(carrier) === "MANUAL"
+                          ? "border-amber-300 bg-amber-50 text-amber-800"
+                          : ""
+                      }
+                    >
+                      {effectiveMode(carrier) === "MANUAL" ? "Manual" : "Automatic"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {carrier.baseUrl || "—"}
                   </TableCell>
@@ -245,6 +274,11 @@ export default function CarriersPage() {
       <GlobalCommissionSheet
         open={isGlobalSheetOpen}
         onOpenChange={setIsGlobalSheetOpen}
+      />
+      <FulfilmentModeDialog
+        open={isFulfilmentOpen}
+        onOpenChange={setIsFulfilmentOpen}
+        carriers={carriers ?? []}
       />
     </div>
   );

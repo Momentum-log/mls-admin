@@ -1,8 +1,6 @@
 /** Manual fulfilment (server W6): the queue, the upload and the switches. */
 
 export interface FulfilmentSettings {
-  /** On: every carrier is manual, whatever its own switch says. */
-  manualForAllCarriers: boolean;
   /** Shown to customers in the "label being prepared" email. */
   businessHours: string | null;
 }
@@ -63,10 +61,14 @@ export interface FulfilmentQueue {
 }
 
 export interface ManualLabelPayload {
-  /** Send exactly one of `labelPdfBase64` (an upload) and `labelUrl` (a link). */
+  /**
+   * At most one of `labelPdfBase64` (an upload) and `labelUrl` (a link).
+   * Required for carriers with a carrier system; optional for Momentum.
+   */
   labelPdfBase64?: string;
   labelUrl?: string;
-  carrierTrackingNumber: string;
+  /** Required except for Momentum, where the MLS number is used. */
+  carrierTrackingNumber?: string;
   /** The carrier's own tracking page, shown to the customer. */
   carrierTrackingUrl?: string;
   handover: "PICKUP" | "DROPOFF";

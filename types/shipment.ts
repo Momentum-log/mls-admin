@@ -146,6 +146,10 @@ export interface OverrideStatusPayload {
   manualOverride: boolean;
   trackingSyncEnabled: boolean;
   notify: boolean;
+  /** Shown to the customer with this step (email and tracking timeline). */
+  note?: string;
+  /** Where the parcel is now, e.g. "Lagos hub". */
+  location?: string;
 }
 
 export interface ShipmentFilter {

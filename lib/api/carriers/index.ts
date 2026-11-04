@@ -1,7 +1,9 @@
 import apiClient from "../index";
 import {
+  BulkFulfilmentModeResult,
   Carrier,
   CreateCarrierPayload,
+  FulfilmentMode,
   RateCardRow,
   SaveCarrierSettingsPayload,
 } from "@/types/carriers";
@@ -98,4 +100,16 @@ export const replaceRateCard = async (
     { rows },
   );
   return data.rows;
+};
+
+/** Sets Automatic or Manual on several carriers in one save. */
+export const setCarriersFulfilmentMode = async (
+  mode: FulfilmentMode,
+  carrierIds: string[],
+): Promise<BulkFulfilmentModeResult> => {
+  const { data } = await apiClient.put<BulkFulfilmentModeResult>(
+    "/admin/carriers/fulfilment-mode",
+    { mode, carrierIds },
+  );
+  return data;
 };
