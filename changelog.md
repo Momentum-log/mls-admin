@@ -5,6 +5,17 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-11-04 - Fulfilment for many carriers at once, Momentum without a carrier system
+
+**Requires:** `mls-server` with bulk fulfilment and the Momentum rate card (data migration `20261104160000_fold_global_fulfilment_switch`). Merge the server first.
+
+- **Added**: **Fulfilment** on the Carriers page (`components/carriers/fulfilment-mode-dialog.tsx`). Choose Automatic or Manual, tick one, several or all carriers, apply. Each carrier's own setting is saved, so its carrier sheet shows the same. A new **Fulfilment** column shows each carrier's mode. Momentum is always Manual and cannot be ticked for Automatic.
+- **Changed**: **"Manual for all carriers" is gone from Labels to prepare.** It overrode carriers without changing their own setting, so carrier sheets still said Automatic. The server migration turned it into each carrier's setting (every carrier Manual where it was on). The page keeps the business hours and points to Carriers > Fulfilment.
+- **Added**: **Rate Card tab for Momentum** (Carriers > Momentum): optional weight bands per route (`NG`, `EU` or a country) and service, priced for the whole shipment, on top of the per-kg prices. The template download has example rows. FedEx and DHL quote live from their own systems, so they have no rate card.
+- **Changed**: **Preparing a Momentum shipment** needs no carrier details: "No label" is the default, the tracking number is the shipment's MLS number (editable), and the button reads "Mark as booked and email the customer".
+- **Added**: **Override status** takes an optional location and a note for the customer. Both show on the customer's tracking page (Momentum's timeline is built from these steps) and in the status email.
+- Verification: `bunx tsc --noEmit`, `bun run lint` and `next build` pass.
+
 ## [1.16.0] - 2026-11-04 - Labels to prepare (manual fulfilment)
 
 **Requires:** `mls-server` with manual fulfilment (migrations `20261104120000_add_manual_fulfilment` and `20261104150000_add_carrier_tracking_url`).

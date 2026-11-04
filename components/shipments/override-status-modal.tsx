@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Bell, BellOff, RefreshCcw, Shield } from "lucide-react";
 import {
@@ -70,6 +72,8 @@ export function OverrideStatusModal({
   const [status, setStatus] = useState(currentStatus);
   const [trackingSyncEnabled, setTrackingSyncEnabled] = useState(currentSync);
   const [notify, setNotify] = useState(true);
+  const [note, setNote] = useState("");
+  const [location, setLocation] = useState("");
   const { mutate: overrideStatus, isPending } = useOverrideStatus();
 
   /**
@@ -93,6 +97,8 @@ export function OverrideStatusModal({
       setStatus(currentStatus);
       setTrackingSyncEnabled(currentSync);
       setNotify(true);
+      setNote("");
+      setLocation("");
     }
   }
 
@@ -113,6 +119,8 @@ export function OverrideStatusModal({
           manualOverride: true,
           trackingSyncEnabled,
           notify,
+          ...(note.trim() ? { note: note.trim() } : {}),
+          ...(location.trim() ? { location: location.trim() } : {}),
         },
       },
       {
@@ -170,6 +178,33 @@ export function OverrideStatusModal({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Shown to the customer: the step on their tracking page and in the email. */}
+          <div className="space-y-2">
+            <Label htmlFor="status-location">Where is the parcel? (optional)</Label>
+            <Input
+              id="status-location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Lagos hub"
+              maxLength={120}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="status-note">Note for the customer (optional)</Label>
+            <Textarea
+              id="status-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="e.g. Left Lagos on today's flight to Warsaw"
+              maxLength={500}
+              rows={2}
+            />
+            <p className="text-xs text-muted-foreground">
+              Shown on the customer&apos;s tracking page with this status, and in
+              the email when Notify User is on.
+            </p>
           </div>
 
           {/* Destructive warning */}
