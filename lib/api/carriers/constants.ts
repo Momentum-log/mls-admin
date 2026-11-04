@@ -6,6 +6,7 @@ export const CARRIER_SLUGS = [
   { id: "fedex", name: "FedEx" },
   { id: "dhl-ecommerce", name: "DHL eCommerce" },
   { id: "dpd", name: "DPD" },
+  { id: "momentum", name: "Momentum Logistics" },
   { id: "inpost", name: "InPost" },
 ] as const;
 
