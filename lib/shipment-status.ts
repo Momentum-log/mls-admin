@@ -31,6 +31,7 @@ export const SHIPMENT_STATUSES = [
   "FAILED",
   "PAYMENT_FAILED",
   "CREATION_FAILED",
+  "LABEL_PENDING",
 ] as const;
 
 export type ShipmentStatus = (typeof SHIPMENT_STATUSES)[number];
@@ -172,6 +173,13 @@ const META: Record<ShipmentStatus, Omit<ShipmentStatusMeta, "value">> = {
     variant: "destructive",
     multiLegOnly: false,
     terminal: true,
+  },
+  LABEL_PENDING: {
+    label: "Label To Prepare",
+    description: "Paid; manual mode. Book it on the carrier's site and upload the label",
+    variant: "secondary",
+    multiLegOnly: false,
+    terminal: false,
   },
 };
 

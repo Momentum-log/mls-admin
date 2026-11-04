@@ -118,6 +118,8 @@ export default function CarrierDetailSheet({
     apiSecret: "",
     isActive: true,
   });
+  // Manual fulfilment: staff book this carrier's labels by hand.
+  const [manualFulfilment, setManualFulfilment] = useState(false);
 
   const [commissions, setCommissions] =
     useState<UpdateCommissionsPayload>(defaultCommissions);
@@ -136,6 +138,7 @@ export default function CarrierDetailSheet({
         apiSecret: "",
         isActive: carrier.isActive,
       });
+      setManualFulfilment(carrier.fulfilmentMode === "MANUAL");
       setIsCustomSlug(
         !!carrier.slug && !CARRIER_SLUGS.some((s) => s.id === carrier.slug),
       );
@@ -160,6 +163,7 @@ export default function CarrierDetailSheet({
         apiSecret: "",
         isActive: true,
       });
+      setManualFulfilment(false);
       setIsCustomSlug(false);
       setCommissions(defaultCommissions);
       setSettings(defaultSettings);
@@ -177,6 +181,7 @@ export default function CarrierDetailSheet({
           slug: formData.slug,
           baseUrl: formData.baseUrl || undefined,
           isActive: formData.isActive,
+          fulfilmentMode: manualFulfilment ? "MANUAL" : "AUTOMATIC",
         };
         // Only include secrets if they were changed (non-empty)
         if (formData.apiKey) payload.apiKey = formData.apiKey;
@@ -422,6 +427,27 @@ export default function CarrierDetailSheet({
                     }
                   />
                 </div>
+
+                {isEditMode && (
+                  <div className="flex items-center justify-between gap-4 rounded-lg border p-4 mt-2">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="carrier-manual" className="text-base">
+                        Fulfilment: {manualFulfilment || carrier?.slug === "momentum" ? "Manual" : "Automatic"}
+                      </Label>
+                      <SheetDescription>
+                        {carrier?.slug === "momentum"
+                          ? "Momentum has no carrier system, so its shipments are always prepared by staff under Labels to prepare."
+                          : "Manual: customers still see prices and pay, but no label is created automatically. Each paid shipment waits under Labels to prepare for staff to book it on the carrier's website. Applies to shipments paid after you save."}
+                      </SheetDescription>
+                    </div>
+                    <Switch
+                      id="carrier-manual"
+                      checked={manualFulfilment || carrier?.slug === "momentum"}
+                      disabled={carrier?.slug === "momentum"}
+                      onCheckedChange={setManualFulfilment}
+                    />
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="commissions" className="pt-4 pb-12">

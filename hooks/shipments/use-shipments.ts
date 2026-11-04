@@ -106,6 +106,10 @@ function announceSettlement(result: SettlementResponse) {
     toast.success("Already paid. The label exists.");
   } else if (result.outcome === "LABEL_CREATED") {
     toast.success("Paid, label created");
+  } else if (result.outcome === "SENT_TO_MANUAL") {
+    toast.success("Paid, sent to manual fulfilment. Upload the label under Labels to prepare.", {
+      duration: 6000,
+    });
   } else if (result.outcome === "LABEL_FAILED") {
     toast.error(
       `Paid, but the carrier refused the label${result.error ? `: ${result.error}` : ""}. Use Retry label.`,
