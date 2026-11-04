@@ -5,6 +5,15 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-11-04 - Labels to prepare (manual fulfilment)
+
+**Requires:** `mls-server` with manual fulfilment (migration `20261104120000_add_manual_fulfilment`).
+
+- **Added**: **Labels to prepare** (`app/dashboard/fulfilment/page.tsx`, sidebar entry with a count badge). Paid shipments of carriers in manual mode, oldest first, with how long each has waited. "Prepare label" opens a sheet with everything needed to book on the carrier's website (both addresses and contacts, packages, customs, the customer's pickup or drop-off choice, price paid and carrier cost), each with a copy button, and an upload form: label PDF (5 MB max), carrier tracking number, pickup (day, window, confirmation) or drop-off, optional service and notes. Saving emails the customer the label and turns tracking on. The page also holds **Manual for all carriers** and the **business hours** customers are told.
+- **Added**: **Fulfilment switch on each carrier** (Carriers, open a carrier, Profile): Automatic or Manual. Momentum shows Manual and cannot be changed.
+- **Added**: status **Label To Prepare** (`LABEL_PENDING`), a "Prepare label (manual)" button on the shipment sheet, and the bypass toast "Paid, sent to manual fulfilment".
+- Verification: `bunx tsc --noEmit`, `bun run lint` and `next build` pass.
+
 ## [1.15.1] - 2026-11-04 - Momentum in the carrier adapter list
 
 - **Fixed**: **Momentum Logistics is in the carrier slug list** (`lib/api/carriers/constants.ts`). Its adapter is `momentum`, which the "Slug must include the carrier name" rule for custom slugs refused (it wanted `momentum-logistics`, which matches no adapter). Pick "Momentum Logistics" from the slug list instead. The server now also repairs that slug by itself at boot.

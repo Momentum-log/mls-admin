@@ -115,7 +115,11 @@ export interface BypassPaymentPayload {
  * What happened after a bypass or a label retry. The payment is kept even
  * when the carrier refuses the label (LABEL_FAILED); retry the label then.
  */
-export type SettlementOutcome = "LABEL_CREATED" | "LABEL_FAILED" | "NOT_FULFILLED";
+export type SettlementOutcome =
+  | "LABEL_CREATED"
+  | "LABEL_FAILED"
+  | "SENT_TO_MANUAL"
+  | "NOT_FULFILLED";
 
 export interface SettlementResponse {
   message?: string;

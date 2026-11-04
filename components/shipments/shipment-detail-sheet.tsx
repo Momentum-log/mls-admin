@@ -34,7 +34,9 @@ import {
   History,
   Loader2,
   RotateCw,
+  ClipboardList,
 } from "lucide-react";
+import Link from "next/link";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   useCompleteShipment,
@@ -480,6 +482,14 @@ export default function ShipmentDetailSheet({
                     </Button>
                   </Can>
                 )}
+              {shipment.shipmentStatus === "LABEL_PENDING" && (
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link href={`/dashboard/fulfilment?shipment=${shipment.id}`}>
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Prepare label (manual)
+                  </Link>
+                </Button>
+              )}
               {shipment.paymentStatus !== "PAID" && (
                 <Can do="shipment:write" fallback="disable">
                   <Button
