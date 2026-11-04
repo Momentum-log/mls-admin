@@ -139,5 +139,9 @@ export interface MomentumSettings {
   /** Naira per 1 EUR; null = Nigeria -> EU not quoted. */
   ngnPerEur: number | null;
   weightStepKg: number;
+  /** Above this chargeable weight customers get "Request a quote"; null = no limit. */
+  maxQuotableKg: number | null;
+  /** Support WhatsApp, international digits (e.g. 2348012345678); null = contact page. */
+  whatsappNumber: string | null;
   dimensionalWeight: { enabled: boolean; divisor: number };
 }

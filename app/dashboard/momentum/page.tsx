@@ -31,6 +31,8 @@ interface FormState {
   euToNg: LaneForm;
   ngnPerEur: string;
   weightStepKg: string;
+  maxQuotableKg: string;
+  whatsappNumber: string;
   dimensionalEnabled: boolean;
   dimensionalDivisor: string;
 }
@@ -58,6 +60,8 @@ const toForm = (s: MomentumSettings): FormState => ({
   euToNg: laneToForm(s.euToNg),
   ngnPerEur: str(s.ngnPerEur),
   weightStepKg: str(s.weightStepKg),
+  maxQuotableKg: str(s.maxQuotableKg),
+  whatsappNumber: s.whatsappNumber ?? "",
   dimensionalEnabled: s.dimensionalWeight.enabled,
   dimensionalDivisor: str(s.dimensionalWeight.divisor),
 });
@@ -102,6 +106,14 @@ function toSettings(form: FormState): MomentumSettings | string {
   const ngnPerEur = parse(form.ngnPerEur, true);
   const weightStepKg = parse(form.weightStepKg, false);
   const divisor = parse(form.dimensionalDivisor, false, true);
+  const maxQuotableKg = parse(form.maxQuotableKg, true);
+  const whatsappDigits = form.whatsappNumber.replace(/[\s()+-]/g, "");
+  if (maxQuotableKg === undefined || maxQuotableKg === 0) {
+    return "The quote limit must be a weight above 0, or empty for no limit.";
+  }
+  if (whatsappDigits && !/^\d{8,15}$/.test(whatsappDigits)) {
+    return "WhatsApp number: use the international number, digits only, e.g. 2348012345678.";
+  }
   if (ngnPerEur === undefined || ngnPerEur === 0) return "The naira rate must be a number above 0, or empty.";
   if (!weightStepKg || weightStepKg > 10) return "The weight step must be between 0 and 10 kg.";
   if (!divisor || divisor < 1000 || divisor > 10000) return "The volumetric divisor must be 1000 to 10000.";
@@ -110,6 +122,8 @@ function toSettings(form: FormState): MomentumSettings | string {
     ...lanes,
     ngnPerEur,
     weightStepKg,
+    maxQuotableKg,
+    whatsappNumber: whatsappDigits || null,
     dimensionalWeight: { enabled: form.dimensionalEnabled, divisor },
   };
 }
@@ -284,6 +298,29 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
               onChange={(v) => setForm({ ...form, ngnPerEur: v })}
             />
             <Field
+              id="max-quotable"
+              label="Price online up to (kg)"
+              hint="Heavier shipments get no price and a “Request a quote” button instead. Empty: no limit."
+              placeholder="No limit"
+              value={form.maxQuotableKg}
+              onChange={(v) => setForm({ ...form, maxQuotableKg: v })}
+            />
+            <div className="space-y-1.5">
+              <Label htmlFor="whatsapp">Support WhatsApp number</Label>
+              <Input
+                id="whatsapp"
+                type="tel"
+                inputMode="tel"
+                placeholder="2348012345678"
+                value={form.whatsappNumber}
+                onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                International format, no leading 0. “Request a quote” and the express note open a
+                WhatsApp chat with this number. Empty: they link to the contact page.
+              </p>
+            </div>
+            <Field
               id="weight-step"
               label="Round weight up to (kg)"
               value={form.weightStepKg}
@@ -330,12 +367,14 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
               <ul className="space-y-2 text-sm">
                 {LANES.map(({ key, title, currency }) =>
                   [false, true].map((express) => {
-                    const price = previewPrice(
-                      settings[key],
-                      Number(previewKg),
-                      settings.weightStepKg,
-                      express,
-                    );
+                    const overLimit =
+                      settings.maxQuotableKg !== null &&
+                      Math.ceil(Number(previewKg) / settings.weightStepKg - 1e-9) *
+                        settings.weightStepKg >
+                        settings.maxQuotableKg;
+                    const price = overLimit
+                      ? null
+                      : previewPrice(settings[key], Number(previewKg), settings.weightStepKg, express);
                     const inEur =
                       price !== null && currency === "NGN"
                         ? settings.ngnPerEur
@@ -348,7 +387,9 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
                           {title} {express ? "express" : "standard"}
                         </span>
                         <span className="text-right font-medium tabular-nums">
-                          {price === null
+                          {overLimit
+                            ? "request a quote"
+                            : price === null
                             ? express
                               ? "on request"
                               : "-"
@@ -396,7 +437,7 @@ export default function MomentumRatesPage() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Momentum rates</h2>
           <p className="text-muted-foreground">
-            Our own service between Nigeria and the 27 EU countries. On these routes it is the
+            Our own door-to-door service between Nigeria and the 27 EU countries. On these routes it is the
             only option customers see while it is active. Commission is off unless you switch it
             on in{" "}
             <Link href="/dashboard/commissions" className="underline">
