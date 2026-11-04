@@ -5,6 +5,14 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-11-04 - Momentum charge currency, plainer commission help
+
+**Requires:** `mls-server` with the Momentum charge-currency change (`chargeCurrency` per lane). Against an older server the picker is ignored on save.
+
+- **Added**: **"Customer pays in"** on each Momentum Rates lane: Euro (default) or Polish złoty. Every customer on that route is charged in it. Naira is not offered until a naira gateway (such as Paystack) exists.
+- **Changed**: **Commissions page explains each mode in plain words** with a worked example under the mode picker (Target uplift: 100 → 130 including VAT; Fixed markup: 100 → 120 + VAT; No commission: 100 + VAT), and the safety-net switch says why it exists.
+- Verification: `bunx tsc --noEmit` and `bun run lint` pass.
+
 ## [1.13.0] - 2026-11-04 - Momentum rates
 
 **Requires:** `mls-server` with PR #25 (`GET/PUT /admin/settings/momentum`). Against an older server the page says the server does not know Momentum rates yet.

@@ -48,18 +48,20 @@ const MODES: { value: CommissionMode; label: string; description: string }[] = [
   {
     value: "TARGET_UPLIFT",
     label: "Target uplift",
-    description: "Customer pays carrier price + target %, VAT included",
+    description:
+      "The customer pays the carrier price plus the target %, and that already includes VAT. At 30%: carrier 100 → customer pays 130 (our fee 5.69 + VAT 24.31).",
   },
   {
     value: "FIXED_MARKUP",
     label: "Fixed markup",
     description:
-      "Each carrier's percent or fixed commission per route, then the safety net",
+      "Each carrier adds its own % or fixed amount per route type (set on the carrier), then VAT goes on top. At 20%: carrier 100 → 120 + VAT 27.60 = 147.60.",
   },
   {
     value: "NONE",
     label: "No commission",
-    description: "Customer pays the carrier price plus VAT",
+    description:
+      "We add nothing; the customer pays the carrier price plus VAT. Carrier 100 → 100 + VAT 23 = 123.",
   },
 ];
 
@@ -171,6 +173,9 @@ function GlobalForm({
             value={mode}
             onChange={(v) => v !== "INHERIT" && setMode(v)}
           />
+          <p className="text-xs text-muted-foreground">
+            {MODES.find((m) => m.value === mode)?.description}
+          </p>
         </div>
         {mode === "TARGET_UPLIFT" && (
           <div className="space-y-2">
@@ -202,8 +207,9 @@ function GlobalForm({
               Minimum commission safety net
             </Label>
             <p className="text-xs text-muted-foreground">
-              Below the price threshold, charge the flat commission instead. The
-              amounts are edited in{" "}
+              For cheap parcels a % earns almost nothing, so below the price
+              threshold we add a flat amount instead (e.g. carrier 30 → 30 + 20 =
+              50). The amounts are edited in{" "}
               <Link
                 href="/dashboard/settings"
                 className="text-brand-blue hover:underline"

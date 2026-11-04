@@ -117,7 +117,12 @@ export interface ReminderSettings {
 }
 
 /** One direction of Momentum's own service; prices in the lane's currency. */
+/** What a customer can be charged in. NGN joins once a naira gateway exists. */
+export type MomentumChargeCurrency = "EUR" | "PLN";
+
 export interface MomentumLane {
+  /** What the customer pays in on this lane, whatever their account says. */
+  chargeCurrency: MomentumChargeCurrency;
   ratePerKg: number;
   minChargeableKg: number;
   /** Under the minimum; null = charged as the minimum weight. */
