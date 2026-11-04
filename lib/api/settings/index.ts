@@ -4,7 +4,10 @@ import { hasStatus } from "@/lib/api-error";
 import {
   GlobalCommissionSettings,
   CarrierCommissionSettings,
+  CommissionPreview,
+  CommissionPreviewInput,
   DhlSettings,
+  MomentumSettings,
   ReminderSettings,
 } from "@/types/settings";
 
@@ -31,6 +34,28 @@ export const getCarrierCommissionSettings = async (
 ): Promise<CarrierCommissionSettings> => {
   const { data } = await apiClient.get<CarrierCommissionSettings>(
     `/admin/settings/commission/${carrierId}`,
+  );
+  return data;
+};
+
+/**
+ * Saves part of a carrier's commission settings. Fields left out are kept,
+ * so this can change only the W4 override.
+ */
+export const updateCarrierCommissionSettings = async (
+  carrierId: string,
+  payload: Partial<CarrierCommissionSettings>,
+): Promise<void> => {
+  await apiClient.put(`/admin/settings/commission/${carrierId}`, payload);
+};
+
+/** The price a customer would see for one carrier price, VAT included. */
+export const previewCommission = async (
+  input: CommissionPreviewInput,
+): Promise<CommissionPreview> => {
+  const { data } = await apiClient.post<CommissionPreview>(
+    "/admin/settings/commission/preview",
+    input,
   );
   return data;
 };
@@ -85,4 +110,23 @@ export const getInvoiceExpiration = async (): Promise<number | null> => {
 
 export const updateInvoiceExpiration = async (durationHours: number): Promise<void> => {
   await apiClient.post("/admin/settings/invoice-expiration", { durationHours });
+};
+
+/** Momentum Logistics rates. Null when the server predates them (404). */
+export const getMomentumSettings = async (): Promise<MomentumSettings | null> => {
+  try {
+    const { data } = await apiClient.get<MomentumSettings>("/admin/settings/momentum");
+    return data;
+  } catch (error) {
+    if (hasStatus(error, 404)) return null;
+    throw error;
+  }
+};
+
+/** Merges the given settings on the server and returns the full set. */
+export const updateMomentumSettings = async (
+  payload: Partial<MomentumSettings>,
+): Promise<MomentumSettings> => {
+  const { data } = await apiClient.put<MomentumSettings>("/admin/settings/momentum", payload);
+  return data;
 };

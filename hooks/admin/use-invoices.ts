@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { getInvoice, getInvoices, markInvoicePaid } from "@/lib/api/admin/invoices";
+import {
+  getInvoice,
+  getInvoices,
+  markInvoicePaid,
+  type MarkInvoicePaidPayload,
+} from "@/lib/api/admin/invoices";
 import { getApiErrorMessage } from "@/lib/api-error";
 import type { InvoiceFilters } from "@/types/invoice";
 
@@ -23,8 +28,8 @@ export const useInvoice = (id: string | null) => {
 export const useMarkInvoicePaid = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-      markInvoicePaid(id, reason),
+    mutationFn: ({ id, ...payload }: { id: string } & MarkInvoicePaidPayload) =>
+      markInvoicePaid(id, payload),
     onSuccess: () => toast.success("Invoice marked as paid"),
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Could not mark the invoice paid")),

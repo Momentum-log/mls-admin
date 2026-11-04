@@ -21,13 +21,17 @@ import {
   FileText,
   ReceiptText,
   Percent,
+  Coins,
   Handshake,
   Settings,
   MailOpen,
   History,
   Building2,
+  Globe,
+  ClipboardList,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useFulfilmentQueue } from "@/hooks/admin/use-fulfilment";
 
 interface NavRoute {
   label: string;
@@ -71,6 +75,12 @@ const navGroups: NavGroup[] = [
         label: "Shipments",
         icon: Package,
         href: "/dashboard/shipments",
+        permission: "shipment:read",
+      },
+      {
+        label: "Labels to prepare",
+        icon: ClipboardList,
+        href: "/dashboard/fulfilment",
         permission: "shipment:read",
       },
       {
@@ -125,6 +135,18 @@ const navGroups: NavGroup[] = [
         icon: Percent,
         href: "/dashboard/tax-rules",
         permission: "shipment:read",
+      },
+      {
+        label: "Commissions",
+        icon: Coins,
+        href: "/dashboard/commissions",
+        permission: "staff:read",
+      },
+      {
+        label: "Momentum Rates",
+        icon: Globe,
+        href: "/dashboard/momentum",
+        permission: "staff:read",
       },
     ],
   },
@@ -212,6 +234,11 @@ const navGroups: NavGroup[] = [
 export function AdminSidebar() {
   const pathname = usePathname();
   const { hasPermission, isSuperAdmin } = usePermissions();
+  // Count badge for the manual fulfilment queue.
+  const { data: fulfilmentQueue } = useFulfilmentQueue(hasPermission("shipment:read"));
+  const badges: Record<string, number> = {
+    "/dashboard/fulfilment": fulfilmentQueue?.count ?? 0,
+  };
 
   return (
     <div className="space-y-4 py-4 flex flex-col h-full bg-white border-r border-border overflow-y-auto">
@@ -268,6 +295,14 @@ export function AdminSidebar() {
                     <div className="flex items-center flex-1">
                       <route.icon className="h-5 w-5 mr-3" />
                       {route.label}
+                      {isAllowed && (badges[route.href] ?? 0) > 0 && (
+                        <span
+                          className="ml-auto rounded-full bg-brand-blue px-2 py-0.5 text-[11px] font-bold text-white"
+                          aria-label={`${badges[route.href]} waiting`}
+                        >
+                          {badges[route.href]}
+                        </span>
+                      )}
                       {!isAllowed && (
                         <Lock className="ml-auto h-4 w-4 text-muted-foreground/60" />
                       )}

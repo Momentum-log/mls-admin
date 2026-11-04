@@ -7,6 +7,7 @@ import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
 import { Can } from "@/components/auth/can";
 import { ReasonDialog } from "@/components/admin/reason-dialog";
+import { MarkPaidDialog } from "./mark-paid-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CopyButton from "@/components/ui/copy-button";
@@ -188,18 +189,14 @@ export function InvoiceDetailSheet({ invoiceId, onOpenChange }: InvoiceDetailShe
         )}
       </SheetContent>
 
-      <ReasonDialog
+      <MarkPaidDialog
         open={markPaidOpen}
         onOpenChange={setMarkPaidOpen}
-        title="Mark this invoice paid?"
-        description="Use this when the customer paid outside the gateway, for example by bank transfer."
-        label="Reference or note"
-        confirmLabel="Mark as paid"
         isLoading={isMarkingPaid}
-        onConfirm={(reason) => {
+        onConfirm={(payload) => {
           if (!invoiceId) return;
           markPaid(
-            { id: invoiceId, reason: reason || undefined },
+            { id: invoiceId, ...payload },
             { onSuccess: () => setMarkPaidOpen(false) },
           );
         }}

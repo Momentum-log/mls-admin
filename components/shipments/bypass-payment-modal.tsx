@@ -11,9 +11,13 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import {
+  EMPTY_MANUAL_PAYMENT,
+  ManualPaymentFields,
+  isManualPaymentValid,
+  toBypassPayload,
+  type ManualPaymentValue,
+} from "@/components/shipments/manual-payment-fields";
 
 interface BypassPaymentModalProps {
   shipmentId: string | null;
@@ -21,26 +25,29 @@ interface BypassPaymentModalProps {
   onClose: () => void;
 }
 
+/**
+ * Records a payment taken outside the gateway. The server then runs the
+ * paid pipeline: invoice PAID, payment recorded, label created, customer
+ * emailed. The toast says what happened to the label.
+ */
 export function BypassPaymentModal({
   shipmentId,
   isOpen,
   onClose,
 }: BypassPaymentModalProps) {
-  const [manualTransactionId, setManualTransactionId] = useState("");
-  const [notes, setNotes] = useState("");
+  const [value, setValue] = useState<ManualPaymentValue>(EMPTY_MANUAL_PAYMENT);
   const { mutate: bypassPayment, isPending } = useBypassPayment();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shipmentId) return;
+    if (!shipmentId || !isManualPaymentValid(value)) return;
 
     bypassPayment(
-      { shipmentId, data: { manualTransactionId, notes } },
+      { shipmentId, data: toBypassPayload(value) },
       {
         onSuccess: () => {
           onClose();
-          setManualTransactionId("");
-          setNotes("");
+          setValue(EMPTY_MANUAL_PAYMENT);
         },
       },
     );
@@ -50,37 +57,20 @@ export function BypassPaymentModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Bypass Payment</DialogTitle>
+          <DialogTitle>Record a payment</DialogTitle>
           <DialogDescription>
-            Manually mark this shipment as PAID.
+            Marks the invoice paid and creates the label, exactly as a card
+            payment would. The customer gets the payment confirmation.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="transactionId">Transaction ID / Reference</Label>
-            <Input
-              id="transactionId"
-              required
-              value={manualTransactionId}
-              onChange={(e) => setManualTransactionId(e.target.value)}
-              placeholder="BANK-REF-123"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Reason for bypass..."
-            />
-          </div>
+          <ManualPaymentFields value={value} onChange={setValue} idPrefix="bypass" />
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Processing..." : "Confirm Payment"}
+            <Button type="submit" disabled={isPending || !isManualPaymentValid(value)}>
+              {isPending ? "Processing..." : "Record payment"}
             </Button>
           </DialogFooter>
         </form>

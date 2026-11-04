@@ -30,6 +30,8 @@ export interface AdminShipment {
   customTrackingNumber: string;
   estimateId?: string; // Link to the source estimate (if converted)
   carrierTrackingNumber?: string;
+  /** Carrier's own tracking page, given by staff with a manual label. */
+  carrierTrackingUrl?: string | null;
   pickupAddress: AdminShipmentAddress;
   dropoffAddress: AdminShipmentAddress;
   weight: { units: string; value: number };

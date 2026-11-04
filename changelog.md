@@ -5,6 +5,54 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-11-04 - Labels to prepare (manual fulfilment)
+
+**Requires:** `mls-server` with manual fulfilment (migrations `20261104120000_add_manual_fulfilment` and `20261104150000_add_carrier_tracking_url`).
+
+- **Added**: **Labels to prepare** (`app/dashboard/fulfilment/page.tsx`, sidebar entry with a count badge). Paid shipments of carriers in manual mode, oldest first, with how long each has waited. "Prepare label" opens a sheet with everything needed to book on the carrier's website (both addresses and contacts, packages, customs, the customer's pickup or drop-off choice, price paid and carrier cost), each with a copy button, and a form: the label as an uploaded PDF (5 MB max) or a pasted https link, carrier tracking number, optional carrier tracking link (shown to the customer and on the shipment sheet), pickup (day, window, confirmation) or drop-off, optional service and notes. Saving emails the customer the label and turns tracking on. The page also holds **Manual for all carriers** and the **business hours** customers are told.
+- **Added**: **Fulfilment switch on each carrier** (Carriers, open a carrier, Profile): Automatic or Manual. Momentum shows Manual and cannot be changed.
+- **Added**: **Email customer** on the shipment sheet (needs `email:write`). It opens Emails, Send an email, with the customer's address and "Your shipment <MLS number>" filled in (`/dashboard/emails?to=&subject=`).
+- **Added**: status **Label To Prepare** (`LABEL_PENDING`), a "Prepare label (manual)" button on the shipment sheet, and the bypass toast "Paid, sent to manual fulfilment".
+- Verification: `bunx tsc --noEmit`, `bun run lint` and `next build` pass.
+
+## [1.15.1] - 2026-11-04 - Momentum in the carrier adapter list
+
+- **Fixed**: **Momentum Logistics is in the carrier slug list** (`lib/api/carriers/constants.ts`). Its adapter is `momentum`, which the "Slug must include the carrier name" rule for custom slugs refused (it wanted `momentum-logistics`, which matches no adapter). Pick "Momentum Logistics" from the slug list instead. The server now also repairs that slug by itself at boot.
+- Verification: `bunx tsc --noEmit` and `bun run lint` pass.
+
+## [1.15.0] - 2026-11-04 - Momentum prices in the currency customers pay
+
+**Requires:** `mls-server` with Momentum settings version 2 (prices in the charge currency, `plnPerEur`, `/health` carriers). Merge the server first.
+
+- **Changed**: **Momentum Rates prices are typed in the currency customers pay.** Each route has "Customer pays in" (Euro, Polish złoty; Nigerian naira is listed but disabled until a naira gateway exists), and every price field's label and placeholder use that currency. Changing the currency converts the current prices with your reference rates as a starting point and asks you to check them, or clears them when there is no rate. Nothing is converted when customers are quoted.
+- **Added**: **Reference rates** (naira per €1, złoty per €1). They only show equivalents under each price ("≈ ₦23,000") and in the preview, and suggest prices on a currency change.
+- **Changed**: **"Not configured" explains itself.** For a carrier that needs no credentials (Momentum) the carrier sheet and the Momentum Rates page say the server is an older build and to redeploy; the server's `/health` lists the carriers it can quote.
+- Verification: `bunx tsc --noEmit`, `bun run lint` and `bun run build` pass. Not checked in a browser against a running server.
+
+## [1.14.0] - 2026-11-04 - Momentum charge currency, plainer commission help
+
+**Requires:** `mls-server` with the Momentum charge-currency change (`chargeCurrency` per lane). Against an older server the picker is ignored on save.
+
+- **Added**: **"Customer pays in"** on each Momentum Rates lane: Euro (default) or Polish złoty. Every customer on that route is charged in it. Naira is not offered until a naira gateway (such as Paystack) exists.
+- **Changed**: **Commissions page explains each mode in plain words** with a worked example under the mode picker (Target uplift: 100 → 130 including VAT; Fixed markup: 100 → 120 + VAT; No commission: 100 + VAT), and the safety-net switch says why it exists.
+- Verification: `bunx tsc --noEmit` and `bun run lint` pass.
+
+## [1.13.0] - 2026-11-04 - Momentum rates
+
+**Requires:** `mls-server` with PR #25 (`GET/PUT /admin/settings/momentum`). Against an older server the page says the server does not know Momentum rates yet.
+
+- **Added**: **Momentum rates** (`/dashboard/momentum`, Finance in the sidebar, `staff:read` to view, `staff:write` to save). Prices for Momentum's own Nigeria <-> EU-27 service. Each direction has a standard price per kg (₦ for Nigeria -> EU, € for EU -> Nigeria), a minimum weight, an optional flat fee under the minimum, standard days, and an optional express price per kg with express days. While express is empty, customers see "Express shipping also available" with a contact link. Shared settings: the online price limit (30 kg by default; heavier shipments get "Request a quote" instead of a price), the support WhatsApp number those buttons open, naira per €1 (Nigeria -> EU is not quoted until it is set), weight rounding step, and the dimensional weight switch (off) with its divisor. A preview shows the net price for a chosen weight in both directions, with the naira price converted to euros. The page shows whether the Momentum carrier is active and warns that booking needs manual fulfilment (W6).
+
+## [1.12.0] - 2026-11-04 - Staff payments and commissions
+
+**Requires:** `mls-server` with PR #24 (settlement pipeline, `retry-label`, commission modes and `commission/preview`). Against an older server the bypass still marks the shipment paid the old way, and the Commissions page says the server does not know commission modes yet.
+
+- **Changed**: **Recording a payment by hand** (`components/shipments/bypass-payment-modal.tsx`, `components/shipments/manual-payment-fields.tsx`). "Mark as Paid (Bypass)" is now "Record a payment". Staff pick how the money arrived (bank transfer, cash, on account, waived), give a reference, and add notes (required when waived, D8). The server then runs the same pipeline as a card payment: invoice PAID, payment recorded, label created, customer emailed. The toast says what happened to the label. "Create & bypass" on the new-shipment page uses the same fields.
+- **Added**: **Retry label** in the shipment sheet for a paid shipment with no label (`CREATION_FAILED`, or `CREATED`/`PAID` left behind by the old bypass). It asks the carrier again; the payment is never touched.
+- **Changed**: **Invoice "Mark as paid"** (`components/invoices/mark-paid-dialog.tsx`) takes the same method, reference and notes. For a shipment's invoice the server creates the label too.
+- **Added**: **Commissions page** (`app/dashboard/commissions/page.tsx`, Finance > Commissions, `staff:read` to view, `staff:write` to save). The global mode (Target uplift, Fixed markup, No commission), the target % and the minimum-commission safety net switch; a per-carrier override table (Global or its own mode and target); and a price calculator that asks the server, so it shows exactly what checkout would charge: carrier, handling fee, VAT and total. A note asks for the accountant's confirmation of the VAT base before Target uplift goes live. Settings links to it.
+- Verification: `bunx tsc --noEmit`, `bun run lint` and `bun run build` pass. Not checked against a running server in a browser.
+
 ## [1.11.0] - 2026-10-17 - DPD
 
 **Requires:** `mls-server` with PR #20 (DPD carrier, rate card endpoints, `isConfigured`). Against an older server the Rate Card tab reports it could not load the card and nothing else changes.

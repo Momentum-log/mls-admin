@@ -3,6 +3,7 @@ import {
   getShipments,
   createProxyShipment,
   bypassPayment,
+  retryLabel,
   overrideStatus,
   getUserShipments,
   deleteShipment,
@@ -16,6 +17,7 @@ import {
   ShipmentFilter,
   CreateProxyShipmentPayload,
   BypassPaymentPayload,
+  SettlementResponse,
   OverrideStatusPayload,
   UserShipmentFilter,
 } from "@/types/shipment";
@@ -67,15 +69,56 @@ export const useBypassPayment = () => {
       shipmentId: string;
       data: BypassPaymentPayload;
     }) => bypassPayment(shipmentId, data),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      announceSettlement(result);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
-      toast.success("Payment bypassed successfully!");
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Failed to bypass payment"));
     },
   });
 };
+
+/** Retries the carrier label for a paid shipment whose label failed. */
+export const useRetryLabel = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (shipmentId: string) => retryLabel(shipmentId),
+    onSuccess: (result) => announceSettlement(result),
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Could not retry the label"));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+    },
+  });
+};
+
+/**
+ * One toast per settlement outcome. A failed label is not an error of the
+ * payment: the payment is kept and staff can retry the label.
+ */
+function announceSettlement(result: SettlementResponse) {
+  if (result.alreadyPaid && result.outcome === "LABEL_CREATED") {
+    toast.success("Already paid. The label exists.");
+  } else if (result.outcome === "LABEL_CREATED") {
+    toast.success("Paid, label created");
+  } else if (result.outcome === "SENT_TO_MANUAL") {
+    toast.success("Paid, sent to manual fulfilment. Upload the label under Labels to prepare.", {
+      duration: 6000,
+    });
+  } else if (result.outcome === "LABEL_FAILED") {
+    toast.error(
+      `Paid, but the carrier refused the label${result.error ? `: ${result.error}` : ""}. Use Retry label.`,
+      { duration: 8000 },
+    );
+  } else {
+    toast.success(`Paid. Shipment is ${result.shipmentStatus ?? "unchanged"}.`);
+  }
+}
 
 export const useOverrideStatus = () => {
   const queryClient = useQueryClient();
