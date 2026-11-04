@@ -5,6 +5,15 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-11-04 - Momentum prices in the currency customers pay
+
+**Requires:** `mls-server` with Momentum settings version 2 (prices in the charge currency, `plnPerEur`, `/health` carriers). Merge the server first.
+
+- **Changed**: **Momentum Rates prices are typed in the currency customers pay.** Each route has "Customer pays in" (Euro, Polish złoty; Nigerian naira is listed but disabled until a naira gateway exists), and every price field's label and placeholder use that currency. Changing the currency converts the current prices with your reference rates as a starting point and asks you to check them, or clears them when there is no rate. Nothing is converted when customers are quoted.
+- **Added**: **Reference rates** (naira per €1, złoty per €1). They only show equivalents under each price ("≈ ₦23,000") and in the preview, and suggest prices on a currency change.
+- **Changed**: **"Not configured" explains itself.** For a carrier that needs no credentials (Momentum) the carrier sheet and the Momentum Rates page say the server is an older build and to redeploy; the server's `/health` lists the carriers it can quote.
+- Verification: `bunx tsc --noEmit`, `bun run lint` and `bun run build` pass. Not checked in a browser against a running server.
+
 ## [1.14.0] - 2026-11-04 - Momentum charge currency, plainer commission help
 
 **Requires:** `mls-server` with the Momentum charge-currency change (`chargeCurrency` per lane). Against an older server the picker is ignored on save.
