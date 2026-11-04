@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { z } from "zod";
 import {
   useEmailTemplates,
@@ -205,13 +206,23 @@ function TemplateForm({
   );
 }
 
-function SendEmailCard() {
+/**
+ * `initialTo` and `initialSubject` come from a link such as "Email customer"
+ * on a shipment: /dashboard/emails?to=<email>&subject=<subject>.
+ */
+function SendEmailCard({
+  initialTo = "",
+  initialSubject,
+}: {
+  initialTo?: string;
+  initialSubject?: string;
+}) {
   const [example, setExample] = useState(EXAMPLE_MESSAGES[0]);
   // Bumped when an example is loaded, so the editor remounts with its body.
   const [editorKey, setEditorKey] = useState(0);
   const [form, setForm] = useState({
-    to: "",
-    subject: example.subject,
+    to: initialTo,
+    subject: initialSubject || example.subject,
     preheader: example.preheader,
     // Sent on purpose: left empty, the server falls back to its configured
     // sender name, which showed a person's name in the demo.
@@ -385,6 +396,9 @@ export default function EmailsPage() {
   const { data: templates = [], isLoading } = useEmailTemplates();
   const [editing, setEditing] = useState<EmailTemplate | null>(null);
   const [creating, setCreating] = useState(false);
+  const searchParams = useSearchParams();
+  const prefillTo = searchParams.get("to") ?? "";
+  const prefillSubject = searchParams.get("subject") ?? "";
 
   return (
     <div className="space-y-6">
@@ -395,7 +409,10 @@ export default function EmailsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="templates" className="space-y-4">
+      <Tabs
+        defaultValue={prefillTo ? "send" : "templates"}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="send">Send an email</TabsTrigger>
@@ -482,7 +499,11 @@ export default function EmailsPage() {
         </TabsContent>
 
         <TabsContent value="send">
-          <SendEmailCard />
+          <SendEmailCard
+            key={`${prefillTo}|${prefillSubject}`}
+            initialTo={prefillTo}
+            initialSubject={prefillSubject}
+          />
         </TabsContent>
       </Tabs>
 

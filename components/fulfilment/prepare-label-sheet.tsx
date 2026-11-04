@@ -28,6 +28,14 @@ import {
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
+const isHttpsUrl = (value: string) => {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
 interface Props {
   shipment: FulfilmentQueueShipment | null;
   onOpenChange: (open: boolean) => void;
@@ -102,8 +110,11 @@ function PrepareLabelBody({
 }) {
   const pref = shipment.handoverPreference;
   const { mutate: upload, isPending } = useUploadManualLabel();
+  const [labelSource, setLabelSource] = useState<"FILE" | "LINK">("FILE");
   const [file, setFile] = useState<File | null>(null);
+  const [labelLink, setLabelLink] = useState("");
   const [tracking, setTracking] = useState("");
+  const [trackingUrl, setTrackingUrl] = useState("");
   const [handover, setHandover] = useState<"PICKUP" | "DROPOFF">(
     pref?.method ?? "DROPOFF",
   );
@@ -122,27 +133,40 @@ function PrepareLabelBody({
 
   const submit = async () => {
     setError(null);
-    if (!file)
-      return setError("Choose the label PDF you downloaded from the carrier.");
-    if (file.type && file.type !== "application/pdf")
-      return setError("The label must be a PDF.");
-    if (file.size > MAX_BYTES)
-      return setError("The label must be 5 MB or smaller.");
+    if (labelSource === "FILE") {
+      if (!file)
+        return setError("Choose the label PDF you downloaded from the carrier.");
+      if (file.type && file.type !== "application/pdf")
+        return setError("The label must be a PDF.");
+      if (file.size > MAX_BYTES)
+        return setError("The label must be 5 MB or smaller.");
+    } else if (!isHttpsUrl(labelLink.trim())) {
+      return setError("Paste the label link (it must start with https://).");
+    }
     if (!/^[A-Za-z0-9-]{3,64}$/.test(tracking.trim())) {
       return setError(
         "Enter the carrier's tracking number (letters, digits and dashes).",
       );
     }
+    if (trackingUrl.trim() && !isHttpsUrl(trackingUrl.trim())) {
+      return setError("The tracking link must start with https://.");
+    }
     if (handover === "PICKUP" && !pickupDate) {
       return setError("Enter the day the courier will collect.");
     }
-    const labelPdfBase64 = await readFileAsBase64(file);
+    const label =
+      labelSource === "FILE" && file
+        ? { labelPdfBase64: await readFileAsBase64(file) }
+        : { labelUrl: labelLink.trim() };
     upload(
       {
         shipmentId: shipment.id,
         payload: {
-          labelPdfBase64,
+          ...label,
           carrierTrackingNumber: tracking.trim(),
+          ...(trackingUrl.trim()
+            ? { carrierTrackingUrl: trackingUrl.trim() }
+            : {}),
           handover,
           ...(handover === "PICKUP"
             ? {
@@ -252,20 +276,64 @@ function PrepareLabelBody({
         <Can do="shipment:write" fallback="disable">
           <section className="rounded-lg border-2 border-brand-blue/30 p-4 space-y-4">
             <h3 className="text-sm font-bold flex items-center gap-2">
-              <FileUp className="h-4 w-4" /> Upload the label
+              <FileUp className="h-4 w-4" /> Label and tracking
             </h3>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="label-file">
-                Label PDF (one file, every page)
-              </Label>
-              <Input
-                id="label-file"
-                type="file"
-                accept="application/pdf,.pdf"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              />
-            </div>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">The label</legend>
+              <div className="flex gap-4 text-sm">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="label-source"
+                    checked={labelSource === "FILE"}
+                    onChange={() => setLabelSource("FILE")}
+                  />
+                  Upload the PDF
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="label-source"
+                    checked={labelSource === "LINK"}
+                    onChange={() => setLabelSource("LINK")}
+                  />
+                  Paste a link
+                </label>
+              </div>
+            </fieldset>
+
+            {labelSource === "FILE" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="label-file">
+                  Label PDF (one file, every page)
+                </Label>
+                <Input
+                  id="label-file"
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Emailed to the customer as an attachment.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="label-link">Label link</Label>
+                <Input
+                  id="label-link"
+                  type="url"
+                  value={labelLink}
+                  onChange={(e) => setLabelLink(e.target.value)}
+                  placeholder="https://"
+                />
+                <p className="text-xs text-muted-foreground">
+                  The customer gets a download button. Use a link that opens
+                  without signing in to the carrier.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label htmlFor="label-tracking">Carrier tracking number</Label>
@@ -275,6 +343,23 @@ function PrepareLabelBody({
                 onChange={(e) => setTracking(e.target.value)}
                 placeholder="As printed on the label"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="label-tracking-url">
+                Carrier tracking link (optional)
+              </Label>
+              <Input
+                id="label-tracking-url"
+                type="url"
+                value={trackingUrl}
+                onChange={(e) => setTrackingUrl(e.target.value)}
+                placeholder="https://"
+              />
+              <p className="text-xs text-muted-foreground">
+                Shown to the customer next to the tracking number. MLS tracking
+                works without it.
+              </p>
             </div>
 
             <fieldset className="space-y-2">

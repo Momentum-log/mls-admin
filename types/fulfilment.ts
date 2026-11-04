@@ -63,8 +63,12 @@ export interface FulfilmentQueue {
 }
 
 export interface ManualLabelPayload {
-  labelPdfBase64: string;
+  /** Send exactly one of `labelPdfBase64` (an upload) and `labelUrl` (a link). */
+  labelPdfBase64?: string;
+  labelUrl?: string;
   carrierTrackingNumber: string;
+  /** The carrier's own tracking page, shown to the customer. */
+  carrierTrackingUrl?: string;
   handover: "PICKUP" | "DROPOFF";
   pickupDate?: string;
   pickupReadyTime?: string;
