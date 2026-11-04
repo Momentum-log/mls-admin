@@ -6,11 +6,13 @@ import {
   saveCarrierSettings,
   getRateCard,
   replaceRateCard,
+  setCarriersFulfilmentMode,
 } from "@/lib/api/carriers";
 import { toast } from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {
   CreateCarrierPayload,
+  FulfilmentMode,
   RateCardRow,
   SaveCarrierSettingsPayload,
 } from "@/types/carriers";
@@ -92,6 +94,27 @@ export const useReplaceRateCard = (slug: string) => {
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Failed to save rate card"));
+    },
+  });
+};
+
+/** Sets Automatic or Manual on the chosen carriers in one save. */
+export const useSetCarriersFulfilmentMode = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ mode, carrierIds }: { mode: FulfilmentMode; carrierIds: string[] }) =>
+      setCarriersFulfilmentMode(mode, carrierIds),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["carriers"] });
+      const label = result.mode === "MANUAL" ? "Manual" : "Automatic";
+      const names = result.updated.map((c) => c.name).join(", ");
+      toast.success(names ? `${label}: ${names}` : "Nothing changed");
+      for (const skipped of result.skipped) {
+        toast(`${skipped.name} stays Manual: ${skipped.reason}`);
+      }
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to update fulfilment"));
     },
   });
 };

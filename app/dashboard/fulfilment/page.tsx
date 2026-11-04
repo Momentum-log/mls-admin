@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -64,40 +63,24 @@ function BusinessHoursForm({
   );
 }
 
-/** The global switch and the business hours customers are told. */
+/**
+ * The business hours customers are told. Which carriers are manual is set on
+ * the Carriers page (Fulfilment), one place for every carrier.
+ */
 function ManualModeCard() {
-  const { data: settings, isLoading } = useFulfilmentSettings();
+  const { data: settings } = useFulfilmentSettings();
   const { mutate: save, isPending } = useUpdateFulfilmentSettings();
 
   return (
     <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
-      <div className="flex items-start justify-between gap-6 flex-wrap">
-        <div className="space-y-1 max-w-2xl">
-          <Label htmlFor="manual-all" className="text-base font-semibold">
-            Manual for all carriers
-          </Label>
-          <p className="text-sm text-muted-foreground">
-            On: every paid shipment (FedEx, DHL, DPD and Momentum) comes here
-            instead of the carrier creating the label automatically. Off: each
-            carrier follows its own switch under{" "}
-            <Link href="/dashboard/carriers" className="underline">
-              Carriers
-            </Link>{" "}
-            (open a carrier, Fulfilment). Momentum is always manual. Shipments
-            already paid stay where they are when you change this.
-          </p>
-        </div>
-        <Can do="staff:write" fallback="disable">
-          <Switch
-            id="manual-all"
-            checked={settings?.manualForAllCarriers ?? false}
-            disabled={isLoading || isPending}
-            onCheckedChange={(checked) =>
-              save({ manualForAllCarriers: checked })
-            }
-          />
-        </Can>
-      </div>
+      <p className="text-sm text-muted-foreground max-w-2xl">
+        Which carriers come here is set on the{" "}
+        <Link href="/dashboard/carriers" className="underline">
+          Carriers
+        </Link>{" "}
+        page: press <strong>Fulfilment</strong>, choose Manual and tick the
+        carriers. Momentum is always manual.
+      </p>
 
       {/* Keyed so the field resets to the saved value once it loads. */}
       <BusinessHoursForm

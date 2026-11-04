@@ -74,6 +74,14 @@ export interface UpdateCarrierPayload {
 
 export type FulfilmentMode = "AUTOMATIC" | "MANUAL";
 
+/** Result of setting one mode on several carriers at once. */
+export interface BulkFulfilmentModeResult {
+  mode: FulfilmentMode;
+  updated: { id: string; slug: string; name: string }[];
+  /** Momentum, when asked to go automatic: it is always manual. */
+  skipped: { id: string; slug: string; name: string; reason: string }[];
+}
+
 /** Payload for updating commissions (CL02 logic enforced by backend). */
 export interface UpdateCommissionsPayload {
   local: Commission;
