@@ -27,6 +27,7 @@ import {
   MailOpen,
   History,
   Building2,
+  Globe,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -131,6 +132,12 @@ const navGroups: NavGroup[] = [
         label: "Commissions",
         icon: Coins,
         href: "/dashboard/commissions",
+        permission: "staff:read",
+      },
+      {
+        label: "Momentum Rates",
+        icon: Globe,
+        href: "/dashboard/momentum",
         permission: "staff:read",
       },
     ],
