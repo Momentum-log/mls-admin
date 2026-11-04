@@ -121,9 +121,13 @@ export interface ReminderSettings {
 export type MomentumChargeCurrency = "EUR" | "PLN";
 
 export interface MomentumLane {
-  /** What the customer pays in on this lane, whatever their account says. */
+  /**
+   * What the customer pays in on this lane, whatever their account says.
+   * Every price below is in this currency and charged as typed.
+   */
   chargeCurrency: MomentumChargeCurrency;
-  ratePerKg: number;
+  /** Null = not priced yet; the lane is not quoted. */
+  ratePerKg: number | null;
   minChargeableKg: number;
   /** Under the minimum; null = charged as the minimum weight. */
   belowMinimumFlatFee: number | null;
@@ -137,12 +141,14 @@ export interface MomentumLane {
 
 /** Momentum Logistics Nigeria <-> EU-27 prices (`GET/PUT /admin/settings/momentum`). */
 export interface MomentumSettings {
-  /** Nigeria -> EU, priced in NGN. */
+  /** Nigeria -> EU. */
   ngToEu: MomentumLane;
-  /** EU -> Nigeria, priced in EUR. */
+  /** EU -> Nigeria. */
   euToNg: MomentumLane;
-  /** Naira per 1 EUR; null = Nigeria -> EU not quoted. */
+  /** Naira per 1 EUR, typed by staff. Reference only: equivalents and suggestions. */
   ngnPerEur: number | null;
+  /** Złoty per 1 EUR, typed by staff. Reference only, like `ngnPerEur`. */
+  plnPerEur: number | null;
   weightStepKg: number;
   /** Above this chargeable weight customers get "Request a quote"; null = no limit. */
   maxQuotableKg: number | null;

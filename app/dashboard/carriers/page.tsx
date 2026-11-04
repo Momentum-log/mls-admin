@@ -197,7 +197,7 @@ export default function CarriersPage() {
                       <Badge
                         variant="secondary"
                         className="ml-1 bg-amber-100 text-amber-800 hover:bg-amber-100"
-                        title="The server has no credentials for this carrier, so it is never quoted."
+                        title="The server cannot quote this carrier (missing credentials, or an older server build), so it is never offered."
                       >
                         Not configured
                       </Badge>
