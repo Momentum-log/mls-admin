@@ -9,6 +9,8 @@ import {
   previewCommission,
   getDhlSettings,
   updateDhlSettings,
+  getMomentumSettings,
+  updateMomentumSettings,
   getReminderSettings,
   updateReminderSettings,
   getInvoiceExpiration,
@@ -18,6 +20,7 @@ import {
   CarrierCommissionSettings,
   CommissionPreviewInput,
   DhlSettings,
+  MomentumSettings,
   ReminderSettings,
 } from "@/types/settings";
 
@@ -138,6 +141,24 @@ export const useUpdateInvoiceExpiration = () => {
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Failed to save the payment window"));
+    },
+  });
+};
+
+export const useMomentumSettings = () => {
+  return useQuery({ queryKey: ["momentum-settings"], queryFn: getMomentumSettings });
+};
+
+export const useUpdateMomentumSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Partial<MomentumSettings>) => updateMomentumSettings(payload),
+    onSuccess: (settings) => {
+      queryClient.setQueryData(["momentum-settings"], settings);
+      toast.success("Momentum rates saved");
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to save Momentum rates"));
     },
   });
 };

@@ -115,3 +115,33 @@ export interface ReminderSettings {
   /** Hours before the invoice expires that the reminder is sent (1–24). */
   reminderHoursBefore: number;
 }
+
+/** One direction of Momentum's own service; prices in the lane's currency. */
+export interface MomentumLane {
+  ratePerKg: number;
+  minChargeableKg: number;
+  /** Under the minimum; null = charged as the minimum weight. */
+  belowMinimumFlatFee: number | null;
+  transitDaysMin: number;
+  transitDaysMax: number;
+  /** Null = express not sold online ("contact us" note shown instead). */
+  expressRatePerKg: number | null;
+  expressTransitDaysMin: number;
+  expressTransitDaysMax: number;
+}
+
+/** Momentum Logistics Nigeria <-> EU-27 prices (`GET/PUT /admin/settings/momentum`). */
+export interface MomentumSettings {
+  /** Nigeria -> EU, priced in NGN. */
+  ngToEu: MomentumLane;
+  /** EU -> Nigeria, priced in EUR. */
+  euToNg: MomentumLane;
+  /** Naira per 1 EUR; null = Nigeria -> EU not quoted. */
+  ngnPerEur: number | null;
+  weightStepKg: number;
+  /** Above this chargeable weight customers get "Request a quote"; null = no limit. */
+  maxQuotableKg: number | null;
+  /** Support WhatsApp, international digits (e.g. 2348012345678); null = contact page. */
+  whatsappNumber: string | null;
+  dimensionalWeight: { enabled: boolean; divisor: number };
+}

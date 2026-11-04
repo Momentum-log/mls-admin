@@ -7,6 +7,7 @@ import {
   CommissionPreview,
   CommissionPreviewInput,
   DhlSettings,
+  MomentumSettings,
   ReminderSettings,
 } from "@/types/settings";
 
@@ -109,4 +110,23 @@ export const getInvoiceExpiration = async (): Promise<number | null> => {
 
 export const updateInvoiceExpiration = async (durationHours: number): Promise<void> => {
   await apiClient.post("/admin/settings/invoice-expiration", { durationHours });
+};
+
+/** Momentum Logistics rates. Null when the server predates them (404). */
+export const getMomentumSettings = async (): Promise<MomentumSettings | null> => {
+  try {
+    const { data } = await apiClient.get<MomentumSettings>("/admin/settings/momentum");
+    return data;
+  } catch (error) {
+    if (hasStatus(error, 404)) return null;
+    throw error;
+  }
+};
+
+/** Merges the given settings on the server and returns the full set. */
+export const updateMomentumSettings = async (
+  payload: Partial<MomentumSettings>,
+): Promise<MomentumSettings> => {
+  const { data } = await apiClient.put<MomentumSettings>("/admin/settings/momentum", payload);
+  return data;
 };

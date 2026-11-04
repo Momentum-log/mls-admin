@@ -5,6 +5,12 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-11-04 - Momentum rates
+
+**Requires:** `mls-server` with PR #25 (`GET/PUT /admin/settings/momentum`). Against an older server the page says the server does not know Momentum rates yet.
+
+- **Added**: **Momentum rates** (`/dashboard/momentum`, Finance in the sidebar, `staff:read` to view, `staff:write` to save). Prices for Momentum's own Nigeria <-> EU-27 service. Each direction has a standard price per kg (₦ for Nigeria -> EU, € for EU -> Nigeria), a minimum weight, an optional flat fee under the minimum, standard days, and an optional express price per kg with express days. While express is empty, customers see "Express shipping also available" with a contact link. Shared settings: the online price limit (30 kg by default; heavier shipments get "Request a quote" instead of a price), the support WhatsApp number those buttons open, naira per €1 (Nigeria -> EU is not quoted until it is set), weight rounding step, and the dimensional weight switch (off) with its divisor. A preview shows the net price for a chosen weight in both directions, with the naira price converted to euros. The page shows whether the Momentum carrier is active and warns that booking needs manual fulfilment (W6).
+
 ## [1.12.0] - 2026-11-04 - Staff payments and commissions
 
 **Requires:** `mls-server` with PR #24 (settlement pipeline, `retry-label`, commission modes and `commission/preview`). Against an older server the bypass still marks the shipment paid the old way, and the Commissions page says the server does not know commission modes yet.
