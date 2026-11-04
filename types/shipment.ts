@@ -99,9 +99,31 @@ export interface CreateProxyShipmentPayload {
   estimateId?: string;
 }
 
+/** How staff say the money arrived (D8). WAIVED needs notes. */
+export type ManualPaymentMethod = "BANK_TRANSFER" | "CASH" | "ON_ACCOUNT" | "WAIVED";
+
 export interface BypassPaymentPayload {
-  manualTransactionId: string;
+  method: ManualPaymentMethod;
+  /** Bank reference, till slip, account number or a waiver reference. */
+  reference: string;
   notes?: string;
+}
+
+/**
+ * What happened after a bypass or a label retry. The payment is kept even
+ * when the carrier refuses the label (LABEL_FAILED); retry the label then.
+ */
+export type SettlementOutcome = "LABEL_CREATED" | "LABEL_FAILED" | "NOT_FULFILLED";
+
+export interface SettlementResponse {
+  message?: string;
+  outcome: SettlementOutcome;
+  alreadyPaid?: boolean;
+  invoiceWasExpired?: boolean;
+  invoiceId?: string | null;
+  shipmentStatus?: string;
+  labelUrl?: string | null;
+  error?: string;
 }
 
 /**

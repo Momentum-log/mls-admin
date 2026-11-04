@@ -46,7 +46,6 @@ import {
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +55,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/utils/format-currency";
+import {
+  EMPTY_MANUAL_PAYMENT,
+  ManualPaymentFields,
+  isManualPaymentValid,
+  toBypassPayload,
+  type ManualPaymentValue,
+} from "@/components/shipments/manual-payment-fields";
 
 /** Steps in the shipment creation flow. */
 const STEPS = [
@@ -147,8 +153,8 @@ export default function CreateShipmentPage() {
 
   // Step 5: Confirm
   const [showBypassDialog, setShowBypassDialog] = useState(false);
-  const [bypassReference, setBypassReference] = useState("");
-  const [bypassNotes, setBypassNotes] = useState("");
+  const [bypassPaymentValue, setBypassPaymentValue] =
+    useState<ManualPaymentValue>(EMPTY_MANUAL_PAYMENT);
 
   /**
    * Estimate the rates came from. Passing it to the proxy endpoint links the
@@ -260,10 +266,7 @@ export default function CreateShipmentPage() {
           bypassPayment(
             {
               shipmentId: created.id,
-              data: {
-                manualTransactionId: bypassReference.trim(),
-                notes: bypassNotes.trim() || undefined,
-              },
+              data: toBypassPayload(bypassPaymentValue),
             },
             { onSettled: () => router.push("/dashboard/shipments") },
           );
@@ -764,8 +767,8 @@ export default function CreateShipmentPage() {
         )}
       </div>
 
-      {/* Bypass Payment — needs a reference, so it collects one rather than
-          confirming blindly. The bypass endpoint requires a transaction id. */}
+      {/* Bypass Payment: records how the money arrived (D8). The server then
+          issues the invoice and creates the label like a card payment. */}
       <Dialog open={showBypassDialog} onOpenChange={setShowBypassDialog}>
         <DialogContent>
           <DialogHeader>
@@ -776,28 +779,11 @@ export default function CreateShipmentPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="bypass-reference">
-                Payment reference <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="bypass-reference"
-                value={bypassReference}
-                onChange={(e) => setBypassReference(e.target.value)}
-                placeholder="BANK-REF-123"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bypass-notes">Notes</Label>
-              <Textarea
-                id="bypass-notes"
-                value={bypassNotes}
-                onChange={(e) => setBypassNotes(e.target.value)}
-                placeholder="Reason for the bypass…"
-              />
-            </div>
-          </div>
+          <ManualPaymentFields
+            value={bypassPaymentValue}
+            onChange={setBypassPaymentValue}
+            idPrefix="new-bypass"
+          />
 
           <DialogFooter>
             <Button
@@ -809,7 +795,9 @@ export default function CreateShipmentPage() {
             </Button>
             <Button
               disabled={
-                !bypassReference.trim() || createPending || bypassPending
+                !isManualPaymentValid(bypassPaymentValue) ||
+                createPending ||
+                bypassPending
               }
               onClick={() => {
                 setShowBypassDialog(false);

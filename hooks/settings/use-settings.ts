@@ -5,6 +5,8 @@ import {
   getGlobalCommissionSettings,
   updateGlobalCommissionSettings,
   getCarrierCommissionSettings,
+  updateCarrierCommissionSettings,
+  previewCommission,
   getDhlSettings,
   updateDhlSettings,
   getReminderSettings,
@@ -13,6 +15,8 @@ import {
   updateInvoiceExpiration,
 } from "@/lib/api/settings";
 import {
+  CarrierCommissionSettings,
+  CommissionPreviewInput,
   DhlSettings,
   ReminderSettings,
 } from "@/types/settings";
@@ -32,6 +36,7 @@ export const useUpdateGlobalCommissionSettings = () => {
       queryClient.invalidateQueries({
         queryKey: ["global-commission-settings"],
       });
+      queryClient.invalidateQueries({ queryKey: ["commission-preview"] });
       toast.success("Global commission settings updated");
     },
     onError: (error) => {
@@ -45,6 +50,37 @@ export const useCarrierCommissionSettings = (carrierId: string | null) => {
     queryKey: ["carrier-commission-settings", carrierId],
     queryFn: () => getCarrierCommissionSettings(carrierId!),
     enabled: !!carrierId,
+  });
+};
+
+export const useUpdateCarrierCommissionSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      carrierId,
+      payload,
+    }: {
+      carrierId: string;
+      payload: Partial<CarrierCommissionSettings>;
+    }) => updateCarrierCommissionSettings(carrierId, payload),
+    onSuccess: (_data, { carrierId }) => {
+      queryClient.invalidateQueries({ queryKey: ["carrier-commission-settings", carrierId] });
+      queryClient.invalidateQueries({ queryKey: ["commission-preview"] });
+      toast.success("Carrier commission saved");
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to save the carrier commission"));
+    },
+  });
+};
+
+/** Live calculator; null input means "not ready, do not ask". */
+export const useCommissionPreview = (input: CommissionPreviewInput | null) => {
+  return useQuery({
+    queryKey: ["commission-preview", input],
+    queryFn: () => previewCommission(input!),
+    enabled: !!input,
+    placeholderData: (previous) => previous,
   });
 };
 

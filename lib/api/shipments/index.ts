@@ -3,6 +3,7 @@ import {
   ShipmentFilter,
   CreateProxyShipmentPayload,
   BypassPaymentPayload,
+  SettlementResponse,
   OverrideStatusPayload,
   Shipment,
   UserShipmentFilter,
@@ -43,16 +44,35 @@ export const createProxyShipment = async (
 };
 
 /**
- * Manually marks a shipment as paid without a real payment.
+ * Records a payment taken outside the gateway. The server runs the same
+ * pipeline as a card payment: invoice PAID, payment recorded, label created.
  *
  * @param shipmentId - The UUID of the shipment.
- * @param data - Manual transaction reference and optional notes.
+ * @param data - Method, reference and notes (notes required when waived).
+ * @returns What happened to the label.
  */
 export const bypassPayment = async (
   shipmentId: string,
   data: BypassPaymentPayload,
-): Promise<void> => {
-  await apiClient.post(`/admin/shipments/${shipmentId}/bypass-payment`, data);
+): Promise<SettlementResponse> => {
+  const { data: result } = await apiClient.post<SettlementResponse>(
+    `/admin/shipments/${shipmentId}/bypass-payment`,
+    data,
+  );
+  return result;
+};
+
+/**
+ * Asks the carrier for the label again for a paid shipment whose label
+ * failed (CREATION_FAILED), or one the old bypass left at CREATED.
+ *
+ * @param shipmentId - The UUID of the shipment.
+ */
+export const retryLabel = async (shipmentId: string): Promise<SettlementResponse> => {
+  const { data } = await apiClient.post<SettlementResponse>(
+    `/admin/shipments/${shipmentId}/retry-label`,
+  );
+  return data;
 };
 
 /**
