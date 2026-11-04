@@ -5,6 +5,11 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.1] - 2026-11-04 - Momentum in the carrier adapter list
+
+- **Fixed**: **Momentum Logistics is in the carrier slug list** (`lib/api/carriers/constants.ts`). Its adapter is `momentum`, which the "Slug must include the carrier name" rule for custom slugs refused (it wanted `momentum-logistics`, which matches no adapter). Pick "Momentum Logistics" from the slug list instead. The server now also repairs that slug by itself at boot.
+- Verification: `bunx tsc --noEmit` and `bun run lint` pass.
+
 ## [1.15.0] - 2026-11-04 - Momentum prices in the currency customers pay
 
 **Requires:** `mls-server` with Momentum settings version 2 (prices in the charge currency, `plnPerEur`, `/health` carriers). Merge the server first.
