@@ -267,10 +267,11 @@ export default function CarrierDetailSheet({
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                     <p className="font-semibold">Not configured on the server</p>
                     <p>
-                      The server has no credentials for {carrier.name}, so it is
-                      never quoted, even when active.
-                      {carrier.slug === "dpd" &&
-                        " Set DPD_LOGIN, DPD_PASSWORD and DPD_MASTER_FID in the server environment and restart it."}
+                      The server this dashboard talks to cannot quote {carrier.name}, so
+                      it is never offered, even when active.
+                      {carrier.slug === "dpd"
+                        ? " Set DPD_LOGIN, DPD_PASSWORD and DPD_MASTER_FID in the server environment and restart it."
+                        : " It needs no credentials, so the server is running an older build: deploy the latest dev and reload. The server's /health page lists the carriers it can quote."}
                     </p>
                   </div>
                 )}

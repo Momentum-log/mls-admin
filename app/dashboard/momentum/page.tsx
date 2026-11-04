@@ -36,11 +36,13 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 
 type LaneKey = "ngToEu" | "euToNg";
 type LaneForm = Record<keyof MomentumLane, string>;
+type PriceField = "ratePerKg" | "belowMinimumFlatFee" | "expressRatePerKg";
 
 interface FormState {
   ngToEu: LaneForm;
   euToNg: LaneForm;
   ngnPerEur: string;
+  plnPerEur: string;
   weightStepKg: string;
   maxQuotableKg: string;
   whatsappNumber: string;
@@ -48,10 +50,37 @@ interface FormState {
   dimensionalDivisor: string;
 }
 
-const LANES: { key: LaneKey; title: string; currency: "NGN" | "EUR"; symbol: string }[] = [
-  { key: "ngToEu", title: "Nigeria → EU", currency: "NGN", symbol: "₦" },
-  { key: "euToNg", title: "EU → Nigeria", currency: "EUR", symbol: "€" },
+const LANES: { key: LaneKey; title: string }[] = [
+  { key: "ngToEu", title: "Nigeria → EU" },
+  { key: "euToNg", title: "EU → Nigeria" },
 ];
+
+/** Currencies in the picker. Naira is listed but cannot be charged yet. */
+const CURRENCIES: { code: MomentumChargeCurrency | "NGN"; label: string; symbol: string; chargeable: boolean }[] = [
+  { code: "EUR", label: "Euro", symbol: "€", chargeable: true },
+  { code: "PLN", label: "Polish złoty", symbol: "zł", chargeable: true },
+  { code: "NGN", label: "Nigerian naira", symbol: "₦", chargeable: false },
+];
+const symbolOf = (code: string) => CURRENCIES.find((c) => c.code === code)?.symbol ?? code;
+
+const PRICE_FIELDS: PriceField[] = ["ratePerKg", "belowMinimumFlatFee", "expressRatePerKg"];
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Units of `currency` per €1 from the reference rates, or null if unknown. */
+function perEur(currency: string, form: Pick<FormState, "ngnPerEur" | "plnPerEur">): number | null {
+  if (currency === "EUR") return 1;
+  const raw = currency === "PLN" ? form.plnPerEur : currency === "NGN" ? form.ngnPerEur : "";
+  const n = Number(raw);
+  return raw.trim() !== "" && Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** `amount` in `from` expressed in `to` with the reference rates, or null. */
+function convert(amount: number, from: string, to: string, form: Pick<FormState, "ngnPerEur" | "plnPerEur">) {
+  const a = perEur(from, form);
+  const b = perEur(to, form);
+  return a && b ? (amount / a) * b : null;
+}
 
 const str = (value: number | null) => (value === null ? "" : String(value));
 
@@ -71,6 +100,7 @@ const toForm = (s: MomentumSettings): FormState => ({
   ngToEu: laneToForm(s.ngToEu),
   euToNg: laneToForm(s.euToNg),
   ngnPerEur: str(s.ngnPerEur),
+  plnPerEur: str(s.plnPerEur ?? null),
   weightStepKg: str(s.weightStepKg),
   maxQuotableKg: str(s.maxQuotableKg),
   whatsappNumber: s.whatsappNumber ?? "",
@@ -94,7 +124,7 @@ function toSettings(form: FormState): MomentumSettings | string {
     const f = form[key];
     const lane = {
       chargeCurrency: f.chargeCurrency as MomentumChargeCurrency,
-      ratePerKg: parse(f.ratePerKg, false),
+      ratePerKg: parse(f.ratePerKg, true),
       minChargeableKg: parse(f.minChargeableKg, false),
       belowMinimumFlatFee: parse(f.belowMinimumFlatFee, true),
       transitDaysMin: parse(f.transitDaysMin, false, true),
@@ -106,7 +136,7 @@ function toSettings(form: FormState): MomentumSettings | string {
     if (Object.values(lane).some((v) => v === undefined)) {
       return `${title}: every price and day field needs a valid number (leave flat fee or express empty to switch them off).`;
     }
-    if (!lane.ratePerKg) return `${title}: the price per kg must be above 0.`;
+    if (lane.ratePerKg === 0) return `${title}: the price per kg must be above 0, or empty.`;
     if (lane.transitDaysMin! > lane.transitDaysMax!) {
       return `${title}: standard days "from" is after "to".`;
     }
@@ -127,13 +157,18 @@ function toSettings(form: FormState): MomentumSettings | string {
   if (whatsappDigits && !/^\d{8,15}$/.test(whatsappDigits)) {
     return "WhatsApp number: use the international number, digits only, e.g. 2348012345678.";
   }
-  if (ngnPerEur === undefined || ngnPerEur === 0) return "The naira rate must be a number above 0, or empty.";
+  const plnPerEur = parse(form.plnPerEur, true);
+  if (ngnPerEur === undefined || ngnPerEur === 0) return "Naira per €1 must be a number above 0, or empty.";
+  if (plnPerEur === undefined || plnPerEur === 0 || (plnPerEur ?? 0) > 100) {
+    return "Złoty per €1 must be a number above 0 (and under 100), or empty.";
+  }
   if (!weightStepKg || weightStepKg > 10) return "The weight step must be between 0 and 10 kg.";
   if (!divisor || divisor < 1000 || divisor > 10000) return "The volumetric divisor must be 1000 to 10000.";
 
   return {
     ...lanes,
     ngnPerEur,
+    plnPerEur,
     weightStepKg,
     maxQuotableKg,
     whatsappNumber: whatsappDigits || null,
@@ -144,7 +179,7 @@ function toSettings(form: FormState): MomentumSettings | string {
 /** Same rules as the server's quoteMomentum, for the preview only. */
 function previewPrice(lane: MomentumLane, weight: number, step: number, express: boolean) {
   const rate = express ? lane.expressRatePerKg : lane.ratePerKg;
-  if (rate === null || weight <= 0) return null;
+  if (rate === null || lane.ratePerKg === null || weight <= 0) return null;
   const kg = Math.ceil(weight / step - 1e-9) * step;
   if (kg < lane.minChargeableKg) {
     if (!express && lane.belowMinimumFlatFee !== null) return lane.belowMinimumFlatFee;
@@ -201,8 +236,57 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
   const error = typeof result === "string" ? result : null;
   const settings = typeof result === "string" ? null : result;
 
+  const [notes, setNotes] = useState<Partial<Record<LaneKey, string>>>({});
+
   const setLane = (key: LaneKey, field: keyof MomentumLane, value: string) =>
     setForm((f) => ({ ...f, [key]: { ...f[key], [field]: value } }));
+
+  /**
+   * A new currency means new prices. With a reference rate the current ones
+   * are converted as a starting point; without one they are cleared. Either
+   * way staff type or check the amounts: nothing is reinterpreted silently.
+   */
+  const changeCurrency = (key: LaneKey, next: string) => {
+    const lane = form[key];
+    const from = lane.chargeCurrency;
+    if (next === from) return;
+    let converted = true;
+    const prices = Object.fromEntries(
+      PRICE_FIELDS.map((field) => {
+        const raw = lane[field];
+        if (raw.trim() === "") return [field, ""];
+        const value = convert(Number(raw), from, next, form);
+        if (value === null) {
+          converted = false;
+          return [field, ""];
+        }
+        return [field, String(round2(value))];
+      }),
+    );
+    setForm((f) => ({ ...f, [key]: { ...f[key], ...prices, chargeCurrency: next } }));
+    const hadPrices = PRICE_FIELDS.some((field) => lane[field].trim() !== "");
+    setNotes((n) => ({
+      ...n,
+      [key]: !hadPrices
+        ? `Type the prices in ${symbolOf(next)}.`
+        : converted
+          ? `Prices converted from ${symbolOf(from)} with your reference rates. Check each one and type the exact ${symbolOf(next)} amounts you want before saving.`
+          : `Prices cleared: there is no reference rate between ${symbolOf(from)} and ${symbolOf(next)}. Type the ${symbolOf(next)} prices.`,
+    }));
+  };
+
+  /** "≈ ₦23,000" next to a price, from the reference rates. */
+  const equivalent = (raw: string, currency: string) => {
+    if (raw.trim() === "" || !Number.isFinite(Number(raw))) return null;
+    const others = ["NGN", "EUR", "PLN"].filter((c) => c !== currency);
+    const parts = others
+      .map((c) => {
+        const v = convert(Number(raw), currency, c, form);
+        return v === null ? null : money(round2(v), c);
+      })
+      .filter(Boolean);
+    return parts.length ? `≈ ${parts.join(" · ")} at your reference rates.` : null;
+  };
 
   return (
     <form
@@ -213,40 +297,54 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
       }}
     >
       <div className="grid gap-6 lg:grid-cols-2">
-        {LANES.map(({ key, title, currency, symbol }) => {
+        {LANES.map(({ key, title }) => {
           const f = form[key];
+          const currency = f.chargeCurrency;
+          const symbol = symbolOf(currency);
           const id = (field: string) => `${key}-${field}`;
           return (
             <Card key={key}>
               <CardHeader>
                 <CardTitle className="text-base">{title}</CardTitle>
-                <CardDescription>Prices in {currency}.</CardDescription>
+                <CardDescription>
+                  Customers pay these exact amounts, in {currency}.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor={id("currency")}>Customer pays in</Label>
-                  <Select
-                    value={f.chargeCurrency}
-                    onValueChange={(v) => setLane(key, "chargeCurrency", v)}
-                  >
+                  <Select value={currency} onValueChange={(v) => changeCurrency(key, v)}>
                     <SelectTrigger id={id("currency")}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="EUR">Euro (€)</SelectItem>
-                      <SelectItem value="PLN">Polish złoty (zł)</SelectItem>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem
+                          key={c.code}
+                          value={c.code}
+                          disabled={!c.chargeable}
+                          description={c.chargeable ? undefined : "Needs a naira payment gateway (Paystack). Coming later."}
+                        >
+                          {c.label} ({c.symbol})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Every customer on this route is charged in this currency.
-                    {currency === "NGN" &&
-                      " Naira payment needs a naira gateway (such as Paystack), so it is not offered yet; the naira price is converted with the rate below."}
+                    Every customer on this route pays in this currency, and the prices below are typed in it.
                   </p>
+                  {notes[key] && (
+                    <p className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900" role="status">
+                      {notes[key]}
+                    </p>
+                  )}
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field
                     id={id("rate")}
                     label={`Standard price per kg (${symbol})`}
+                    placeholder={`e.g. ${currency === "PLN" ? "60" : "14"} ${symbol}`}
+                    hint={equivalent(f.ratePerKg, currency) ?? (f.ratePerKg.trim() === "" ? "Empty: this route is not priced online yet." : undefined)}
                     value={f.ratePerKg}
                     onChange={(v) => setLane(key, "ratePerKg", v)}
                   />
@@ -260,8 +358,8 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
                 <Field
                   id={id("flat")}
                   label={`Flat fee under the minimum (${symbol})`}
-                  hint="Empty: shipments under the minimum are charged as the minimum weight."
-                  placeholder="Not set"
+                  hint={equivalent(f.belowMinimumFlatFee, currency) ?? "Empty: shipments under the minimum are charged as the minimum weight."}
+                  placeholder={`Not set (${symbol})`}
                   value={f.belowMinimumFlatFee}
                   onChange={(v) => setLane(key, "belowMinimumFlatFee", v)}
                 />
@@ -285,8 +383,8 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
                   <Field
                     id={id("express")}
                     label={`Express price per kg (${symbol})`}
-                    hint="Empty: express is not sold online. Customers see “Express shipping also available” with a contact link."
-                    placeholder="Not set"
+                    hint={equivalent(f.expressRatePerKg, currency) ?? "Empty: express is not sold online. Customers see “Express shipping also available” with a contact link."}
+                    placeholder={`Not set (${symbol})`}
                     value={f.expressRatePerKg}
                     onChange={(v) => setLane(key, "expressRatePerKg", v)}
                   />
@@ -316,20 +414,29 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Currency and weight</CardTitle>
+            <CardTitle className="text-base">Reference rates and weight</CardTitle>
             <CardDescription>
-              Customers are charged in EUR (PLN for Polish accounts), never naira.
+              Reference rates only show equivalents and suggest prices when you change a route&apos;s
+              currency. They never change what customers pay.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Field
-              id="ngn-per-eur"
-              label="Naira per €1"
-              hint="Converts Nigeria → EU prices. Empty: Nigeria → EU is not quoted."
-              placeholder="Not set"
-              value={form.ngnPerEur}
-              onChange={(v) => setForm({ ...form, ngnPerEur: v })}
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                id="ngn-per-eur"
+                label="Naira per €1"
+                placeholder="e.g. 1700"
+                value={form.ngnPerEur}
+                onChange={(v) => setForm({ ...form, ngnPerEur: v })}
+              />
+              <Field
+                id="pln-per-eur"
+                label="Złoty per €1"
+                placeholder="e.g. 4.30"
+                value={form.plnPerEur}
+                onChange={(v) => setForm({ ...form, plnPerEur: v })}
+              />
+            </div>
             <Field
               id="max-quotable"
               label="Price online up to (kg)"
@@ -398,8 +505,9 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
             />
             {settings ? (
               <ul className="space-y-2 text-sm">
-                {LANES.map(({ key, title, currency }) =>
+                {LANES.map(({ key, title }) =>
                   [false, true].map((express) => {
+                    const currency = settings[key].chargeCurrency;
                     const overLimit =
                       settings.maxQuotableKg !== null &&
                       Math.ceil(Number(previewKg) / settings.weightStepKg - 1e-9) *
@@ -408,12 +516,8 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
                     const price = overLimit
                       ? null
                       : previewPrice(settings[key], Number(previewKg), settings.weightStepKg, express);
-                    const inEur =
-                      price !== null && currency === "NGN"
-                        ? settings.ngnPerEur
-                          ? money(price / settings.ngnPerEur, "EUR")
-                          : "not quoted (no naira rate)"
-                        : null;
+                    const naira =
+                      price !== null ? convert(price, currency, "NGN", form) : null;
                     return (
                       <li key={`${key}-${express}`} className="flex justify-between gap-4">
                         <span>
@@ -422,11 +526,13 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
                         <span className="text-right font-medium tabular-nums">
                           {overLimit
                             ? "request a quote"
+                            : settings[key].ratePerKg === null
+                            ? "not priced"
                             : price === null
                             ? express
                               ? "on request"
                               : "-"
-                            : `${money(price, currency)}${inEur ? ` → ${inEur}` : ""}`}
+                            : `${money(round2(price), currency)}${naira !== null ? ` (≈ ${money(round2(naira), "NGN")})` : ""}`}
                         </span>
                       </li>
                     );
@@ -456,8 +562,9 @@ function MomentumForm({ initial }: { initial: MomentumSettings }) {
 }
 
 /**
- * Momentum Logistics' own Nigeria <-> EU-27 service (W5): per-kg prices,
- * minimum weight, flat fee, express, naira rate and the weight rules.
+ * Momentum Logistics' own Nigeria <-> EU-27 service (W5): per route, the
+ * currency customers pay in and the prices typed in it; reference rates and
+ * the weight rules.
  */
 export default function MomentumRatesPage() {
   const { data, isLoading } = useMomentumSettings();
@@ -491,11 +598,19 @@ export default function MomentumRatesPage() {
         )}
       </div>
 
+      {carrier?.isConfigured === false && (
+        <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
+          The server this dashboard talks to is an older build that doesn&apos;t include Momentum, so
+          Nigeria ↔ EU gets no prices even though it is active. Deploy the latest dev on the server
+          (on Render, check Events) and reload. Its /health page lists the carriers it can quote.
+        </p>
+      )}
+
       {carrier?.isActive === false && (
         <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          Momentum is switched off, so customers don&apos;t see it yet. Paying for and booking a
-          Momentum shipment also needs manual fulfilment, which isn&apos;t built yet. Keep it off
-          until then.
+          Momentum is switched off, so Nigeria ↔ EU customers are asked to contact you instead of
+          seeing prices. Switch it on in Carriers. Note that a paid Momentum shipment still needs
+          staff to arrange it by hand until manual fulfilment is built.
         </p>
       )}
 
@@ -503,7 +618,7 @@ export default function MomentumRatesPage() {
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       ) : data === null ? (
         <p className="text-sm text-muted-foreground">
-          The server does not know Momentum rates yet. Deploy mls-server with PR #25, then reload.
+          The server does not know Momentum rates yet. Deploy the latest mls-server dev, then reload.
         </p>
       ) : data ? (
         <MomentumForm key={JSON.stringify(data)} initial={data} />
