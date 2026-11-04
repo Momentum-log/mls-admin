@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ManualPaymentMethod } from "@/types/shipment";
+import type { BypassPaymentPayload, ManualPaymentMethod } from "@/types/shipment";
 
 export const MANUAL_PAYMENT_METHODS: {
   value: ManualPaymentMethod;
@@ -42,10 +42,13 @@ export function isManualPaymentValid(value: ManualPaymentValue): boolean {
 }
 
 /** The payload the bypass endpoint takes. */
-export function toBypassPayload(value: ManualPaymentValue) {
+export function toBypassPayload(value: ManualPaymentValue): BypassPaymentPayload {
+  const reference = value.reference.trim();
   return {
     method: value.method,
-    reference: value.reference.trim(),
+    reference,
+    // Older servers only read this name; PR #24 accepts either.
+    manualTransactionId: reference,
     notes: value.notes.trim() || undefined,
   };
 }

@@ -106,6 +106,8 @@ export interface BypassPaymentPayload {
   method: ManualPaymentMethod;
   /** Bank reference, till slip, account number or a waiver reference. */
   reference: string;
+  /** The same reference under its pre-1.12 name, for servers before PR #24. */
+  manualTransactionId?: string;
   notes?: string;
 }
 
