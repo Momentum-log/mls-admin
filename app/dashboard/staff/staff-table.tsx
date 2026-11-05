@@ -8,6 +8,7 @@ import {
   useEnableStaff,
   useDeleteStaff,
   useAssignStaffRole,
+  useResetStaffPassword,
   useRoles,
 } from "@/hooks/staff/use-staff";
 import { Staff } from "@/types/staff";
@@ -31,6 +32,7 @@ import {
   ShieldCheck,
   Trash2,
   Edit,
+  KeyRound,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -72,6 +74,7 @@ export default function StaffTable() {
   const { mutate: enableStaff } = useEnableStaff();
   const { mutate: deleteStaff } = useDeleteStaff();
   const { mutate: assignRole } = useAssignStaffRole();
+  const { mutate: resetPassword } = useResetStaffPassword();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [isInlineRole, setIsInlineRole] = useState(false);
@@ -83,7 +86,7 @@ export default function StaffTable() {
   });
 
   const [confirmAction, setConfirmAction] = useState<{
-    type: "suspend" | "enable" | "delete";
+    type: "suspend" | "enable" | "delete" | "reset";
     staff: Staff;
   } | null>(null);
 
@@ -133,6 +136,7 @@ export default function StaffTable() {
     if (confirmAction.type === "suspend") suspendStaff(confirmAction.staff.id);
     if (confirmAction.type === "enable") enableStaff(confirmAction.staff.id);
     if (confirmAction.type === "delete") deleteStaff(confirmAction.staff.id);
+    if (confirmAction.type === "reset") resetPassword(confirmAction.staff.id);
     setConfirmAction(null);
   };
 
@@ -210,6 +214,11 @@ export default function StaffTable() {
                     ) : (
                       <Badge variant="destructive">Suspended</Badge>
                     )}
+                    {s.mustChangePassword && (
+                      <Badge variant="outline" className="ml-2">
+                        Temporary password
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {s.lastActive ? formatDate(s.lastActive) : "Never"}
@@ -243,6 +252,16 @@ export default function StaffTable() {
                             <Edit className="mr-2 h-4 w-4" />
                             Change Role
                           </DropdownMenuItem>
+                          {s.isActive && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setConfirmAction({ type: "reset", staff: s })
+                              }
+                            >
+                              <KeyRound className="mr-2 h-4 w-4" />
+                              Reset Password
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           {s.isActive ? (
                             <DropdownMenuItem
@@ -481,16 +500,26 @@ export default function StaffTable() {
               ? "Suspend Staff"
               : confirmAction.type === "enable"
                 ? "Enable Staff"
-                : "Delete Staff"
+                : confirmAction.type === "reset"
+                  ? "Reset Password"
+                  : "Delete Staff"
           }
           description={
             confirmAction.type === "suspend"
               ? `Are you sure you want to suspend ${confirmAction.staff.name}? They will lose access immediately.`
               : confirmAction.type === "enable"
                 ? `Restore access for ${confirmAction.staff.name}?`
-                : `Are you sure you want to permanently delete ${confirmAction.staff.name}? This action cannot be undone.`
+                : confirmAction.type === "reset"
+                  ? `Email ${confirmAction.staff.name} (${confirmAction.staff.email}) a new temporary password? Their current password stops working, they are signed out everywhere, and they must choose a new password at their next sign-in.`
+                  : `Are you sure you want to permanently delete ${confirmAction.staff.name}? This action cannot be undone.`
           }
-          confirmLabel={confirmAction.type === "delete" ? "Delete" : "Confirm"}
+          confirmLabel={
+            confirmAction.type === "delete"
+              ? "Delete"
+              : confirmAction.type === "reset"
+                ? "Reset and email"
+                : "Confirm"
+          }
           destructive={
             confirmAction.type === "delete" || confirmAction.type === "suspend"
           }
