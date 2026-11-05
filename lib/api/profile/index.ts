@@ -1,9 +1,8 @@
 import apiClient from "../index";
-import { User } from "@/types/auth";
-import { ActivityLogsResponse } from "@/types/profile";
+import { ActivityLogsResponse, MyProfile } from "@/types/profile";
 
-export const getMyProfile = async (): Promise<User> => {
-  const { data } = await apiClient.get<User>("/admin/staff/me/profile");
+export const getMyProfile = async (): Promise<MyProfile> => {
+  const { data } = await apiClient.get<MyProfile>("/admin/staff/me/profile");
   return data;
 };
 

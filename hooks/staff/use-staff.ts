@@ -11,6 +11,7 @@ import {
   suspendStaff,
   enableStaff,
   deleteStaff,
+  resetStaffPassword,
 } from "@/lib/api/staff";
 import { toast } from "react-hot-toast";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -153,6 +154,18 @@ export const useDeleteStaff = () => {
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Failed to delete staff"));
+    },
+  });
+};
+
+export const useResetStaffPassword = () => {
+  return useMutation({
+    mutationFn: (id: string) => resetStaffPassword(id),
+    onSuccess: (data) => {
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Failed to reset password"));
     },
   });
 };
