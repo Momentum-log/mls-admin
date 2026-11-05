@@ -25,6 +25,8 @@ export interface Staff {
   role: Role;
   lastActive: string;
   lastLogin: string;
+  /** A temporary password was issued and has not been replaced yet. */
+  mustChangePassword?: boolean;
 }
 
 export interface CreateRolePayload {

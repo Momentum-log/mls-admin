@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import {
   getMyProfile,
@@ -16,9 +16,12 @@ export const useMyProfile = () => {
 };
 
 export const useUpdateMyPassword = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateMyPassword,
     onSuccess: () => {
+      // Clears the forced-change lock and starts the 30-day wait on the profile.
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
       toast.success("Password updated successfully");
     },
     onError: (error) => {

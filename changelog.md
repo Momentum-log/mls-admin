@@ -5,6 +5,15 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-11-05 - Reset staff passwords, forced and limited password change
+
+**Requires:** `mls-server` with staff password reset (migration `20261105210000_add_staff_password_reset`). Without it the Reset Password action returns 404 and the profile has no `mustChangePassword`, so nothing is locked.
+
+- **Added**: **Reset Password** in the Staff list actions (needs `staff:write`; not shown for the Super Administrator or suspended staff). After a confirmation, the member is emailed a random temporary password and signed out everywhere. A "Temporary password" badge shows until they replace it.
+- **Added**: **Forced password change** (`components/force-password-change.tsx`, wraps the dashboard layout). While the profile says `mustChangePassword`, the console shows only the change form (and Sign out) instead of the dashboard, because the server refuses every other route.
+- **Changed**: **Change password** (profile drawer, Security) shows the new rules (10-72 characters with upper, lower, number, symbol; a confirm field), the date the next change opens up (once every 30 days), and disables the form until then. Rules mirror the server in `lib/password-policy.ts`.
+- Verification: `bunx tsc --noEmit` and `bun run lint` pass; not exercised against a running server.
+
 ## [1.17.0] - 2026-11-04 - Fulfilment for many carriers at once, Momentum without a carrier system
 
 **Requires:** `mls-server` with bulk fulfilment and the Momentum rate card (data migration `20261104160000_fold_global_fulfilment_switch`). Merge the server first.

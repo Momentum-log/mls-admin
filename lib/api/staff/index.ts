@@ -87,3 +87,10 @@ export const enableStaff = async (id: string): Promise<Staff> => {
 export const deleteStaff = async (id: string): Promise<void> => {
   await apiClient.delete(`/admin/staff/delete-staff/${id}`);
 };
+
+export const resetStaffPassword = async (id: string): Promise<{ message: string }> => {
+  const { data } = await apiClient.post<{ message: string }>(
+    `/admin/staff/reset-staff-password/${id}`,
+  );
+  return data;
+};
