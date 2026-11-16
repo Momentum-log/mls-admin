@@ -105,8 +105,6 @@ export interface DhlSettings {
   firstMileFeePln: number;
   /** Which hub handoff the collections queue pre-selects. */
   hubHandoffDefault: "COURIER" | "SERVICE_POINT";
-  /** Whether VAT is added to the collection fee. */
-  applyVat: boolean;
 }
 
 /** Payment reminder emails (`/admin/reminder-settings`). */

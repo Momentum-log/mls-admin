@@ -34,10 +34,20 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
+  BillingSection,
+  FxSection,
+  HiddenServicesSection,
+  VatAlertsSection,
+} from "@/components/vat/settings-sections";
+import {
   BellRing,
   Clock,
+  EyeOff,
+  Landmark,
   Loader2,
   Lock,
+  Mail,
+  Repeat,
   ShieldAlert,
   Truck,
 } from "lucide-react";
@@ -153,7 +163,7 @@ function DhlSection() {
 function DhlForm({ initial }: { initial: DhlSettings }) {
   const { mutate: save, isPending } = useUpdateDhlSettings();
   const [form, setForm] = useState({
-    ...initial,
+    hubHandoffDefault: initial.hubHandoffDefault,
     firstMileFeePln: String(initial.firstMileFeePln),
   });
 
@@ -165,7 +175,8 @@ function DhlForm({ initial }: { initial: DhlSettings }) {
       className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (isValid) save({ ...form, firstMileFeePln: fee });
+        if (isValid)
+          save({ firstMileFeePln: fee, hubHandoffDefault: form.hubHandoffDefault });
       }}
     >
       <div className="space-y-1.5">
@@ -210,16 +221,6 @@ function DhlForm({ initial }: { initial: DhlSettings }) {
         <p className="text-xs text-muted-foreground">
           Pre-selected in the Collections queue; staff can still pick the other.
         </p>
-      </div>
-      <div className="flex items-center justify-between rounded-md border p-3">
-        <div>
-          <Label htmlFor="dhl-vat">Add VAT to the collection fee</Label>
-        </div>
-        <Switch
-          id="dhl-vat"
-          checked={form.applyVat}
-          onCheckedChange={(applyVat) => setForm({ ...form, applyVat })}
-        />
       </div>
       <Can do="staff:write" fallback="disable">
         <Button type="submit" disabled={!isValid || isPending}>
@@ -351,7 +352,7 @@ export default function SettingsPage() {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
         <p className="text-muted-foreground">
-          Pricing, invoicing and DHL defaults that apply to every customer.
+          Pricing, currency, VAT, invoicing and DHL defaults that apply to every customer.
         </p>
       </div>
 
@@ -390,6 +391,42 @@ export default function SettingsPage() {
           readPermission="email:write"
         >
           <ReminderSection />
+        </Section>
+
+        <Section
+          icon={Repeat}
+          title="Exchange rates"
+          description="NBP Table A is the source. Invoices always use the NBP rate; the manual rate and buffer affect customer quotes only."
+          readPermission="staff:read"
+        >
+          <FxSection />
+        </Section>
+
+        <Section
+          icon={EyeOff}
+          title="Hidden carrier services"
+          description="Services customers never see in quotes, for example FedEx International First."
+          readPermission="staff:read"
+        >
+          <HiddenServicesSection />
+        </Section>
+
+        <Section
+          icon={Mail}
+          title="VAT review alerts"
+          description="Who is emailed when an order needs a VAT review or a tax ID registry is down. Empty means all staff."
+          readPermission="staff:read"
+        >
+          <VatAlertsSection />
+        </Section>
+
+        <Section
+          icon={Landmark}
+          title="Billing details"
+          description="Billing address and tax ID checks before a shipment can be booked."
+          readPermission="staff:read"
+        >
+          <BillingSection />
         </Section>
       </div>
     </div>
