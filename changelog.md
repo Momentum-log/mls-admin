@@ -5,6 +5,19 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-11-16 - VAT matrix, VAT review, exchange rates, hidden services
+
+**Requires:** `mls-server` PR #45 (VAT matrix, NBP rates, hidden services, tax snapshot; migration adds three tables) and PR #46 (billing profile, tax ID checks, held orders; second migration). Merge the server PRs first. Without them the new pages show errors.
+
+- **Added**: **VAT Rules** (`/dashboard/vat-rules`, replaces Tax Rules). A 7 route by 4 client type grid with a VAT code per cell (23, 0, RC, NP, NP_REVIEW), an optional "if via Poland" code, an "accountant pending" marker, editable Polish and English invoice wording per code, and the list of country pairs that transit Poland. Publishing creates a new version and needs a reason; the confirmation lists every changed cell. A History tab lists all versions, compares any with the live one, and reverts (as a new version). Needs `staff:read` to view and `staff:write` to publish.
+- **Added**: **VAT Review** (`/dashboard/vat-reviews`) with a sidebar badge: orders accepted at 0% VAT pending accountant review, and orders held because Biała lista or VIES could not be reached. Resolve with a required note; the customer's price never changes.
+- **Added**: Settings cards **Exchange rates** (rate in use, NBP date, stale warning, automatic or manual rate, EUR buffer percent, refresh now, recent rates), **Hidden carrier services** (for example FedEx `INTERNATIONAL_FIRST`), **VAT review alerts** (recipients) and **Billing details** (require billing details switch, registry status, and the address-proof setting shown disabled as "not available yet").
+- **Added**: Shipment sheet **VAT and price breakdown**: client type, route, VAT code and matrix version, tax ID check and reference, review and 0% proof status, quote exchange rate, and the admin-only carrier cost and margin. Invoice sheet shows the VAT code and note and, for EUR invoices, the NBP rate and VAT in PLN. User page shows the saved billing details and the last tax ID check.
+- **Changed**: The invoice sheet no longer falls back to the carrier price when an invoice has no net total.
+- **Removed**: Tax Rules page and the DHL "Add VAT to the collection fee" switch. The server ignores that setting now: the matrix decides VAT.
+- Not built (needs server support): a shipment list filter for "0% without proof".
+- Verification: `bunx tsc --noEmit`, `bun run lint` and `next build` pass; not exercised against a running server.
+
 ## [1.18.0] - 2026-11-05 - Reset staff passwords, forced and limited password change
 
 **Requires:** `mls-server` with staff password reset (migration `20261105210000_add_staff_password_reset`). Without it the Reset Password action returns 404 and the profile has no `mustChangePassword`, so nothing is locked.

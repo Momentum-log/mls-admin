@@ -97,9 +97,10 @@ Detail: [domains/rbac-permissions.md](domains/rbac-permissions.md).
 | `/dashboard/business-upgrades` | Business account requests: NIP check, approve or reject | `user:read` |
 | `/dashboard/invoices` | Invoices, detail sheet with payments, CSV export | `shipment:read` |
 | `/dashboard/refunds` | Refund queue: gateway refund, retry on failure, manual payout | `shipment:read` |
-| `/dashboard/tax-rules` | VAT rules per route and customer type | `shipment:read` |
+| `/dashboard/vat-rules` | Versioned VAT matrix (route x client type), invoice wording, transit lanes, history and revert | `staff:read` (publish: `staff:write`) |
+| `/dashboard/vat-reviews` | Orders needing VAT review or held while a tax ID registry is down; resolve with a note | `staff:read` (resolve: `staff:write`) |
 | `/dashboard/inquiries` | Partner enquiries and their status | `inquiries:read` |
-| `/dashboard/settings` | Commission safety net, DHL, invoice window, payment reminders (per-card permissions) | `dashboard:read` |
+| `/dashboard/settings` | Commission safety net, DHL, invoice window, payment reminders, exchange rates, hidden services, VAT alerts, billing (per-card permissions) | `dashboard:read` |
 | `/dashboard/emails` | Database email templates and a one-off sender (rich text editor, live preview in the MLS design via `lib/email/message-layout.ts`, a mirror of the server's `layouts/message.hbs`) | `email:read` |
 | `/dashboard/activity-logs` | Audit log for staff and customers | `staff:read` |
 | `/dashboard/leads` | Marketing leads / shipping estimates | `user:read` + `leads:read` |
