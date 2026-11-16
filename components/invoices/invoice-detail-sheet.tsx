@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useInvoice, useMarkInvoicePaid } from "@/hooks/admin/use-invoices";
+import { useShipmentTax } from "@/hooks/admin/use-vat";
 import { useRequestInvoiceRefund } from "@/hooks/admin/use-refunds";
 import { formatCurrency } from "@/utils/format-currency";
-import { formatDateTime } from "@/utils/format-date";
+import { formatDate, formatDateTime } from "@/utils/format-date";
 import { Can } from "@/components/auth/can";
 import { ReasonDialog } from "@/components/admin/reason-dialog";
 import { MarkPaidDialog } from "./mark-paid-dialog";
@@ -44,6 +45,7 @@ export function InvoiceDetailSheet({ invoiceId, onOpenChange }: InvoiceDetailShe
   const { data: invoice, isLoading } = useInvoice(invoiceId);
   const { mutate: markPaid, isPending: isMarkingPaid } = useMarkInvoicePaid();
   const { mutate: requestRefund, isPending: isRequesting } = useRequestInvoiceRefund();
+  const { data: tax } = useShipmentTax(invoice?.shipmentId ?? null);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
 
@@ -75,7 +77,7 @@ export function InvoiceDetailSheet({ invoiceId, onOpenChange }: InvoiceDetailShe
             </div>
 
             <section className="space-y-1.5">
-              <Row label="Net">{money(invoice.totalNet ?? invoice.basePrice)}</Row>
+              <Row label="Net">{money(invoice.totalNet)}</Row>
               <Row label={`VAT${invoice.taxRule ? ` (${invoice.taxRule.vatRate}%)` : ""}`}>
                 {money(invoice.totalVat ?? invoice.taxAmount)}
               </Row>
@@ -85,6 +87,30 @@ export function InvoiceDetailSheet({ invoiceId, onOpenChange }: InvoiceDetailShe
                 </span>
               </Row>
             </section>
+
+            {(tax?.snapshot || (invoice.currency !== "PLN" && invoice.exchangeRateValue)) && (
+              <section className="space-y-1.5 border-t pt-4">
+                {tax?.snapshot && (
+                  <>
+                    <Row label="VAT code">
+                      <Badge variant="outline">{tax.snapshot.vatCode}</Badge>
+                    </Row>
+                    {(tax.snapshot.notePl || tax.snapshot.noteEn) && (
+                      <Row label="Invoice note">{tax.snapshot.notePl || tax.snapshot.noteEn}</Row>
+                    )}
+                  </>
+                )}
+                {invoice.currency !== "PLN" && invoice.exchangeRateValue != null && (
+                  <>
+                    <Row label="NBP rate">
+                      {invoice.exchangeRateValue.toFixed(4)}
+                      {invoice.exchangeRateDate ? ` · ${formatDate(invoice.exchangeRateDate)}` : ""}
+                    </Row>
+                    <Row label="VAT in PLN">{formatCurrency("PLN", invoice.vatAmountPln ?? 0)}</Row>
+                  </>
+                )}
+              </section>
+            )}
 
             <section className="space-y-1.5 border-t pt-4">
               <Row label="Customer">{invoice.user?.name ?? invoice.buyerName ?? "—"}</Row>

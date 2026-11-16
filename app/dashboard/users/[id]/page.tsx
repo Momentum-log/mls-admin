@@ -15,6 +15,7 @@ import {
 import CopyButton from "@/components/ui/copy-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import ConversionBadge from "@/components/ui/conversion-badge";
+import { BillingProfileCard } from "@/components/vat/billing-profile-card";
 import ShipmentDetailSheet from "@/components/shipments/shipment-detail-sheet";
 import EstimateDetailSheet from "@/components/shipments/estimate-detail-sheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -335,6 +336,8 @@ export default function UserDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      <BillingProfileCard userId={user.id} />
 
       {/* Recent Shipments + Recent Estimates — 2-column grid */}
       <div className="grid gap-6 md:grid-cols-2">
