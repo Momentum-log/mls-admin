@@ -55,6 +55,7 @@ import {
   isMultiLegStatus,
 } from "@/lib/shipment-status";
 import { Can } from "@/components/auth/can";
+import { ShipmentTaxPanel } from "@/components/vat/shipment-tax-panel";
 
 /**
  * Props for ShipmentDetailSheet.
@@ -385,6 +386,8 @@ export default function ShipmentDetailSheet({
               </div>
             </div>
           </section>
+
+          <ShipmentTaxPanel shipmentId={shipment.id} />
 
           {/* Timestamps */}
           <section className="space-y-1.5 text-sm">

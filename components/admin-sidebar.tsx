@@ -29,9 +29,11 @@ import {
   Building2,
   Globe,
   ClipboardList,
+  ShieldCheck,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useFulfilmentQueue } from "@/hooks/admin/use-fulfilment";
+import { useVatReviews } from "@/hooks/admin/use-vat";
 
 interface NavRoute {
   label: string;
@@ -131,10 +133,16 @@ const navGroups: NavGroup[] = [
         permission: "shipment:read",
       },
       {
-        label: "Tax Rules",
+        label: "VAT Rules",
         icon: Percent,
-        href: "/dashboard/tax-rules",
-        permission: "shipment:read",
+        href: "/dashboard/vat-rules",
+        permission: "staff:read",
+      },
+      {
+        label: "VAT Review",
+        icon: ShieldCheck,
+        href: "/dashboard/vat-reviews",
+        permission: "staff:read",
       },
       {
         label: "Commissions",
@@ -236,8 +244,11 @@ export function AdminSidebar() {
   const { hasPermission, isSuperAdmin } = usePermissions();
   // Count badge for the manual fulfilment queue.
   const { data: fulfilmentQueue } = useFulfilmentQueue(hasPermission("shipment:read"));
+  // Count badge for orders whose VAT needs a person to look at it.
+  const { data: vatReviews } = useVatReviews("OPEN", hasPermission("staff:read"));
   const badges: Record<string, number> = {
     "/dashboard/fulfilment": fulfilmentQueue?.count ?? 0,
+    "/dashboard/vat-reviews": vatReviews?.openCount ?? 0,
   };
 
   return (

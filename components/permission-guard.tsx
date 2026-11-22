@@ -35,7 +35,8 @@ const routePermissions: Record<string, string | string[]> = {
   "/dashboard/activity-logs": "staff:read",
   "/dashboard/invoices": "shipment:read",
   "/dashboard/refunds": "shipment:read",
-  "/dashboard/tax-rules": "shipment:read",
+  "/dashboard/vat-rules": "staff:read",
+  "/dashboard/vat-reviews": "staff:read",
   "/dashboard/momentum": "staff:read",
   // Least specific, so it only applies to the overview itself and to any
   // sub-route not named above.

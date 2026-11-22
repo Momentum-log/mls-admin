@@ -16,7 +16,6 @@ export interface Invoice {
   userId: string;
   shipmentId: string | null;
   status: InvoiceStatus;
-  basePrice: number;
   taxAmount: number;
   totalAmount: number;
   currency: string;
@@ -55,6 +54,10 @@ export interface InvoiceDetail extends Invoice {
   totalNet: number | null;
   totalVat: number | null;
   totalGross: number | null;
+  /** Foreign-currency invoices: the NBP rate (PLN per 1 unit), its date and the VAT in PLN. */
+  exchangeRateValue: number | null;
+  exchangeRateDate: string | null;
+  vatAmountPln: number | null;
   auditLogs: InvoiceAuditEntry[];
   payments: InvoicePayment[];
 }
