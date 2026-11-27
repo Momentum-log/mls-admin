@@ -5,6 +5,7 @@ import type {
   FxSettingsUpdate,
   FxStatus,
   HiddenServices,
+  HideRateRules,
   PublishVatMatrixPayload,
   PublishVatMatrixResult,
   ShipmentTax,
@@ -14,6 +15,8 @@ import type {
   VatReview,
   VatReviewFilter,
   VatReviewList,
+  VatSimulation,
+  VatSimulationInput,
 } from "@/types/vat";
 
 export const getVatMatrix = async (): Promise<VatMatrixOverview> => {
@@ -120,4 +123,22 @@ export const getUserBillingProfile = async (userId: string): Promise<BillingProf
     `/admin/users/${userId}/billing-profile`,
   );
   return data.profile;
+};
+
+export const getHideRules = async (): Promise<HideRateRules> => {
+  const { data } = await apiClient.get<{ rules: HideRateRules }>("/admin/settings/hide-rules");
+  return data.rules;
+};
+
+export const updateHideRules = async (rules: HideRateRules): Promise<HideRateRules> => {
+  const { data } = await apiClient.put<{ rules: HideRateRules }>("/admin/settings/hide-rules", {
+    rules,
+  });
+  return data.rules;
+};
+
+/** What VAT a journey gets under the live matrix, next to the built-in defaults. */
+export const simulateVat = async (input: VatSimulationInput): Promise<VatSimulation> => {
+  const { data } = await apiClient.post<VatSimulation>("/admin/vat-matrix/simulate", input);
+  return data;
 };

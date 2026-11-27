@@ -2,6 +2,7 @@
 
 import { useVatMatrix } from "@/hooks/admin/use-vat";
 import { MatrixEditor } from "@/components/vat/matrix-editor";
+import { VatSimulator } from "@/components/vat/vat-simulator";
 import { VersionHistory } from "@/components/vat/version-history";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,6 +42,7 @@ export default function VatRulesPage() {
           <TabsList>
             <TabsTrigger value="matrix">Matrix</TabsTrigger>
             <TabsTrigger value="history">History ({data.versions.length})</TabsTrigger>
+            <TabsTrigger value="simulator">Simulator</TabsTrigger>
           </TabsList>
           <TabsContent value="matrix" className="pt-4">
             {/* Keyed by version so a publish or revert resets the draft to the new live matrix. */}
@@ -48,6 +50,9 @@ export default function VatRulesPage() {
           </TabsContent>
           <TabsContent value="history" className="pt-4">
             <VersionHistory versions={data.versions} active={data.active.content} />
+          </TabsContent>
+          <TabsContent value="simulator" className="pt-4">
+            <VatSimulator />
           </TabsContent>
         </Tabs>
       )}

@@ -31,3 +31,19 @@ export const getAccountUpgradeProofFile = async (id: string): Promise<Blob> => {
   });
   return data;
 };
+
+/** Whether business accounts may ask to go back to individual. */
+export const getAccountChangeSettings = async (): Promise<boolean> => {
+  const { data } = await apiClient.get<{ allowBusinessToIndividual: boolean }>(
+    "/admin/settings/account-changes",
+  );
+  return data.allowBusinessToIndividual;
+};
+
+export const updateAccountChangeSettings = async (allow: boolean): Promise<boolean> => {
+  const { data } = await apiClient.put<{ allowBusinessToIndividual: boolean }>(
+    "/admin/settings/account-changes",
+    { allowBusinessToIndividual: allow },
+  );
+  return data.allowBusinessToIndividual;
+};
