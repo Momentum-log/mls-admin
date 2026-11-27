@@ -207,6 +207,33 @@ export interface FxSettingsUpdate {
 /** `{ fedex: ["INTERNATIONAL_FIRST"] }` */
 export type HiddenServices = Record<string, string[]>;
 
+/** Hide rates slower than N days, or whose name contains a keyword. */
+export interface HideRateRules {
+  maxTransitDays: number | null;
+  keywords: string[];
+}
+
+export interface VatSimulationInput {
+  pickupCountry: string;
+  deliveryCountry: string;
+  clientType: ClientType;
+  viaPolandHub?: boolean;
+}
+
+export interface VatSimulation {
+  matrixVersion: number;
+  decision: {
+    routeType: RouteType;
+    vatCode: VatCode;
+    vatRatePercent: number;
+    noteEn: string | null;
+    needsReview: boolean;
+  };
+  seed: { vatCode: VatCode; vatRatePercent: number };
+  /** The live matrix gives a different VAT code than the built-in defaults. */
+  differsFromSeed: boolean;
+}
+
 export interface VatAlertSettings {
   emails: string[];
 }

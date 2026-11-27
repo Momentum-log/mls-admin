@@ -94,7 +94,8 @@ Detail: [domains/rbac-permissions.md](domains/rbac-permissions.md).
 | `/dashboard/multi-leg` | Hub-routed shipments queue; confirm arrival; create leg 2 (409 re-pricing decision) | `shipment:read` |
 | `/dashboard/collections` | DHL first-mile collections; hub handoff (courier booking or service point) | `shipment:read` |
 | `/dashboard/cancellations` | Customer cancellation requests: approve or reject | `shipment:read` |
-| `/dashboard/business-upgrades` | Business account requests: NIP check, approve or reject | `user:read` |
+| `/dashboard/business-upgrades` | Account changes: business requests (NIP check) and return-to-individual requests; approve or reject; switch for allowing returns | `user:read` |
+| `/dashboard/messages` | Contact-form inbox: read, reply by email, set status | `inquiries:read` / `inquiries:write` |
 | `/dashboard/invoices` | Invoices, detail sheet with payments, CSV export | `shipment:read` |
 | `/dashboard/refunds` | Refund queue: gateway refund, retry on failure, manual payout | `shipment:read` |
 | `/dashboard/vat-rules` | Versioned VAT matrix (route x client type), invoice wording, transit lanes, history and revert | `staff:read` (publish: `staff:write`) |

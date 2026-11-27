@@ -5,8 +5,10 @@ import Link from "next/link";
 import { toast } from "react-hot-toast";
 import {
   useAccountUpgradeRequests,
+  useAccountChangeSettings,
   useApproveAccountUpgrade,
   useRejectAccountUpgrade,
+  useUpdateAccountChangeSettings,
 } from "@/hooks/admin/use-account-upgrades";
 import { getAccountUpgradeProofFile } from "@/lib/api/admin/account-upgrades";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -17,6 +19,7 @@ import { Pager } from "@/components/admin/pager";
 import { ReasonDialog } from "@/components/admin/reason-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import CopyButton from "@/components/ui/copy-button";
 import {
@@ -43,6 +46,10 @@ const STATUS_FILTERS: { value: AccountUpgradeStatus; label: string }[] = [
   { value: "CANCELLED", label: "Cancelled by customer" },
 ];
 
+function isDowngrade(request: AccountUpgradeRequest | null): boolean {
+  return request?.direction === "DOWNGRADE";
+}
+
 /**
  * Customers asking to become business accounts. Check the NIP against the
  * public registry (or the attached document), then approve or reject.
@@ -59,6 +66,8 @@ export default function BusinessUpgradesPage() {
   const [openingProof, setOpeningProof] = useState<string | null>(null);
   const { mutate: approve, isPending: isApproving } = useApproveAccountUpgrade();
   const { mutate: reject, isPending: isRejecting } = useRejectAccountUpgrade();
+  const { data: allowDowngrade, isLoading: isLoadingSetting } = useAccountChangeSettings();
+  const { mutate: saveSetting, isPending: isSavingSetting } = useUpdateAccountChangeSettings();
 
   const openProof = async (id: string) => {
     setOpeningProof(id);
@@ -78,9 +87,9 @@ export default function BusinessUpgradesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Business Upgrades</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Account Changes</h2>
           <p className="text-muted-foreground">
-            Customers asking to switch to a business account.
+            Customers asking to become a business account, or to go back to an individual one.
           </p>
         </div>
         <Select
@@ -103,12 +112,31 @@ export default function BusinessUpgradesPage() {
         </Select>
       </div>
 
+      <div className="flex items-center justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm">
+        <div>
+          <p className="text-sm font-medium">Allow business accounts to return to individual</p>
+          <p className="text-xs text-muted-foreground">
+            Off by default. When off, business customers do not see the option. Individual
+            customers can always ask for a business account.
+          </p>
+        </div>
+        <Can do="staff:write" fallback="disable">
+          <Switch
+            checked={allowDowngrade ?? false}
+            disabled={isLoadingSetting || isSavingSetting}
+            onCheckedChange={(checked) => saveSetting(checked)}
+            aria-label="Allow business accounts to return to individual"
+          />
+        </Can>
+      </div>
+
       <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead>Customer</TableHead>
-              <TableHead>Company</TableHead>
+              <TableHead>Change</TableHead>
+              <TableHead>Company / reason</TableHead>
               <TableHead>NIP</TableHead>
               <TableHead>Requested</TableHead>
               <TableHead className="text-right w-[260px]">Action</TableHead>
@@ -117,13 +145,13 @@ export default function BusinessUpgradesPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-64 text-center">
+                <TableCell colSpan={6} className="h-64 text-center">
                   <Loader2 className="mx-auto h-8 w-8 animate-spin text-brand-blue" />
                 </TableCell>
               </TableRow>
             ) : requests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-64 text-center">
+                <TableCell colSpan={6} className="h-64 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Building2 className="h-10 w-10 opacity-20" />
                     <p className="font-medium">No requests here.</p>
@@ -148,12 +176,27 @@ export default function BusinessUpgradesPage() {
                       {request.user?.email}
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm font-medium">{request.companyName}</TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center gap-1 font-mono text-sm">
-                      {request.nip}
-                      <CopyButton text={request.nip} tooltipText="Copy NIP" />
-                    </span>
+                    <Badge variant={isDowngrade(request) ? "outline" : "default"} className="text-xs">
+                      {isDowngrade(request) ? "To individual" : "To business"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-xs text-sm font-medium">
+                    {isDowngrade(request) ? (
+                      <span className="font-normal text-muted-foreground">{request.reason ?? "No reason given"}</span>
+                    ) : (
+                      request.companyName
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {isDowngrade(request) || !request.nip ? (
+                      "—"
+                    ) : (
+                      <span className="inline-flex items-center gap-1 font-mono text-sm">
+                        {request.nip}
+                        <CopyButton text={request.nip} tooltipText="Copy NIP" />
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
                     {formatDateTime(request.createdAt)}
@@ -209,8 +252,12 @@ export default function BusinessUpgradesPage() {
       <ConfirmDialog
         open={!!approveTarget}
         onOpenChange={(open) => !open && setApproveTarget(null)}
-        title="Approve this business account?"
-        description={`${approveTarget?.user?.name ?? "The customer"} becomes a business account for ${approveTarget?.companyName ?? ""} (NIP ${approveTarget?.nip ?? ""}). Check the NIP in the public registry first. The customer is emailed.`}
+        title={isDowngrade(approveTarget) ? "Return this account to individual?" : "Approve this business account?"}
+        description={
+          isDowngrade(approveTarget)
+            ? `${approveTarget?.user?.name ?? "The customer"} becomes an individual account. Company name and NIP are cleared and the billing profile becomes personal. Past orders keep their tax. The customer is emailed.`
+            : `${approveTarget?.user?.name ?? "The customer"} becomes a business account for ${approveTarget?.companyName ?? ""} (NIP ${approveTarget?.nip ?? ""}). Check the NIP in the public registry first. The customer is emailed.`
+        }
         confirmLabel="Approve"
         isLoading={isApproving}
         onConfirm={() => {
@@ -223,7 +270,7 @@ export default function BusinessUpgradesPage() {
         open={!!rejectTarget}
         onOpenChange={(open) => !open && setRejectTarget(null)}
         title="Reject this request?"
-        description="The account stays personal. The customer is emailed what you write below."
+        description="The account stays as it is. The customer is emailed what you write below."
         label="What the customer should know"
         placeholder="e.g. The NIP does not match the company name in the registry."
         required
