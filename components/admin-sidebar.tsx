@@ -23,6 +23,7 @@ import {
   Percent,
   Coins,
   Handshake,
+  MessageSquare,
   Settings,
   MailOpen,
   History,
@@ -34,6 +35,7 @@ import {
 import { usePermissions } from "@/hooks/use-permissions";
 import { useFulfilmentQueue } from "@/hooks/admin/use-fulfilment";
 import { useVatReviews } from "@/hooks/admin/use-vat";
+import { useNewContactCount } from "@/hooks/admin/use-contact-messages";
 
 interface NavRoute {
   label: string;
@@ -110,7 +112,7 @@ const navGroups: NavGroup[] = [
         permission: "user:read",
       },
       {
-        label: "Business Upgrades",
+        label: "Account Changes",
         icon: Building2,
         href: "/dashboard/business-upgrades",
         permission: "user:read",
@@ -177,6 +179,12 @@ const navGroups: NavGroup[] = [
         label: "Partner Enquiries",
         icon: Handshake,
         href: "/dashboard/inquiries",
+        permission: "inquiries:read",
+      },
+      {
+        label: "Messages",
+        icon: MessageSquare,
+        href: "/dashboard/messages",
         permission: "inquiries:read",
       },
     ],
@@ -246,7 +254,10 @@ export function AdminSidebar() {
   const { data: fulfilmentQueue } = useFulfilmentQueue(hasPermission("shipment:read"));
   // Count badge for orders whose VAT needs a person to look at it.
   const { data: vatReviews } = useVatReviews("OPEN", hasPermission("staff:read"));
+  // Count badge for unread contact-form messages.
+  const { data: newMessages } = useNewContactCount(hasPermission("inquiries:read"));
   const badges: Record<string, number> = {
+    "/dashboard/messages": newMessages ?? 0,
     "/dashboard/fulfilment": fulfilmentQueue?.count ?? 0,
     "/dashboard/vat-reviews": vatReviews?.openCount ?? 0,
   };

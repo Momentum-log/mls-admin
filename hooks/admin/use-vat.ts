@@ -4,6 +4,7 @@ import {
   getBillingSettings,
   getFxStatus,
   getHiddenServices,
+  getHideRules,
   getShipmentTax,
   getUserBillingProfile,
   getVatAlertSettings,
@@ -12,17 +13,20 @@ import {
   getVatReviews,
   publishVatMatrix,
   refreshFxRates,
+  simulateVat,
   resolveVatReview,
   revertVatMatrix,
   updateBillingEnforced,
   updateFxSettings,
   updateHiddenServices,
+  updateHideRules,
   updateVatAlertSettings,
 } from "@/lib/api/admin/vat";
 import { getApiErrorMessage } from "@/lib/api-error";
 import type {
   FxSettingsUpdate,
   HiddenServices,
+  HideRateRules,
   PublishVatMatrixPayload,
   VatReviewFilter,
 } from "@/types/vat";
@@ -31,6 +35,7 @@ const MATRIX_KEY = ["vat-matrix"];
 const REVIEWS_KEY = ["vat-reviews"];
 const FX_KEY = ["fx-status"];
 const HIDDEN_KEY = ["hidden-services"];
+const HIDE_RULES_KEY = ["hide-rate-rules"];
 const ALERTS_KEY = ["vat-alert-settings"];
 const BILLING_KEY = ["billing-settings"];
 
@@ -174,4 +179,25 @@ export const useUserBillingProfile = (userId: string | null) =>
     queryKey: ["user-billing-profile", userId],
     queryFn: () => getUserBillingProfile(userId as string),
     enabled: !!userId,
+  });
+
+export const useHideRules = (enabled = true) =>
+  useQuery({ queryKey: HIDE_RULES_KEY, queryFn: getHideRules, enabled });
+
+export const useUpdateHideRules = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rules: HideRateRules) => updateHideRules(rules),
+    onSuccess: (rules) => {
+      queryClient.setQueryData(HIDE_RULES_KEY, rules);
+      toast.success("Hiding rules saved");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error, "Could not save the rules")),
+  });
+};
+
+export const useSimulateVat = () =>
+  useMutation({
+    mutationFn: simulateVat,
+    onError: (error) => toast.error(getApiErrorMessage(error, "Could not run the simulation")),
   });

@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import {
   approveAccountUpgrade,
+  getAccountChangeSettings,
   getAccountUpgradeRequests,
   rejectAccountUpgrade,
+  updateAccountChangeSettings,
 } from "@/lib/api/admin/account-upgrades";
 import { getApiErrorMessage } from "@/lib/api-error";
 import type { AccountUpgradeStatus } from "@/types/account-upgrade";
@@ -26,7 +28,7 @@ export const useApproveAccountUpgrade = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => approveAccountUpgrade(id),
-    onSuccess: () => toast.success("Now a business account. The customer has been emailed."),
+    onSuccess: () => toast.success("Account changed. The customer has been emailed."),
     onError: (error) => toast.error(getApiErrorMessage(error, "Could not approve the request")),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: KEY });
@@ -43,5 +45,20 @@ export const useRejectAccountUpgrade = () => {
     onSuccess: () => toast.success("Request rejected. The customer has been emailed."),
     onError: (error) => toast.error(getApiErrorMessage(error, "Could not reject the request")),
     onSettled: () => queryClient.invalidateQueries({ queryKey: KEY }),
+  });
+};
+
+const SETTINGS_KEY = ["account-change-settings"];
+
+export const useAccountChangeSettings = () =>
+  useQuery({ queryKey: SETTINGS_KEY, queryFn: getAccountChangeSettings });
+
+export const useUpdateAccountChangeSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (allow: boolean) => updateAccountChangeSettings(allow),
+    onSuccess: () => toast.success("Setting saved"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Could not save the setting")),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: SETTINGS_KEY }),
   });
 };

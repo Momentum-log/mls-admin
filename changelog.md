@@ -5,6 +5,16 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.0] - 2026-11-27 - Messages inbox, account changes, VAT simulator, hide slow options
+
+**Requires:** `mls-server` PR #48 (contact messages, account change direction, hide rules and VAT simulator; two migrations). Merge the server PR first. Without it the new pages and panels show errors.
+
+- **Added**: **Messages** (`/dashboard/messages`): contact-form messages with a status filter and search, a detail panel with the conversation, status change (New, Replied, Closed) and a reply form that emails the sender from the company address. Sidebar badge shows new messages. Needs `inquiries:read` to view and `inquiries:write` to reply.
+- **Changed**: **Business Upgrades** is now **Account Changes**. A column shows whether the customer asked to become a business or to go back to individual (with their reason), and approving a downgrade explains what it clears. New switch "Allow business accounts to return to individual" (off by default).
+- **Added**: Settings card **Hide slow options**: hide carrier options slower than N days, or whose name contains a keyword.
+- **Added**: **Simulator** tab on VAT Rules: pick from and to country and client type to see the VAT code under the live matrix, the matrix version, and whether it differs from the built-in defaults.
+- Verification: `bunx tsc --noEmit` and `bun run lint` pass; not exercised against a running server or in a browser.
+
 ## [1.19.0] - 2026-11-16 - VAT matrix, VAT review, exchange rates, hidden services
 
 **Requires:** `mls-server` PR #45 (VAT matrix, NBP rates, hidden services, tax snapshot; migration adds three tables) and PR #46 (billing profile, tax ID checks, held orders; second migration). Merge the server PRs first. Without them the new pages show errors.
