@@ -5,10 +5,12 @@ import {
   useBillingSettings,
   useFxStatus,
   useHiddenServices,
+  useHideRules,
   useRefreshFxRates,
   useUpdateBillingEnforced,
   useUpdateFxSettings,
   useUpdateHiddenServices,
+  useUpdateHideRules,
   useUpdateVatAlertSettings,
   useVatAlertSettings,
 } from "@/hooks/admin/use-vat";
@@ -19,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { formatDate, formatDateTime } from "@/utils/format-date";
-import type { FxStatus, HiddenServices } from "@/types/vat";
+import type { FxStatus, HiddenServices, HideRateRules } from "@/types/vat";
 import { AlertTriangle, Loader2, Plus, RefreshCw, X } from "lucide-react";
 
 function Loading() {
@@ -377,6 +379,112 @@ export function BillingSection() {
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Hide slow or expensive-looking options by transit time or a name keyword. */
+export function HideRulesSection() {
+  const { data, isLoading } = useHideRules();
+  if (isLoading || !data) return <Loading />;
+  return <HideRulesEditor key={JSON.stringify(data)} initial={data} />;
+}
+
+function HideRulesEditor({ initial }: { initial: HideRateRules }) {
+  const { mutate: save, isPending } = useUpdateHideRules();
+  const [days, setDays] = useState(initial.maxTransitDays?.toString() ?? "");
+  const [keywords, setKeywords] = useState<string[]>(initial.keywords);
+  const [keyword, setKeyword] = useState("");
+
+  const parsedDays = days.trim() === "" ? null : Number(days);
+  const daysValid = parsedDays === null || (Number.isInteger(parsedDays) && parsedDays >= 1 && parsedDays <= 90);
+  const dirty =
+    parsedDays !== initial.maxTransitDays || JSON.stringify(keywords) !== JSON.stringify(initial.keywords);
+
+  const addKeyword = (): void => {
+    const next = keyword.trim();
+    if (!next) return;
+    setKeywords((k) => Array.from(new Set([...k, next])));
+    setKeyword("");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <Label htmlFor="hide-days">Hide options slower than (days)</Label>
+        <Input
+          id="hide-days"
+          type="number"
+          min={1}
+          max={90}
+          className="w-32"
+          placeholder="Off"
+          value={days}
+          onChange={(e) => setDays(e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Options whose longest estimate is above this are not shown. Leave empty to turn off.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="hide-keyword">Hide options whose name contains</Label>
+        <ul className="flex flex-wrap gap-2">
+          {keywords.length === 0 && <li className="text-sm text-muted-foreground">No keywords.</li>}
+          {keywords.map((k) => (
+            <li
+              key={k}
+              className="inline-flex items-center gap-1 rounded-full border bg-muted/40 py-1 pl-3 pr-1 text-xs"
+            >
+              {k}
+              <Can do="staff:write" fallback="disable">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  aria-label={`Remove keyword ${k}`}
+                  onClick={() => setKeywords((all) => all.filter((x) => x !== k))}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </Can>
+            </li>
+          ))}
+        </ul>
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addKeyword();
+          }}
+        >
+          <Input
+            id="hide-keyword"
+            className="w-56"
+            placeholder="economy"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+          />
+          <Can do="staff:write" fallback="disable">
+            <Button type="submit" variant="outline" disabled={!keyword.trim()}>
+              <Plus className="mr-1 h-4 w-4" />
+              Add
+            </Button>
+          </Can>
+        </form>
+      </div>
+
+      <Can do="staff:write" fallback="disable">
+        <Button
+          disabled={!dirty || !daysValid || isPending}
+          onClick={() => save({ maxTransitDays: parsedDays, keywords })}
+        >
+          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save
+        </Button>
+      </Can>
+      {!daysValid && <p className="text-xs text-destructive">Enter a whole number from 1 to 90.</p>}
     </div>
   );
 }

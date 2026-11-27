@@ -37,6 +37,7 @@ import {
   BillingSection,
   FxSection,
   HiddenServicesSection,
+  HideRulesSection,
   VatAlertsSection,
 } from "@/components/vat/settings-sections";
 import {
@@ -409,6 +410,15 @@ export default function SettingsPage() {
           readPermission="staff:read"
         >
           <HiddenServicesSection />
+        </Section>
+
+        <Section
+          icon={EyeOff}
+          title="Hide slow options"
+          description="Hide carrier options slower than a number of days, or whose name contains a keyword, from every price list."
+          readPermission="staff:read"
+        >
+          <HideRulesSection />
         </Section>
 
         <Section
