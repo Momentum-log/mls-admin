@@ -5,6 +5,15 @@ All notable changes to this project "Momentum Logistics Service" will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0] - 2026-11-27 - Messages as cases, rich text replies
+
+**Requires:** the `mls-server` PR for the contact case workflow (migration `20261127140000_contact_case_workflow`). Merge the server PR first; without it the Read and Resolved statuses and rich replies fail.
+
+- **Changed**: **Messages** are cases with four statuses: New, Read, Answered, Resolved (Closed is now Resolved). Filter by any status; each row shows a coloured status. Opening a new case marks it Read. Buttons: Mark read, Mark resolved, Reopen.
+- **Added**: replies are written in the rich text editor (headings, lists, links, bold) and emailed to the customer in the branded layout with their message quoted. The case becomes Answered and the reply stays in the thread.
+- **Added**: **Log a customer reply**: replies by email are not tracked, so paste the customer's email onto the case; it appears in the thread and the case goes back to New.
+- Verification: `bunx tsc --noEmit` and `bun run lint` pass; not exercised against a running server or in a browser.
+
 ## [1.20.0] - 2026-11-27 - Messages inbox, account changes, VAT simulator, hide slow options
 
 **Requires:** `mls-server` PR #48 (contact messages, account change direction, hide rules and VAT simulator; two migrations). Merge the server PR first. Without it the new pages and panels show errors.
