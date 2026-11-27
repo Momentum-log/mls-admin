@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { RichTextEditor } from "@/components/emails/rich-text-editor";
 import {
   useContactMessage,
   useContactMessages,
+  useLogCustomerReply,
   useReplyToContactMessage,
   useUpdateContactStatus,
 } from "@/hooks/admin/use-contact-messages";
@@ -38,20 +40,38 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, MessageSquare, Search, Send } from "lucide-react";
+import { CheckCircle2, Eye, Loader2, MessageSquare, RotateCcw, Search, Send } from "lucide-react";
 
 const STATUS_LABEL: Record<ContactStatus, string> = {
   NEW: "New",
-  REPLIED: "Replied",
-  CLOSED: "Closed",
+  READ: "Read",
+  REPLIED: "Answered",
+  RESOLVED: "Resolved",
 };
 
+const STATUS_CLASS: Record<ContactStatus, string> = {
+  NEW: "bg-brand-blue text-white border-transparent",
+  READ: "bg-amber-100 text-amber-900 border-amber-200",
+  REPLIED: "bg-sky-100 text-sky-900 border-sky-200",
+  RESOLVED: "bg-emerald-100 text-emerald-900 border-emerald-200",
+};
+
+function StatusBadge({ status }: { status: ContactStatus }) {
+  return (
+    <Badge variant="outline" className={`text-xs ${STATUS_CLASS[status]}`}>
+      {STATUS_LABEL[status]}
+    </Badge>
+  );
+}
+
 /**
- * Messages from the public contact form. Each one is also emailed to the
- * company inbox; staff can answer here and the reply is emailed to the sender.
+ * Cases from the public contact form. Each submission is also emailed to the
+ * company inbox. Staff read it, answer here (the reply is emailed to the
+ * customer), and mark the case resolved. Customer emails are not tracked
+ * automatically: log them on the case by hand.
  */
 export default function MessagesPage() {
-  const [status, setStatus] = useState<ContactStatus | "ALL">("NEW");
+  const [status, setStatus] = useState<ContactStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
   const [page, setPage] = useState(1);
@@ -71,7 +91,7 @@ export default function MessagesPage() {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Messages</h2>
         <p className="text-muted-foreground">
-          Questions sent through the website contact form.
+          Each message from the website contact form is a case: new, read, answered or resolved.
           {data ? ` ${data.newCount} new.` : ""}
         </p>
       </div>
@@ -152,9 +172,7 @@ export default function MessagesPage() {
                     {formatDateTime(m.createdAt)}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={m.status === "NEW" ? "default" : "outline"} className="text-xs">
-                      {STATUS_LABEL[m.status]}
-                    </Badge>
+                    <StatusBadge status={m.status} />
                   </TableCell>
                 </TableRow>
               ))
@@ -174,18 +192,55 @@ function MessageSheet({ id, onClose }: { id: string | null; onClose: () => void 
   const { data: message, isLoading } = useContactMessage(id);
   const { mutate: setStatus, isPending: isUpdating } = useUpdateContactStatus();
   const { mutate: reply, isPending: isReplying } = useReplyToContactMessage();
+  const { mutate: logReply, isPending: isLogging } = useLogCustomerReply();
   const { can } = useCan();
   const canWrite = can("inquiries:write");
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState({ html: "", empty: true });
+  const [editorKey, setEditorKey] = useState(0);
+  const [logText, setLogText] = useState("");
+  const [logOpen, setLogOpen] = useState(false);
+  const autoRead = useRef<string | null>(null);
+
+  // Opening a new case marks it read, once per case.
+  useEffect(() => {
+    if (!message || !canWrite || message.status !== "NEW" || autoRead.current === message.id) return;
+    autoRead.current = message.id;
+    setStatus({ id: message.id, status: "READ", silent: true });
+  }, [message, canWrite, setStatus]);
 
   const send = (): void => {
-    if (!id || !draft.trim()) return;
-    reply({ id, body: draft.trim() }, { onSuccess: () => setDraft("") });
+    if (!id || draft.empty) return;
+    reply(
+      { id, bodyHtml: draft.html },
+      {
+        onSuccess: () => {
+          setDraft({ html: "", empty: true });
+          setEditorKey((k) => k + 1);
+        },
+      },
+    );
+  };
+
+  const saveLog = (): void => {
+    if (!id || !logText.trim()) return;
+    logReply(
+      { id, body: logText.trim() },
+      {
+        onSuccess: () => {
+          setLogText("");
+          setLogOpen(false);
+        },
+      },
+    );
+  };
+
+  const change = (status: ContactStatus): void => {
+    if (message) setStatus({ id: message.id, status });
   };
 
   return (
     <Sheet open={!!id} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+      <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
         <SheetHeader>
           <SheetTitle>{message?.subject ?? "Message"}</SheetTitle>
           <SheetDescription>
@@ -199,49 +254,77 @@ function MessageSheet({ id, onClose }: { id: string | null; onClose: () => void 
           </div>
         ) : (
           <div className="space-y-5 px-4 pb-6">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-xs text-muted-foreground">
-                {formatDateTime(message.createdAt)}
-              </span>
-              <Select
-                value={message.status}
-                disabled={!canWrite || isUpdating}
-                onValueChange={(value) => setStatus({ id: message.id, status: value as ContactStatus })}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(STATUS_LABEL) as ContactStatus[]).map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {STATUS_LABEL[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <StatusBadge status={message.status} />
+                <span className="text-xs text-muted-foreground">
+                  Received {formatDateTime(message.createdAt)}
+                </span>
+              </div>
+              {canWrite && (
+                <div className="flex gap-2">
+                  {message.status === "NEW" && (
+                    <Button size="sm" variant="outline" disabled={isUpdating} onClick={() => change("READ")}>
+                      <Eye className="mr-1.5 h-4 w-4" />
+                      Mark read
+                    </Button>
+                  )}
+                  {message.status === "RESOLVED" ? (
+                    <Button size="sm" variant="outline" disabled={isUpdating} onClick={() => change("READ")}>
+                      <RotateCcw className="mr-1.5 h-4 w-4" />
+                      Reopen
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" disabled={isUpdating} onClick={() => change("RESOLVED")}>
+                      <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                      Mark resolved
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
 
-            <p className="whitespace-pre-wrap rounded-lg bg-muted/50 p-3 text-sm">{message.message}</p>
+            <div className="rounded-lg bg-muted/50 p-3">
+              <p className="mb-1 text-xs text-muted-foreground">{message.name} wrote</p>
+              <p className="whitespace-pre-wrap text-sm">{message.message}</p>
+            </div>
 
-            {(message.replies ?? []).map((r) => (
-              <div key={r.id} className="rounded-lg border border-brand-blue/30 bg-brand-blue/5 p-3">
-                <p className="mb-1 text-xs text-muted-foreground">
-                  Reply · {formatDateTime(r.createdAt)}
-                </p>
-                <p className="whitespace-pre-wrap text-sm">{r.body}</p>
-              </div>
-            ))}
+            {(message.replies ?? []).map((r) =>
+              r.direction === "INBOUND" ? (
+                <div key={r.id} className="rounded-lg border border-amber-300/60 bg-amber-50 p-3">
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    Customer reply (logged{r.sentByName ? ` by ${r.sentByName}` : ""}) ·{" "}
+                    {formatDateTime(r.createdAt)}
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm">{r.body}</p>
+                </div>
+              ) : (
+                <div key={r.id} className="rounded-lg border border-brand-blue/30 bg-brand-blue/5 p-3">
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    Our reply{r.sentByName ? ` · ${r.sentByName}` : ""} · {formatDateTime(r.createdAt)}
+                  </p>
+                  {r.bodyHtml ? (
+                    // Sanitized by the server to a short list of formatting tags.
+                    <div className="mls-editor text-sm" dangerouslySetInnerHTML={{ __html: r.bodyHtml }} />
+                  ) : (
+                    <p className="whitespace-pre-wrap text-sm">{r.body}</p>
+                  )}
+                </div>
+              ),
+            )}
 
             {canWrite && (
               <div className="space-y-2">
-                <Textarea
-                  rows={6}
-                  placeholder={`Reply to ${message.name}. It is emailed from the company address.`}
-                  value={draft}
-                  maxLength={5000}
-                  onChange={(e) => setDraft(e.target.value)}
+                <p className="text-sm font-medium">Reply to {message.name}</p>
+                <RichTextEditor
+                  key={`${message.id}-${editorKey}`}
+                  initialContent=""
+                  onChange={(html, empty) => setDraft({ html, empty })}
                 />
-                <Button onClick={send} disabled={isReplying || !draft.trim()}>
+                <p className="text-xs text-muted-foreground">
+                  Emailed from the company address with their message quoted. The case is marked answered.
+                </p>
+                <Button onClick={send} disabled={isReplying || draft.empty}>
                   {isReplying ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -249,6 +332,37 @@ function MessageSheet({ id, onClose }: { id: string | null; onClose: () => void 
                   )}
                   Send reply
                 </Button>
+
+                <div className="border-t pt-3">
+                  {logOpen ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Log a customer reply</p>
+                      <p className="text-xs text-muted-foreground">
+                        Replies by email are not tracked. Paste what they wrote from the mailbox; the case
+                        goes back to New.
+                      </p>
+                      <Textarea
+                        rows={4}
+                        value={logText}
+                        maxLength={10000}
+                        onChange={(e) => setLogText(e.target.value)}
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveLog} disabled={isLogging || !logText.trim()}>
+                          {isLogging && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Save to case
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setLogOpen(false)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="ghost" onClick={() => setLogOpen(true)}>
+                      Log a customer reply
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>

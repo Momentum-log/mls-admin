@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import {
   getContactMessage,
   getContactMessages,
+  logCustomerReply,
   replyToContactMessage,
   updateContactStatus,
 } from "@/lib/api/admin/contact";
@@ -38,9 +39,11 @@ export const useContactMessage = (id: string | null) =>
 export const useUpdateContactStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: ContactStatus }) =>
+    mutationFn: ({ id, status }: { id: string; status: ContactStatus; silent?: boolean }) =>
       updateContactStatus(id, status),
-    onSuccess: () => toast.success("Message updated"),
+    onSuccess: (_data, variables) => {
+      if (!variables.silent) toast.success("Case updated");
+    },
     onError: (error) => toast.error(getApiErrorMessage(error, "Could not update the message")),
     onSettled: () => queryClient.invalidateQueries({ queryKey: KEY }),
   });
@@ -49,9 +52,20 @@ export const useUpdateContactStatus = () => {
 export const useReplyToContactMessage = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: string }) => replyToContactMessage(id, body),
+    mutationFn: ({ id, bodyHtml }: { id: string; bodyHtml: string }) =>
+      replyToContactMessage(id, bodyHtml),
     onSuccess: () => toast.success("Reply sent"),
     onError: (error) => toast.error(getApiErrorMessage(error, "Could not send the reply")),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: KEY }),
+  });
+};
+
+export const useLogCustomerReply = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: string }) => logCustomerReply(id, body),
+    onSuccess: () => toast.success("Customer reply logged"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Could not log the reply")),
     onSettled: () => queryClient.invalidateQueries({ queryKey: KEY }),
   });
 };

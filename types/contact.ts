@@ -1,12 +1,18 @@
 /** Messages sent through the public contact form (server `ContactMessage`). */
 
-export type ContactStatus = "NEW" | "REPLIED" | "CLOSED";
+export type ContactStatus = "NEW" | "READ" | "REPLIED" | "RESOLVED";
+
+/** OUTBOUND: staff reply emailed to the customer. INBOUND: customer email logged by staff. */
+export type ContactReplyDirection = "OUTBOUND" | "INBOUND";
 
 export interface ContactReply {
   id: string;
   body: string;
+  /** Sanitized rich text for OUTBOUND replies; null for plain and INBOUND ones. */
+  bodyHtml: string | null;
+  direction: ContactReplyDirection;
   createdAt: string;
-  sentBy?: string | null;
+  sentByName?: string | null;
 }
 
 export interface ContactMessage {
